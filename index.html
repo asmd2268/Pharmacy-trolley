@@ -16,6 +16,7 @@
   --high:#ff4757;   --high-bg:rgba(255,71,87,.13);
   --noexp:#a78bfa; --noexp-border:rgba(167,139,250,.3); --noexp-bg:rgba(167,139,250,.06);
   --custom:#e879f9; --custom-bg:rgba(232,121,249,.10); --custom-border:rgba(232,121,249,.35);
+  --replaced:#f0a500; --replaced-bg:rgba(240,165,0,.14); --replaced-border:rgba(240,165,0,.45);
   --font:'IBM Plex Sans Arabic',sans-serif;
   --mono:'JetBrains Mono',monospace;
   --radius:10px;
@@ -29,15 +30,16 @@ body.light {
   --high-bg:rgba(255,71,87,.15);
   --noexp:#7c3aed; --noexp-border:rgba(124,58,237,.3); --noexp-bg:rgba(124,58,237,.06);
   --custom:#a21caf; --custom-bg:rgba(162,28,175,.08); --custom-border:rgba(162,28,175,.3);
+  --replaced-bg:rgba(240,165,0,.18); --replaced-border:rgba(240,165,0,.5);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .3s,color .3s}
 
 /* HEADER */
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;box-shadow:var(--shadow);}
-header h1{font-size:15px;font-weight:700;color:var(--accent);flex:1;min-width:120px}
-.stats{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
-.stat-badge{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;flex-wrap:wrap;box-shadow:var(--shadow);}
+header h1{font-size:14px;font-weight:700;color:var(--accent);flex:1;min-width:120px}
+.stats{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.stat-badge{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:10.5px;color:var(--text2);display:flex;align-items:center;gap:4px;min-height:26px;}
 .stat-badge span{color:var(--text);font-weight:700}
 .theme-btn{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:15px;transition:all .2s;color:var(--text);font-family:var(--font);}
 .theme-btn:hover{border-color:var(--accent)}
@@ -48,7 +50,7 @@ header h1{font-size:15px;font-weight:700;color:var(--accent);flex:1;min-width:12
 .tab:hover{color:var(--text);background:var(--surface2)}
 .tab.active{color:var(--accent);background:var(--bg);border-color:var(--border);border-bottom-color:var(--bg);margin-bottom:-1px}
 
-main{padding:14px 18px;max-width:1600px;margin:0 auto}
+main{padding:12px 16px;max-width:1680px;margin:0 auto}
 .tab-content{display:none}.tab-content.active{display:block}
 
 /* BUTTONS */
@@ -73,20 +75,30 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 .toolbar select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:12px;cursor:pointer;outline:none;}
 
 /* LEGEND */
-.legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:11px;color:var(--text2)}
+.home-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.home-panel-top{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:8px;align-items:center}
+.drawer-controls{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.control-chip{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;min-height:32px}
+.control-chip label{font-size:11px;color:var(--text2);white-space:nowrap}
+.control-chip input[type=number]{width:48px;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px 6px;color:var(--text);font-family:var(--mono);text-align:center;font-size:12px}
+.drawer-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.legend{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:10.5px;color:var(--text2)}
 .legend-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0}
-.legend-item{display:flex;align-items:center;gap:4px}
+.legend-item{display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px}
 
 /* DRAWERS GRID */
-.drawers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:6px;transition:all .2s}
+.drawers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:8px;transition:all .2s;align-items:start}
 .zoom-bar{display:flex;align-items:center;gap:8px;margin-left:auto}
 .zoom-btn{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:14px;color:var(--text);font-family:var(--font);line-height:1}
 .view-btn{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:3px 9px;cursor:pointer;font-size:12px;color:var(--text2);font-family:var(--font);transition:all .2s}
 .view-btn.active{color:var(--accent);border-color:var(--accent)}
 
-.drawer-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .2s,box-shadow .2s;}
+.drawer-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .2s,box-shadow .2s;}
 .drawer-card:hover{border-color:var(--accent2);box-shadow:var(--shadow)}
-.drawer-row{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:0;border-bottom:1px solid var(--border);min-height:36px;cursor:pointer;transition:background .15s;position:relative;}
+.drawer-row{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:stretch;gap:0;border-bottom:1px solid var(--border);min-height:44px;cursor:pointer;transition:background .15s;position:relative;}
+.drawer-row[draggable=true]{cursor:grab}
+.drawer-row.dragging{opacity:.45}
+.drawer-row.drop-target{background:rgba(0,153,255,.12);outline:1px dashed var(--accent2)}
 .drawer-row:last-child{border-bottom:none}
 .drawer-row:hover{background:var(--surface2)}
 .drawer-row.no-expiry{background:var(--noexp-bg);border-right:2px solid var(--noexp-border)}
@@ -96,18 +108,22 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 .drawer-row.type-lasa      {border-right:2px solid var(--lasa)}
 .drawer-row.type-high-alert{border-right:2px solid var(--high)}
 .drawer-row.custom-drug    {border-right:2px solid var(--custom)}
-.row-label{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text3);display:flex;align-items:center;justify-content:center;align-self:stretch;background:var(--surface2);border-left:1px solid var(--border);min-width:22px;}
-.row-body{display:flex;align-items:center;gap:6px;padding:5px 8px;overflow:hidden;flex:1;min-width:0;}
-.row-drug{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.row-label{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent2);display:flex;align-items:center;justify-content:center;align-self:stretch;background:var(--surface2);border-left:1px solid var(--border);min-width:26px;}
+.row-body{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;padding:7px 8px;overflow:visible;flex:1;min-width:0;}
+.row-drug{font-size:12px;font-weight:600;color:var(--text);white-space:normal;word-break:break-word;overflow:visible;display:block;line-height:1.4;flex:1;min-width:0;width:100%;}
 .row-drug.no-expiry-text{color:var(--noexp)}
 .drawer-row.type-hazard     .row-drug{color:var(--hazard)}
 .drawer-row.type-lasa       .row-drug{color:var(--lasa)}
 .drawer-row.type-high-alert .row-drug{color:var(--high)}
 .drawer-row.custom-drug     .row-drug{color:var(--custom)}
-.row-badges{display:flex;gap:3px;flex-wrap:nowrap;flex-shrink:0}
-.row-right{display:flex;align-items:center;gap:5px;padding:5px 7px 5px 0;flex-shrink:0}
-.drawer-card-header{display:flex;align-items:center;gap:6px;padding:4px 8px 4px 10px;background:var(--surface2);border-bottom:1px solid var(--border);}
-.drawer-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent2);background:rgba(0,153,255,.12);padding:1px 7px;border-radius:4px;flex-shrink:0;}
+.row-badges{display:flex;gap:3px;flex-wrap:wrap;flex-shrink:0;max-width:100%;overflow:visible}
+.row-right{display:flex;align-items:center;gap:5px;padding:5px 7px 5px 0;flex-shrink:0;min-width:82px;justify-content:flex-end;align-self:center}
+.drawer-view-hint{font-size:11px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;margin-bottom:8px;display:none}
+.drawer-view-hint.show{display:block}
+.drawer-card-header{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.drawer-num{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent2);background:rgba(0,153,255,.12);padding:2px 8px;border-radius:5px;flex-shrink:0;}
+.drawer-header-title{font-size:11px;font-weight:700;color:var(--text);white-space:nowrap}
+.drawer-slot-count{font-size:10px;color:var(--text3);font-family:var(--mono);white-space:nowrap}
 .drawer-card-header .drawer-status-dots{display:flex;gap:3px;align-items:center;margin-right:auto}
 .status-dot-sm{width:6px;height:6px;border-radius:50%}
 
@@ -117,7 +133,34 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 .drawers-table td{padding:5px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
 .drawers-table tr:hover td{background:var(--surface2)}
 .drawers-table .loc-cell{font-family:var(--mono);font-size:10px;color:var(--accent2);white-space:nowrap}
-.drawers-table .name-cell{font-weight:600;font-size:12px;max-width:280px}
+.drawers-table .name-cell{font-weight:600;font-size:12px;max-width:420px;white-space:normal;word-break:break-word;line-height:1.45}
+.drawers-table tr[draggable=true]{cursor:grab}
+.drawers-table tr.dragging{opacity:.45}
+.drawers-table tr.drop-target td{background:rgba(0,153,255,.12)}
+.drawers-table tr.db-only-row td{background:var(--custom-bg)}
+.drawers-table tr.db-only-row:hover td{background:rgba(232,121,249,.16)}
+.drawers-table tr.replaced-row td{background:var(--replaced-bg);border-right:3px solid var(--replaced-border)}
+.drawers-table tr.replaced-row:hover td{background:rgba(240,165,0,.22)}
+.drawers-table tr.replaced-row .name-cell{color:var(--replaced)}
+.drawers-table th.sortable{cursor:pointer;user-select:none;transition:color .15s}
+.drawers-table th.sortable:hover{color:var(--accent)}
+.drawers-table th.sort-asc::after{content:' ▲';font-size:8px;color:var(--accent)}
+.drawers-table th.sort-desc::after{content:' ▼';font-size:8px;color:var(--accent)}
+.db-filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--text2)}
+.db-filters select,.db-filters input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-family:var(--font);font-size:11px}
+.search-voice-row{display:flex;gap:6px;align-items:center;width:100%}
+.search-voice-row .search-input{flex:1}
+.list-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.mobile-list-preview{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:var(--mono);font-size:11px;line-height:1.6;max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-word;display:none;margin-top:8px}
+.mobile-list-preview.show{display:block}
+.drawer-map{display:grid;grid-template-columns:74px repeat(4,minmax(160px,1fr));gap:4px;min-width:760px}
+.drawer-map-wrap{overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px}
+.drawer-map-head,.drawer-map-drawer,.drawer-map-cell{border:1px solid var(--border);border-radius:6px;background:var(--surface2);padding:6px;font-size:11px}
+.drawer-map-head,.drawer-map-drawer{font-family:var(--mono);font-weight:700;color:var(--accent2);text-align:center}
+.drawer-map-cell{min-height:58px;color:var(--text);line-height:1.35;word-break:break-word;cursor:pointer;transition:background .15s,border-color .15s}
+.drawer-map-cell:hover:not(.map-empty){background:var(--surface);border-color:var(--accent2)}
+.drawer-map-cell.map-empty{color:var(--text3);display:flex;align-items:center;justify-content:center;padding:6px;cursor:default}
+.drawer-map-cell.map-empty:hover{background:var(--surface2);border-color:var(--border)}
 
 /* TYPE BADGES */
 .type-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-bottom:3px;}
@@ -185,7 +228,8 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 .loc-preview{font-family:var(--mono);font-size:11px;color:var(--accent);background:rgba(0,212,170,.1);padding:2px 8px;border-radius:4px;margin-top:4px;}
 
 /* DB-ONLY BADGE */
-.db-only-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(232,121,249,.12);color:var(--custom);border:1px solid var(--custom-border);}
+.db-only-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(232,121,249,.18);color:var(--custom);border:1px solid var(--custom-border);}
+.replaced-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(240,165,0,.12);color:var(--warn);border:1px solid rgba(240,165,0,.35);}
 
 /* SEARCH RESULTS */
 .search-result{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:flex-start;gap:12px;margin-bottom:7px;}
@@ -281,6 +325,9 @@ code{font-family:var(--mono)}
 
 @media(max-width:600px){
   .drawers-grid{grid-template-columns:1fr}
+  .home-panel-top{grid-template-columns:1fr}
+  .drawer-controls{justify-content:flex-start}
+  .control-chip{flex:1;min-width:140px}
   .shelf-cell{min-width:50px;min-height:44px}
 }
 </style>
@@ -316,71 +363,116 @@ code{font-family:var(--mono)}
 
 <!-- ══ DRAWERS ══ -->
 <div id="tab-drawers" class="tab-content active">
-  <div class="toolbar">
-    <label>⏰ تنبيه قبل</label>
-    <input type="number" id="warnDays" value="30" min="1" max="365" onchange="saveSettings();refreshAll()">
-    <label>يوم</label>
-    <label style="margin-right:10px">⚠️ حرج</label>
-    <input type="number" id="critDays" value="7" min="1" max="60" onchange="saveSettings();refreshAll()">
-    <label>يوم</label>
-    <input type="text" class="search-input" id="drawerFilter" placeholder="🔍 بحث سريع في الأدراج..." oninput="renderDrawers()">
-    <div style="display:flex;gap:4px">
-      <button class="view-btn active" id="viewBtnCard" onclick="setDrawerView('card')">⊞ بطاقات</button>
-      <button class="view-btn" id="viewBtnTable" onclick="setDrawerView('table')">☰ جدول</button>
-    </div>
-    <div style="margin-right:auto;display:flex;gap:6px;align-items:center">
-      <div class="zoom-bar">
-        <button class="zoom-btn" onclick="zoomDrawers(-1)">−</button>
-        <span id="zoomLabel" style="font-size:11px;color:var(--text2);min-width:30px;text-align:center">100%</span>
-        <button class="zoom-btn" onclick="zoomDrawers(1)">＋</button>
+  <div class="home-panel">
+    <div class="home-panel-top">
+      <input type="text" class="search-input" id="drawerFilter" placeholder="بحث سريع في اسم الدواء أو الدرج..." oninput="renderDrawers()">
+      <div class="drawer-controls">
+        <div class="control-chip">
+          <label>تنبيه</label>
+          <input type="number" id="warnDays" value="30" min="1" max="365" onchange="saveSettings();refreshAll()">
+          <label>يوم</label>
+        </div>
+        <div class="control-chip">
+          <label>حرج</label>
+          <input type="number" id="critDays" value="7" min="1" max="60" onchange="saveSettings();refreshAll()">
+          <label>يوم</label>
+        </div>
+        <div class="drawer-actions">
+          <button class="view-btn active" id="viewBtnCard" onclick="setDrawerView('card')">⊞ بطاقات</button>
+          <button class="view-btn" id="viewBtnTable" onclick="setDrawerView('table')">☰ جدول</button>
+          <button class="view-btn" id="viewBtnMap" onclick="setDrawerView('map')">▦ عرض شامل</button>
+          <div class="zoom-bar">
+            <button class="zoom-btn" onclick="zoomDrawers(-1)">−</button>
+            <span id="zoomLabel" style="font-size:11px;color:var(--text2);min-width:30px;text-align:center">100%</span>
+            <button class="zoom-btn" onclick="zoomDrawers(1)">＋</button>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="exportData()">📤 تصدير</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importFile').click()">📥 استيراد</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(this)">
+        </div>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="exportData()">📤 تصدير</button>
-      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importFile').click()">📥 استيراد</button>
-      <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(this)">
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--hazard)"></div>Hazard</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--lasa)"></div>LASA</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div>High Alert</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--noexp);opacity:.7"></div>بدون تاريخ</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>درج العلب</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#6e7681;opacity:.8"></div>OOS</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--custom)"></div>مضاف يدوياً</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--replaced)"></div>مستبدل (قاعدة فقط)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--custom);opacity:.6"></div>غير موزّع</div>
     </div>
   </div>
-  <div class="legend">
-    <span>نوع:</span>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--hazard)"></div>Hazard</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--lasa)"></div>LASA</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div>High Alert</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--noexp);opacity:.7"></div>بدون تاريخ</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>📦 درج العلب</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#6e7681;opacity:.8"></div>🚫 OOS</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--custom)"></div>✨ مضاف يدوياً</div>
-  </div>
+  <div id="drawerViewHint" class="drawer-view-hint"></div>
   <div id="drawersGrid" class="drawers-grid"></div>
 </div>
 
 <!-- ══ DATABASE ══ -->
 <div id="tab-db" class="tab-content">
-  <div class="toolbar">
-    <input type="text" class="search-input" id="dbSearch" placeholder="🔍 ابحث في قاعدة البيانات..." oninput="renderDB()">
-    <select id="dbFilter" onchange="renderDB()">
-      <option value="all">كل الأدوية</option>
-      <option value="has-exp">لديها تواريخ</option>
-      <option value="no-exp">بدون تاريخ</option>
-      <option value="expired">منتهية</option>
-      <option value="warn">قريبة من الانتهاء</option>
-      <option value="hazard">Hazard</option>
-      <option value="lasa">LASA</option>
-      <option value="high-alert">High Alert</option>
-      <option value="oos">OOS</option>
-      <option value="shelf">درج العلب</option>
-      <option value="custom">مضافة يدوياً</option>
-      <option value="db-only">✨ في القاعدة فقط (غير موزّعة)</option>
-    </select>
-    <span id="dbCountLabel" style="font-size:11px;color:var(--text3);background:var(--surface2);padding:3px 8px;border-radius:5px"></span>
-    <button class="btn btn-primary btn-sm" onclick="openAddDrugModal()" style="margin-right:auto">＋ إضافة دواء جديد</button>
+  <div class="toolbar" style="flex-direction:column;align-items:stretch">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%">
+      <input type="text" class="search-input" id="dbSearch" placeholder="🔍 ابحث في قاعدة البيانات..." oninput="renderDB()" style="min-width:160px">
+      <button class="btn btn-secondary btn-sm" id="dbVoiceBtn" onclick="toggleDbVoice()" title="بحث صوتي">🎙️</button>
+      <select id="dbFilter" onchange="renderDB()">
+        <option value="all">كل الأدوية</option>
+        <option value="has-exp">لديها تواريخ</option>
+        <option value="no-exp">بدون تاريخ</option>
+        <option value="expired">منتهية</option>
+        <option value="warn">قريبة من الانتهاء</option>
+        <option value="hazard">Hazard</option>
+        <option value="lasa">LASA</option>
+        <option value="high-alert">High Alert</option>
+        <option value="oos">OOS</option>
+        <option value="shelf">درج العلب</option>
+        <option value="custom">مضافة يدوياً</option>
+        <option value="db-only">✨ في القاعدة فقط (غير موزّعة)</option>
+        <option value="replaced">🔄 مستبدل (محفوظ بالقاعدة فقط)</option>
+      </select>
+      <span id="dbCountLabel" style="font-size:11px;color:var(--text3);background:var(--surface2);padding:3px 8px;border-radius:5px"></span>
+      <div style="margin-right:auto;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="copyDbList()">📋 نسخ القائمة</button>
+        <button class="btn btn-secondary btn-sm" onclick="shareDbList()">📤 مشاركة</button>
+        <button class="btn btn-warn btn-sm" onclick="fixAllDrugNames()">🔧 تصحيح الأسماء</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddDrugModal()">＋ إضافة دواء</button>
+      </div>
+    </div>
+    <div class="db-filters">
+      <span>تصفية:</span>
+      <select id="dbColLoc" onchange="renderDB()">
+        <option value="all">كل المواقع</option>
+        <option value="drawer">في الأدراج</option>
+        <option value="db-only">قاعدة فقط</option>
+        <option value="replaced">مستبدل</option>
+      </select>
+      <select id="dbColSlot" onchange="renderDB()">
+        <option value="all">كل الخانات</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+      <select id="dbColStatus" onchange="renderDB()">
+        <option value="all">كل الحالات</option>
+        <option value="ok">🟢 سليم</option>
+        <option value="warn">🟡 قريب</option>
+        <option value="danger">🔴 منتهي/حرج</option>
+        <option value="no-exp">⬜ بدون تاريخ</option>
+      </select>
+      <select id="dbColDrawer" onchange="renderDB()">
+        <option value="all">كل الأدراج</option>
+      </select>
+      <span style="font-size:10px;color:var(--text3)">🟠 مستبدل | 🟣 غير موزّع | انقر رأس العمود للترتيب</span>
+    </div>
   </div>
   <div style="overflow-x:auto">
     <table class="drawers-table" id="dbTable">
       <thead><tr>
-        <th style="width:90px">الموقع</th>
-        <th>اسم الدواء</th>
-        <th style="width:110px">النوع</th>
-        <th style="width:180px">تواريخ الانتهاء</th>
-        <th style="width:60px">الحالة</th>
+        <th class="sortable" style="width:90px" data-sort="loc" onclick="setDbSort('loc')">الموقع</th>
+        <th class="sortable" data-sort="name" onclick="setDbSort('name')">اسم الدواء</th>
+        <th class="sortable" style="width:110px" data-sort="type" onclick="setDbSort('type')">النوع</th>
+        <th class="sortable" style="width:180px" data-sort="exp" onclick="setDbSort('exp')">تواريخ الانتهاء</th>
+        <th class="sortable" style="width:60px" data-sort="status" onclick="setDbSort('status')">الحالة</th>
         <th style="width:90px">إجراءات</th>
       </tr></thead>
       <tbody id="dbTableBody"></tbody>
@@ -390,20 +482,30 @@ code{font-family:var(--mono)}
 
 <!-- ══ SEARCH ══ -->
 <div id="tab-search" class="tab-content">
-  <div class="toolbar">
-    <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن أي دواء..." oninput="doSearch()">
-    <select id="searchFilter" onchange="doSearch()">
-      <option value="all">كل الأنواع</option>
-      <option value="hazard">Hazard</option>
-      <option value="lasa">LASA</option>
-      <option value="high-alert">High Alert</option>
-      <option value="oos">Out of Stock</option>
-      <option value="shelf">درج العلب</option>
-      <option value="no-exp">بدون تاريخ انتهاء</option>
-      <option value="custom">مضاف يدوياً</option>
-      <option value="db-only">في القاعدة فقط</option>
-    </select>
-    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('searchInput').value='';document.getElementById('searchFilter').value='all';doSearch()">مسح</button>
+  <div class="toolbar" style="flex-direction:column;align-items:stretch">
+    <div class="search-voice-row">
+      <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن أي دواء..." oninput="doSearch()">
+      <button class="btn btn-secondary btn-sm" id="searchVoiceBtn" onclick="toggleSearchVoice()" title="بحث صوتي">🎙️</button>
+      <select id="searchFilter" onchange="doSearch()">
+        <option value="all">كل الأنواع</option>
+        <option value="hazard">Hazard</option>
+        <option value="lasa">LASA</option>
+        <option value="high-alert">High Alert</option>
+        <option value="oos">Out of Stock</option>
+        <option value="shelf">درج العلب</option>
+        <option value="no-exp">بدون تاريخ انتهاء</option>
+        <option value="custom">مضاف يدوياً</option>
+        <option value="db-only">في القاعدة فقط</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('searchInput').value='';document.getElementById('searchFilter').value='all';doSearch()">مسح</button>
+    </div>
+    <div class="list-actions">
+      <button class="btn btn-secondary btn-sm" onclick="copySearchList()">📋 نسخ كقائمة</button>
+      <button class="btn btn-secondary btn-sm" onclick="shareSearchList()">📤 مشاركة (جوال)</button>
+      <button class="btn btn-secondary btn-sm" onclick="toggleListPreview()">👁️ معاينة القائمة</button>
+      <span id="searchVoiceStatus" style="font-size:11px;color:var(--text3)"></span>
+    </div>
+    <div id="searchListPreview" class="mobile-list-preview"></div>
   </div>
   <div id="searchResults"></div>
 </div>
@@ -517,10 +619,10 @@ code{font-family:var(--mono)}
 
   <!-- LOCATION EDITOR (only for custom drugs) -->
   <div id="locEditorSection" class="form-group" style="display:none">
-    <label>📍 تغيير موقع الدرج</label>
+    <label id="locEditorLabel">📍 تغيير موقع الدرج</label>
     <div class="loc-editor">
       <label>درج رقم</label>
-      <input type="number" id="editLocDr" min="1" max="9999" oninput="checkLocConflict()">
+      <input type="number" id="editLocDr" min="1" max="9999" placeholder="رقم الدرج" oninput="checkLocConflict()">
       <label>خانة</label>
       <select id="editLocSl" onchange="checkLocConflict()">
         <option value="A">A</option>
@@ -581,7 +683,12 @@ code{font-family:var(--mono)}
   </div>
 
   <div class="form-group">
-    <label>📍 موقع الدرج <span style="color:var(--danger)">*</span></label>
+    <label>إضافة عدة أدوية دفعة واحدة</label>
+    <textarea id="bulkDrugNames" rows="4" placeholder="اكتب كل دواء في سطر مستقل. ستُضاف إلى قاعدة البيانات فقط ثم تحدد مواقعها لاحقاً."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label>📍 موقع الدرج <span style="color:var(--text3)">(اختياري)</span></label>
     <div class="loc-editor">
       <label>درج رقم</label>
       <input type="number" id="newDrugDr" min="1" max="9999" placeholder="1-50" oninput="checkNewLocConflict()">
@@ -598,7 +705,7 @@ code{font-family:var(--mono)}
     <div id="newLocConflictMsg" class="loc-conflict"></div>
     <div id="newLocPreview" class="key-preview-box" style="display:none"></div>
     <div style="margin-top:8px;font-size:11px;color:var(--text3)">
-      💡 يمكنك اختيار أي رقم درج. الأدراج 1–50 هي الأدراج الأصلية، وما فوق ذلك يُعدّ إضافة خارجية.
+      💡 اترك الموقع فارغاً لإضافة العلاج إلى قاعدة البيانات فقط، ثم افتحه لاحقاً وحدد موقعه.
     </div>
   </div>
 
@@ -624,6 +731,7 @@ code{font-family:var(--mono)}
 
   <div class="modal-actions">
     <button class="btn btn-secondary" onclick="closeModal('addDrugModal')">إلغاء</button>
+    <button class="btn btn-warn" onclick="saveNewDrugDbOnly()">📚 إضافة للقاعدة فقط</button>
     <button class="btn btn-primary" onclick="saveNewDrug()">✅ إضافة الدواء</button>
   </div>
 </div>
@@ -815,11 +923,68 @@ function parseKey(key){
 }
 function makeKey(dr, sl){ return `${dr}${sl}`; }
 function nextDbOnlyKey(){
-  let dr = 1000;
-  while(Object.keys(data).some(k=>parseKey(k)?.dr>=dr)) dr += 1000;
-  let n = dr;
+  let n = 1000;
   while(data[makeKey(n,'A')]) n++;
   return makeKey(n,'A');
+}
+function isDbOnlyKey(key){
+  const p=parseKey(key);
+  return !!p && p.dr>=1000;
+}
+function isReplaced(key){
+  const item=data[key];
+  if(!item) return false;
+  return item.replaced===true || (item.notes||'').includes('مستبدل');
+}
+function formatDrugName(name, asHtml){
+  const normalized = normalizeDrugName(name);
+  if(asHtml) return normalized.replace(/\n/g,'<br>');
+  return normalized.replace(/\n/g,' ');
+}
+function normalizeDrugDosageLine(line){
+  let s = line.trim();
+  if(!s) return s;
+  s = s.replace(/\b(MG|MCG|ML|G|IU|I\.U\.|MICROGRAMS?)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, u, n) => `${n} ${u.replace(/\./g,'').toUpperCase()}`);
+  s = s.replace(/\b(mg|mcg|ml|g|iu)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, _u, n) => `${n} MG`);
+  s = s.replace(/(\d+(?:\.\d+)?)(MG|MCG|ML|G|IU)(?=$|\s|\+|\)|,|\/)/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
+  s = s.replace(/(\d+(?:\.\d+)?)(mg|mcg|ml|g|iu)(?=$|\s|\+|\)|,|\/)/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
+  s = s.replace(/\bI\.?\s*U\.?\s+(\d+(?:\.\d+)?)\b/gi, (_, n) => `${n} I.U.`);
+  s = s.replace(/\b(\d+(?:\.\d+)?)\s*I\.?\s*U\.?\b/gi, (_, n) => `${n} I.U.`);
+  s = s.replace(/\b(\d+(?:\.\d+)?)\s*(MG|MCG|ML|G)\b/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
+  return s.replace(/\s{2,}/g,' ').trim();
+}
+function normalizeDrugName(name){
+  if(!name) return name;
+  const lines = name.split('\n');
+  if(lines.length === 1) return normalizeDrugDosageLine(lines[0]);
+  return lines[0].trim() + '\n' + normalizeDrugDosageLine(lines.slice(1).join(' '));
+}
+function autoFixDrugNames(silent){
+  let count = 0;
+  for(const key in data){
+    const neu = normalizeDrugName(data[key].name);
+    if(data[key].name !== neu){ data[key].name = neu; count++; }
+  }
+  RAW_DRUGS.forEach((row,ri)=>row.forEach((name,ci)=>{
+    const k = makeKey(ri+1, ORIG_SLOTS[ci]);
+    if(data[k] && !customKeys.has(k)){
+      const neu = normalizeDrugName(name);
+      if(data[k].name !== neu){ data[k].name = neu; count++; }
+    }
+  }));
+  if(count){ saveData(); if(!silent) refreshAll(); }
+  return count;
+}
+function fixAllDrugNames(){
+  const n = autoFixDrugNames(true);
+  refreshAll();
+  showToast(n ? `✅ تم تصحيح ${n} اسم دواء` : '✅ كل الأسماء صحيحة بالفعل');
+}
+function archiveReplacedEntry(entry){
+  const keepKey=nextDbOnlyKey();
+  data[keepKey]={...entry,shelf:false,oos:false,replaced:true,notes:(entry.notes?entry.notes+' | ':'')+'مستبدل ومحفوظ في قاعدة البيانات فقط'};
+  customKeys.add(keepKey);
+  return keepKey;
 }
 
 // ══ INIT ══
@@ -841,10 +1006,10 @@ function initData(){
     row.forEach((name,ci)=>{
       const key = makeKey(ri+1, ORIG_SLOTS[ci]);
       if(!data[key]){
-        data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:''};
+        data[key]={name:normalizeDrugName(name),expiries:[],types:[],oos:false,shelf:false,notes:''};
       } else {
         // For original drugs, always update name from source
-        if(!customKeys.has(key)) data[key].name = name;
+        if(!customKeys.has(key)) data[key].name = normalizeDrugName(name);
       }
       ['types','expiries'].forEach(k=>{ if(!data[key][k]) data[key][k]=[]; });
       if(data[key].oos===undefined)   data[key].oos=false;
@@ -853,6 +1018,10 @@ function initData(){
       if(data[key].expiries.length===0 && KNOWN_EXP[key]) data[key].expiries=[...KNOWN_EXP[key]];
     });
   });
+  for(const key in data){
+    if((data[key].notes||'').includes('مستبدل')) data[key].replaced = true;
+  }
+  autoFixDrugNames(true);
   document.getElementById('warnDays').value = settings.warnDays;
   document.getElementById('critDays').value  = settings.critDays;
   applyTheme();
@@ -896,6 +1065,7 @@ function rowLabel(r){ return ROW_LABELS[r]||String(r+1); }
 function isDbOnly(key){
   const item = data[key];
   if(!item) return false;
+  if(isDbOnlyKey(key)) return true;
   // If it's a custom key, check if it exists as a "real" location
   // Custom keys added by user: they DO have a location (the key itself is the location)
   // "db-only" = drugs whose location isn't reflected anywhere meaningful
@@ -967,6 +1137,7 @@ function zoomDrawers(dir){
 // ══ ADD DRUG MODAL ══
 function openAddDrugModal(){
   document.getElementById('newDrugName').value='';
+  document.getElementById('bulkDrugNames').value='';
   document.getElementById('newDrugDr').value='';
   document.getElementById('newDrugSl').value='A';
   document.getElementById('newDrugHazard').checked=false;
@@ -1028,14 +1199,29 @@ function addNewDrugExpRow(){
   list.appendChild(row);
 }
 
+function saveNewDrugDbOnly(){
+  document.getElementById('newDrugDr').value='';
+  saveNewDrug();
+}
+
 function saveNewDrug(){
   const name = document.getElementById('newDrugName').value.trim();
+  const bulkNames = document.getElementById('bulkDrugNames').value.split(/\n+/).map(s=>s.trim()).filter(Boolean);
   const dr   = parseInt(document.getElementById('newDrugDr').value);
   const sl   = document.getElementById('newDrugSl').value;
+  if(bulkNames.length){
+    for(const bulkName of bulkNames){
+      const bulkKey=nextDbOnlyKey();
+      data[bulkKey]={name:normalizeDrugName(bulkName),expiries:[],types:[],oos:false,shelf:false,notes:'أضيف دفعة واحدة - غير موزع'};
+      customKeys.add(bulkKey);
+    }
+    saveData(); closeModal('addDrugModal'); refreshAll();
+    showToast(`✅ تمت إضافة ${bulkNames.length} أدوية إلى قاعدة البيانات فقط`);
+    return;
+  }
   if(!name) return showToast('⚠️ أدخل اسم الدواء');
-  if(!dr || !sl) return showToast('⚠️ أدخل موقع الدرج');
 
-  const key = makeKey(dr, sl);
+  const key = dr && sl ? makeKey(dr, sl) : nextDbOnlyKey();
 
   // Duplicate name check (exact)
   for(const [k,item] of Object.entries(data)){
@@ -1063,12 +1249,10 @@ function saveNewDrug(){
 
   const oldEntry = data[key];
   if(oldEntry){
-    const keepKey = nextDbOnlyKey();
-    data[keepKey] = {...oldEntry, shelf:false};
-    customKeys.add(keepKey);
+    archiveReplacedEntry(oldEntry);
   }
   data[key] = {
-    name,
+    name: normalizeDrugName(name),
     expiries,
     types,
     oos: false,
@@ -1078,7 +1262,7 @@ function saveNewDrug(){
   customKeys.add(key);
 
   saveData(); closeModal('addDrugModal'); refreshAll();
-  showToast(`✅ تمت إضافة "${name}" في ${key}`);
+  showToast(dr&&sl ? `✅ تمت إضافة "${name}" في ${key}` : `✅ تمت إضافة "${name}" إلى قاعدة البيانات فقط`);
 }
 
 // ══ EDIT LOCATION (for custom drugs) ══
@@ -1104,19 +1288,24 @@ function openExpModal(key){
   const item = data[key];
   const parsed = parseKey(key);
   const isCustom = customKeys.has(key);
+  const dbOnly = isDbOnly(key);
+  const replaced = isReplaced(key);
 
   document.getElementById('modalDrugInfo').innerHTML=`
-    <strong>${item.name.replace(/\n/g,' ')}</strong><br>
-    الموقع: <span style="color:var(--accent);font-family:var(--mono)">درج ${parsed.dr} — خانة ${parsed.sl}</span>
-    ${isCustom?'<span class="custom-badge" style="margin-right:6px">✨ مضاف يدوياً</span>':''}`;
+    <strong>${formatDrugName(item.name)}</strong><br>
+    الموقع: <span style="color:var(--accent);font-family:var(--mono)">${dbOnly?'في قاعدة البيانات فقط':`درج ${parsed.dr} — خانة ${parsed.sl}`}</span>
+    ${dbOnly?'<span class="db-only-badge" style="margin-right:6px">غير موزّع</span>':''}
+    ${replaced?'<span class="replaced-badge" style="margin-right:6px">مستبدل — لا يظهر بالأدراج</span>':''}
+    ${isCustom&&!replaced?'<span class="custom-badge" style="margin-right:6px">✨ مضاف يدوياً</span>':''}`;
 
   // Show/hide location editor
   const locSection = document.getElementById('locEditorSection');
   const delBtn = document.getElementById('deleteDrugBtnWrap');
-  if(isCustom){
+  if(isCustom || dbOnly){
     locSection.style.display='block';
     delBtn.style.display='block';
-    document.getElementById('editLocDr').value = parsed.dr;
+    document.getElementById('locEditorLabel').textContent = dbOnly ? '📍 تعيين موقع الدرج' : '📍 تغيير موقع الدرج';
+    document.getElementById('editLocDr').value = dbOnly ? '' : parsed.dr;
     document.getElementById('editLocSl').value  = parsed.sl;
     document.getElementById('locConflictMsg').classList.remove('show');
     document.getElementById('locPreview').textContent = `الموقع الحالي: ${key}`;
@@ -1186,26 +1375,35 @@ function saveExpiries(){
   if(document.getElementById('typeHighAlert').checked) types.push('high-alert');
 
   const isCustom = customKeys.has(editingKey);
+  const dbOnlyLoc = isDbOnly(editingKey);
 
-  // Handle location change for custom drugs
-  if(isCustom){
+  // Handle location change for custom / db-only drugs
+  if(isCustom || dbOnlyLoc){
     const newDr = parseInt(document.getElementById('editLocDr').value);
     const newSl = document.getElementById('editLocSl').value;
-    const newKey = makeKey(newDr, newSl);
+    if(newDr && newSl){
+      const newKey = makeKey(newDr, newSl);
 
-    if(newKey !== editingKey){
-      if(data[newKey] && !customKeys.has(newKey)){
-        if(!confirm(`موقع ${newKey} مشغول بدواء أصلي. تأكيد الانتقال؟`)) return;
-      } else if(data[newKey]){
-        if(!confirm(`موقع ${newKey} مشغول. تأكيد الانتقال؟`)) return;
+      if(newKey !== editingKey){
+        if(data[newKey] && !customKeys.has(newKey)){
+          if(!confirm(`موقع ${newKey} مشغول بدواء أصلي. تأكيد الانتقال؟`)) return;
+        } else if(data[newKey]){
+          if(!confirm(`موقع ${newKey} مشغول. تأكيد الانتقال؟`)) return;
+        }
+        const entry = {...data[editingKey]};
+        const replacedAtTarget = data[newKey] ? {...data[newKey]} : null;
+        delete data[editingKey];
+        customKeys.delete(editingKey);
+        if(replacedAtTarget){
+          archiveReplacedEntry(replacedAtTarget);
+        }
+        entry.replaced = false;
+        editingKey = newKey;
+        data[newKey] = entry;
+        customKeys.add(newKey);
       }
-      // Move the entry
-      const entry = {...data[editingKey]};
-      delete data[editingKey];
-      customKeys.delete(editingKey);
-      editingKey = newKey;
-      data[newKey] = entry;
-      customKeys.add(newKey);
+    } else if(dbOnlyLoc && document.getElementById('editLocDr').value.trim()){
+      return showToast('⚠️ أدخل رقم الدرج صحيحاً لتعيين الموقع');
     }
   }
 
@@ -1219,39 +1417,242 @@ function saveExpiries(){
 }
 
 // ══ DATABASE ══
+let dbSort = { col:'loc', dir:'asc' };
+let lastSearchResults = [];
+let listPreviewOpen = false;
+let searchVoiceRec = null, dbVoiceRec = null;
+let searchVoiceActive = false, dbVoiceActive = false;
+
+function setDbSort(col){
+  if(dbSort.col===col) dbSort.dir = dbSort.dir==='asc' ? 'desc' : 'asc';
+  else { dbSort.col = col; dbSort.dir = 'asc'; }
+  renderDB();
+}
+function updateDbSortHeaders(){
+  document.querySelectorAll('#dbTable th.sortable').forEach(th=>{
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.dataset.sort===dbSort.col) th.classList.add(dbSort.dir==='asc'?'sort-asc':'sort-desc');
+  });
+}
+function populateDbDrawerFilter(){
+  const sel = document.getElementById('dbColDrawer');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">كل الأدراج</option>';
+  const nums = new Set();
+  for(const k of Object.keys(data)){
+    if(isDbOnly(k) && !isReplaced(k)) continue;
+    const p = parseKey(k); if(p && p.dr<=999) nums.add(p.dr);
+  }
+  [...nums].sort((a,b)=>a-b).forEach(n=>{
+    sel.insertAdjacentHTML('beforeend', `<option value="${n}">درج ${n}</option>`);
+  });
+  if([...sel.options].some(o=>o.value===cur)) sel.value = cur;
+}
+function dbStatusRank(key, item){
+  if(!item.expiries.length) return 0;
+  const st = slotExpSt(key);
+  if(st==='danger') return 3;
+  if(st==='warn') return 2;
+  return 1;
+}
+function passesDbItemFilters(key, item, q, f){
+  const nm = !q || item.name.replace(/\n/g,' ').toLowerCase().includes(q) || key.toLowerCase().includes(q);
+  if(!nm) return false;
+  const exSt = slotExpSt(key);
+  const isCustom = customKeys.has(key);
+  const dbOnly = isDbOnly(key);
+  const replaced = isReplaced(key);
+  if(f==='has-exp')    { if(!item.expiries.length) return false; }
+  else if(f==='no-exp')  { if(item.expiries.length) return false; }
+  else if(f==='expired') { if(!(exSt==='danger'&&item.expiries.some(e=>daysUntil(e)<0))) return false; }
+  else if(f==='warn')    { if(exSt!=='warn') return false; }
+  else if(f==='hazard')  { if(!item.types.includes('hazard')) return false; }
+  else if(f==='lasa')    { if(!item.types.includes('lasa')) return false; }
+  else if(f==='high-alert') { if(!item.types.includes('high-alert')) return false; }
+  else if(f==='oos')     { if(!item.oos) return false; }
+  else if(f==='shelf')   { if(!item.shelf) return false; }
+  else if(f==='custom')  { if(!isCustom) return false; }
+  else if(f==='db-only') { if(!dbOnly || replaced) return false; }
+  else if(f==='replaced') { if(!replaced) return false; }
+  const locF = document.getElementById('dbColLoc')?.value || 'all';
+  const slotF = document.getElementById('dbColSlot')?.value || 'all';
+  const statusF = document.getElementById('dbColStatus')?.value || 'all';
+  const drF = document.getElementById('dbColDrawer')?.value || 'all';
+  if(locF==='drawer' && (dbOnly || replaced)) return false;
+  if(locF==='db-only' && (!dbOnly || replaced)) return false;
+  if(locF==='replaced' && !replaced) return false;
+  if(slotF!=='all'){
+    const p = parseKey(key);
+    if(!p || p.sl!==slotF) return false;
+  }
+  if(drF!=='all'){
+    const p = parseKey(key);
+    if(!p || String(p.dr)!==drF) return false;
+  }
+  if(statusF==='no-exp' && item.expiries.length) return false;
+  if(statusF==='ok' && (dbStatusRank(key,item)!==1)) return false;
+  if(statusF==='warn' && exSt!=='warn') return false;
+  if(statusF==='danger' && exSt!=='danger') return false;
+  return true;
+}
+function getDbFilteredKeys(){
+  const q = (document.getElementById('dbSearch')?.value||'').trim().toLowerCase();
+  const f = document.getElementById('dbFilter')?.value || 'all';
+  const keys = Object.keys(data).filter(k=>passesDbItemFilters(k, data[k], q, f));
+  const dir = dbSort.dir==='asc' ? 1 : -1;
+  keys.sort((a,b)=>{
+    const ia=data[a], ib=data[b], pa=parseKey(a), pb=parseKey(b);
+    let va, vb;
+    switch(dbSort.col){
+      case 'name':
+        va=formatDrugName(ia.name).toLowerCase(); vb=formatDrugName(ib.name).toLowerCase(); break;
+      case 'type':
+        va=(ia.types.join(',')+(ia.shelf?'s':'')+(ia.oos?'o':'')).toLowerCase();
+        vb=(ib.types.join(',')+(ib.shelf?'s':'')+(ib.oos?'o':'')).toLowerCase(); break;
+      case 'exp':
+        va=ia.expiries.length?[...ia.expiries].sort()[0]:'9999-12-31';
+        vb=ib.expiries.length?[...ib.expiries].sort()[0]:'9999-12-31'; break;
+      case 'status':
+        va=dbStatusRank(a,ia); vb=dbStatusRank(b,ib); break;
+      case 'loc':
+      default:
+        if(isReplaced(a)&&!isReplaced(b)) return dir;
+        if(!isReplaced(a)&&isReplaced(b)) return -dir;
+        if(isDbOnly(a)&&!isDbOnly(b)) return dir;
+        if(!isDbOnly(a)&&isDbOnly(b)) return -dir;
+        if(!pa||!pb) return 0;
+        va=pa.dr*100+pa.sl.charCodeAt(0); vb=pb.dr*100+pb.sl.charCodeAt(0); break;
+    }
+    if(va<vb) return -dir;
+    if(va>vb) return dir;
+    return 0;
+  });
+  return keys;
+}
+function buildDrugListText(keys, title){
+  if(!keys.length) return '📋 لا توجد نتائج';
+  const lines = keys.map(k=>{
+    const item = data[k];
+    const p = parseKey(k);
+    const loc = isReplaced(k) ? '🔄 مستبدل' : isDbOnly(k) ? '📚 قاعدة' : `درج ${p.dr}-${p.sl}`;
+    return `${loc}  ${formatDrugName(item.name)}`;
+  });
+  return `📋 ${title}\n${'─'.repeat(28)}\n` + lines.join('\n');
+}
+async function copyTextToClipboard(text){
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast('✅ تم نسخ القائمة');
+    return true;
+  }catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); showToast('✅ تم نسخ القائمة'); return true; }
+    catch{ showToast('⚠️ تعذّر النسخ'); return false; }
+    finally{ document.body.removeChild(ta); }
+  }
+}
+function copyDbList(){
+  const text = buildDrugListText(getDbFilteredKeys(), 'قاعدة البيانات');
+  copyTextToClipboard(text);
+}
+async function shareDbList(){
+  const keys = getDbFilteredKeys();
+  const text = buildDrugListText(keys, 'قاعدة البيانات');
+  if(navigator.share){
+    try{ await navigator.share({title:'قائمة الأدوية',text}); return; }catch(e){ if(e.name==='AbortError') return; }
+  }
+  copyTextToClipboard(text);
+}
+function copySearchList(){
+  const text = buildDrugListText(lastSearchResults.map(r=>r.key), 'نتائج البحث');
+  copyTextToClipboard(text);
+  const prev = document.getElementById('searchListPreview');
+  if(prev){ prev.textContent=text; prev.classList.add('show'); listPreviewOpen=true; }
+}
+async function shareSearchList(){
+  const text = buildDrugListText(lastSearchResults.map(r=>r.key), 'نتائج البحث');
+  if(navigator.share){
+    try{ await navigator.share({title:'قائمة الأدوية',text}); return; }catch(e){ if(e.name==='AbortError') return; }
+  }
+  copyTextToClipboard(text);
+}
+function toggleListPreview(){
+  const prev = document.getElementById('searchListPreview');
+  listPreviewOpen = !listPreviewOpen;
+  if(listPreviewOpen){
+    prev.textContent = buildDrugListText(lastSearchResults.map(r=>r.key), 'نتائج البحث');
+    prev.classList.add('show');
+  } else prev.classList.remove('show');
+}
+function stopVoiceInput(kind){
+  const rec = kind==='db' ? dbVoiceRec : searchVoiceRec;
+  if(rec){ try{ rec.stop(); rec.abort(); }catch(e){} }
+  if(kind==='db'){ dbVoiceActive=false; document.getElementById('dbVoiceBtn').textContent='🎙️'; }
+  else { searchVoiceActive=false; document.getElementById('searchVoiceBtn').textContent='🎙️'; document.getElementById('searchVoiceStatus').textContent=''; }
+}
+function toggleSearchVoice(){
+  const SpeechRec = window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRec) return showToast('⚠️ المتصفح لا يدعم البحث الصوتي');
+  if(searchVoiceActive){ stopVoiceInput('search'); return; }
+  stopVoiceInput('db');
+  searchVoiceRec = new SpeechRec();
+  searchVoiceRec.lang='en-US';
+  searchVoiceRec.interimResults=true;
+  searchVoiceRec.continuous=false;
+  searchVoiceRec.onresult=e=>{
+    let t='';
+    for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript;
+    document.getElementById('searchInput').value=t.trim();
+    document.getElementById('searchVoiceStatus').textContent='🎙️ '+t.trim();
+    if(e.results[e.results.length-1].isFinal) doSearch();
+  };
+  searchVoiceRec.onend=()=>{ searchVoiceActive=false; document.getElementById('searchVoiceBtn').textContent='🎙️'; };
+  searchVoiceRec.onerror=()=>{ stopVoiceInput('search'); showToast('⚠️ خطأ في التسجيل الصوتي'); };
+  searchVoiceRec.start();
+  searchVoiceActive=true;
+  document.getElementById('searchVoiceBtn').textContent='⏹️';
+  document.getElementById('searchVoiceStatus').textContent='🎙️ استمع...';
+}
+function toggleDbVoice(){
+  const SpeechRec = window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRec) return showToast('⚠️ المتصفح لا يدعم البحث الصوتي');
+  if(dbVoiceActive){ stopVoiceInput('db'); return; }
+  stopVoiceInput('search');
+  dbVoiceRec = new SpeechRec();
+  dbVoiceRec.lang='en-US';
+  dbVoiceRec.interimResults=true;
+  dbVoiceRec.continuous=false;
+  dbVoiceRec.onresult=e=>{
+    let t='';
+    for(let i=0;i<e.results.length;i++) t+=e.results[i][0].transcript;
+    document.getElementById('dbSearch').value=t.trim();
+    if(e.results[e.results.length-1].isFinal) renderDB();
+  };
+  dbVoiceRec.onend=()=>{ dbVoiceActive=false; document.getElementById('dbVoiceBtn').textContent='🎙️'; };
+  dbVoiceRec.onerror=()=>{ stopVoiceInput('db'); showToast('⚠️ خطأ في التسجيل الصوتي'); };
+  dbVoiceRec.start();
+  dbVoiceActive=true;
+  document.getElementById('dbVoiceBtn').textContent='⏹️';
+}
+
 function renderDB(){
-  const q=(document.getElementById('dbSearch').value||'').trim().toLowerCase();
-  const f=document.getElementById('dbFilter').value;
+  populateDbDrawerFilter();
   const tbody=document.getElementById('dbTableBody');
   tbody.innerHTML='';
   let count=0;
-  const sortedKeys = Object.keys(data).sort((a,b)=>{
-    const pa=parseKey(a), pb=parseKey(b);
-    if(!pa||!pb) return 0;
-    return pa.dr!==pb.dr ? pa.dr-pb.dr : pa.sl.localeCompare(pb.sl);
-  });
+  const sortedKeys = getDbFilteredKeys();
   for(const key of sortedKeys){
     const item=data[key];
-    const nm=!q||item.name.replace(/\n/g,' ').toLowerCase().includes(q)||key.toLowerCase().includes(q);
-    if(!nm) continue;
+    count++;
     const exSt=slotExpSt(key);
     const isCustom=customKeys.has(key);
-    let pass=true;
-    if(f==='has-exp')    pass=item.expiries.length>0;
-    else if(f==='no-exp')  pass=item.expiries.length===0;
-    else if(f==='expired') pass=exSt==='danger'&&item.expiries.some(e=>daysUntil(e)<0);
-    else if(f==='warn')    pass=exSt==='warn';
-    else if(f==='hazard')  pass=item.types.includes('hazard');
-    else if(f==='lasa')    pass=item.types.includes('lasa');
-    else if(f==='high-alert') pass=item.types.includes('high-alert');
-    else if(f==='oos')     pass=item.oos;
-    else if(f==='shelf')   pass=item.shelf;
-    else if(f==='custom')  pass=isCustom;
-    else if(f==='db-only') pass=isDbOnly(key);
-    if(!pass) continue;
-    count++;
+    const dbOnly=isDbOnly(key);
+    const replaced=isReplaced(key);
     const parsed=parseKey(key);
-    const nameClean=item.name.replace(/\n/g,' ');
+    const nameClean=formatDrugName(item.name);
     const exHtml=item.expiries.length
       ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}" style="margin-left:3px">${formatDate(e)}<span style="font-size:8px;margin-right:2px">(${daysLabel(d)})</span></span>`;}).join('')
       :`<span style="color:var(--noexp);font-size:11px;font-weight:600">— بدون تاريخ</span>`;
@@ -1261,15 +1662,19 @@ function renderDB(){
     if(item.types.includes('high-alert')) tHtml+=`<span class="type-badge high-alert">🔴 High</span> `;
     if(item.shelf) tHtml+=`<span class="shelf-badge">📦</span> `;
     if(item.oos)   tHtml+=`<span class="oos-badge">OOS</span> `;
-    if(isCustom)   tHtml+=`<span class="custom-badge">✨ مضاف</span>`;
+    if(replaced)   tHtml+=`<span class="replaced-badge">🔄 مستبدل</span> `;
+    else if(dbOnly) tHtml+=`<span class="db-only-badge">غير موزّع</span> `;
+    if(isCustom&&!replaced) tHtml+=`<span class="custom-badge">✨ مضاف</span>`;
     const stIcon=!item.expiries.length?`<span style="color:var(--noexp)">●</span>`:exSt==='danger'?'🔴':exSt==='warn'?'🟡':'🟢';
     const tr=document.createElement('tr');
     tr.style.cursor='pointer';
-    if(isCustom) tr.style.borderRight='2px solid var(--custom)';
+    if(replaced) tr.classList.add('replaced-row');
+    else if(dbOnly) tr.classList.add('db-only-row');
+    if(isCustom && !replaced) tr.style.borderRight='2px solid var(--custom)';
     tr.onclick=()=>openExpModal(key);
     tr.innerHTML=`
-      <td class="loc-cell">درج ${parsed.dr} — ${parsed.sl}</td>
-      <td class="name-cell" style="max-width:260px;word-break:break-word;white-space:normal;line-height:1.4">${nameClean}</td>
+      <td class="loc-cell">${replaced?'🔄 مستبدل':dbOnly?'قاعدة فقط':`درج ${parsed.dr} — ${parsed.sl}`}</td>
+      <td class="name-cell">${nameClean}</td>
       <td>${tHtml||'<span style="color:var(--text3)">—</span>'}</td>
       <td>${exHtml}</td>
       <td style="text-align:center;font-size:14px">${stIcon}</td>
@@ -1280,6 +1685,7 @@ function renderDB(){
     tbody.appendChild(tr);
   }
   document.getElementById('dbCountLabel').textContent=`${count} دواء`;
+  updateDbSortHeaders();
 }
 
 function quickDeleteCustom(key){
@@ -1293,14 +1699,34 @@ function quickDeleteCustom(key){
 
 // ══ DRAWERS ══
 let drawerView='card';
+let drawerRowDragKey=null;
+let drawerDragJustEnded=false;
 function setDrawerView(v){
   drawerView=v;
   document.getElementById('viewBtnCard').classList.toggle('active',v==='card');
   document.getElementById('viewBtnTable').classList.toggle('active',v==='table');
+  document.getElementById('viewBtnMap').classList.toggle('active',v==='map');
   renderDrawers();
+}
+function updateDrawerViewHint(){
+  const hint=document.getElementById('drawerViewHint');
+  if(!hint) return;
+  if(drawerView==='table'){
+    hint.classList.add('show');
+    hint.textContent='☰ اسحب أي صف وأفلته على صف آخر لتبديل موقع العلاجين (الدرج والخانة).';
+  } else if(drawerView==='card'){
+    hint.classList.add('show');
+    hint.textContent='⊞ اسحب أي صف وأفلته على صف آخر لتبديل العلاجين بين الخانات أو الأدراج.';
+  } else if(drawerView==='map'){
+    hint.classList.add('show');
+    hint.textContent='▦ عرض شامل: الأدراج 1–50 × خانات A–D فقط — انقر على أي خلية للتعديل.';
+  } else {
+    hint.classList.remove('show');
+  }
 }
 
 function renderDrawers(){
+  updateDrawerViewHint();
   const q=(document.getElementById('drawerFilter').value||'').trim().toLowerCase();
   const grid=document.getElementById('drawersGrid');
   grid.innerHTML='';
@@ -1308,9 +1734,43 @@ function renderDrawers(){
   // Collect all drawer numbers (original 1-50 + custom)
   const drawerNums = new Set();
   for(const key of Object.keys(data)){
+    if(isDbOnly(key)) continue;
     const p = parseKey(key); if(p) drawerNums.add(p.dr);
   }
   const sortedDrawers = [...drawerNums].sort((a,b)=>a-b);
+
+  if(drawerView==='map'){
+    grid.style.display='block';
+    const wrap=document.createElement('div'); wrap.className='drawer-map-wrap';
+    const map=document.createElement('div'); map.className='drawer-map';
+    map.innerHTML='<div class="drawer-map-head">درج</div>'+ORIG_SLOTS.map(sl=>`<div class="drawer-map-head">${sl}</div>`).join('');
+    const mapDrawers = sortedDrawers.filter(dr=>dr>=1&&dr<=50);
+    for(const dr of mapDrawers){
+      const rowKeys=Object.keys(data).filter(k=>{const p=parseKey(k);return p&&p.dr===dr&&!isDbOnly(k);});
+      if(q&&!rowKeys.some(k=>data[k].name.toLowerCase().includes(q))) continue;
+      map.insertAdjacentHTML('beforeend',`<div class="drawer-map-drawer">${dr}</div>`);
+      for(const sl of ORIG_SLOTS){
+        const key=makeKey(dr,sl), item=data[key];
+        if(!item){
+          map.insertAdjacentHTML('beforeend','<div class="drawer-map-cell map-empty">—</div>');
+          continue;
+        }
+        const dim=q&&!item.name.toLowerCase().includes(q);
+        const exp=item.expiries.length?[...item.expiries].sort()[0]:'';
+        const cell=document.createElement('div');
+        cell.className='drawer-map-cell'+(item?'':' map-empty');
+        if(dim) cell.style.opacity='.18';
+        cell.innerHTML=`<div style="font-weight:700">${formatDrugName(item.name,true)}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
+            ${exp?`<span class="exp-tag ${expStatus(exp)==='critical'?'danger':expStatus(exp)}">${formatDate(exp)}</span>`:'<span class="db-only-badge" style="color:var(--noexp);border-color:var(--noexp-border);background:var(--noexp-bg)">بدون تاريخ</span>'}
+            ${item.oos?'<span class="oos-badge">OOS</span>':''}
+          </div>`;
+        cell.onclick=()=>openExpModal(key);
+        map.appendChild(cell);
+      }
+    }
+    wrap.appendChild(map); grid.appendChild(wrap); updateStats(); return;
+  }
 
   if(drawerView==='table'){
     grid.style.display='block';
@@ -1331,6 +1791,7 @@ function renderDrawers(){
       return pa.dr!==pb.dr ? pa.dr-pb.dr : pa.sl.localeCompare(pb.sl);
     });
     for(const key of sortedKeys){
+      if(isDbOnly(key)) continue;
       const item=data[key];
       if(q&&!item.name.toLowerCase().includes(q)) continue;
       const p=parseKey(key);
@@ -1346,9 +1807,17 @@ function renderDrawers(){
       if(item.shelf) tHtml+=`<span class="shelf-badge">📦</span>`;
       if(item.oos)   tHtml+=`<span class="oos-badge">OOS</span>`;
       if(isCustom)   tHtml+=`<span class="custom-badge">✨</span>`;
-      const nameClean=item.name.replace(/\n/g,' ');
+      const nameClean=formatDrugName(item.name);
       const tr=document.createElement('tr');
       if(isCustom) tr.style.borderRight='2px solid var(--custom)';
+      tr.draggable=true;
+      tr.dataset.key=key;
+      tr.title='اسحب لتبديل موقع العلاج مع صف آخر';
+      tr.addEventListener('dragstart',handleDrawerRowDragStart);
+      tr.addEventListener('dragover',handleDrawerRowDragOver);
+      tr.addEventListener('dragleave',handleDrawerRowDragLeave);
+      tr.addEventListener('drop',handleDrawerRowDrop);
+      tr.addEventListener('dragend',handleDrawerRowDragEnd);
       tr.innerHTML=`<td class="loc-cell">درج ${p.dr} — ${p.sl}</td>
         <td class="name-cell">${nameClean}</td>
         <td>${tHtml||'—'}</td>
@@ -1365,7 +1834,7 @@ function renderDrawers(){
   for(const dr of sortedDrawers){
     // Get all slots for this drawer
     const drawerKeys = Object.keys(data)
-      .filter(k=>{ const p=parseKey(k); return p&&p.dr===dr; })
+      .filter(k=>{ const p=parseKey(k); return p&&p.dr===dr&&!isDbOnly(k); })
       .sort((a,b)=>{ const pa=parseKey(a), pb=parseKey(b); return pa.sl.localeCompare(pb.sl); });
 
     const anyMatch=!q||drawerKeys.some(k=>data[k].name.toLowerCase().includes(q));
@@ -1390,7 +1859,8 @@ function renderDrawers(){
     const slotLabels = drawerKeys.map(k=>parseKey(k).sl).join(' ');
     card.innerHTML=`<div class="drawer-card-header">
       <span class="drawer-num">${dr}</span>
-      <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">${slotLabels}</span>
+      <span class="drawer-header-title">درج ${dr}</span>
+      <span class="drawer-slot-count">${drawerKeys.length} خانات: ${slotLabels}</span>
       ${hasCustom?'<span class="custom-badge" style="font-size:8px;padding:0 4px">✨</span>':''}
       <div class="drawer-status-dots">${dots}</div>
     </div>`;
@@ -1432,25 +1902,76 @@ function renderDrawers(){
         expHtml=`<span class="exp-tag ${s==='critical'?'danger':s}" style="font-size:8px;padding:0 4px">${formatDate(earliest)}</span>`;
       }
 
-      const nameClean=item.name.replace(/\n/g,' ');
+      const nameHtml=formatDrugName(item.name,true);
       const drugCls='row-drug'+((!item.expiries.length&&!dim)?' no-expiry-text':'');
 
       row.innerHTML=`
         <div class="row-label">${p.sl}</div>
         <div class="row-body">
           ${badgeHtml?`<div class="row-badges">${badgeHtml}</div>`:''}
-          <div class="${drugCls}" title="${nameClean}">${nameClean}</div>
+          <div class="${drugCls}" title="${nameClean}">${nameHtml}</div>
         </div>
         <div class="row-right">
           ${expHtml}
           <button class="add-exp-btn" style="margin-top:0;padding:1px 6px;font-size:10px" onclick="event.stopPropagation();openExpModal('${key}')">✏️</button>
         </div>`;
-      row.addEventListener('click',()=>openExpModal(key));
+      row.draggable=true;
+      row.dataset.key=key;
+      row.title='اسحب لتبديل موقع العلاج مع صف آخر في نفس الدرج أو أي درج';
+      row.addEventListener('dragstart',handleDrawerRowDragStart);
+      row.addEventListener('dragover',handleDrawerRowDragOver);
+      row.addEventListener('dragleave',handleDrawerRowDragLeave);
+      row.addEventListener('drop',handleDrawerRowDrop);
+      row.addEventListener('dragend',handleDrawerRowDragEnd);
+      row.addEventListener('click',()=>{ if(drawerDragJustEnded) return; openExpModal(key); });
       card.appendChild(row);
     }
     grid.appendChild(card);
   }
   updateStats();
+}
+
+function swapDrawerKeys(a,b){
+  if(!a||!b||a===b||!data[a]||!data[b]) return false;
+  const aData={...data[a]}, bData={...data[b]};
+  const aCustom=customKeys.has(a), bCustom=customKeys.has(b);
+  data[a]=bData; data[b]=aData;
+  customKeys.delete(a); customKeys.delete(b);
+  if(bCustom) customKeys.add(a);
+  if(aCustom) customKeys.add(b);
+  return true;
+}
+function handleDrawerRowDragStart(e){
+  drawerRowDragKey=this.dataset.key;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',drawerRowDragKey);
+}
+function handleDrawerRowDragOver(e){
+  if(!drawerRowDragKey||drawerRowDragKey===this.dataset.key) return;
+  e.preventDefault();
+  this.classList.add('drop-target');
+}
+function handleDrawerRowDragLeave(){
+  this.classList.remove('drop-target');
+}
+function handleDrawerRowDrop(e){
+  e.preventDefault();
+  e.stopPropagation();
+  const targetKey=this.dataset.key;
+  document.querySelectorAll('.drawers-table tr.drop-target,.drawer-row.drop-target').forEach(el=>el.classList.remove('drop-target'));
+  if(swapDrawerKeys(drawerRowDragKey,targetKey)){
+    saveData();
+    renderDrawers();
+    showToast('✅ تم تبديل موقع العلاجين');
+  }
+  drawerRowDragKey=null;
+}
+function handleDrawerRowDragEnd(){
+  document.querySelectorAll('.drawers-table tr.dragging,.drawers-table tr.drop-target,.drawer-row.dragging,.drawer-row.drop-target').forEach(el=>el.classList.remove('dragging','drop-target'));
+  drawerRowDragKey=null;
+  drawerDragJustEnded=true;
+  setTimeout(()=>{ drawerDragJustEnded=false; },120);
 }
 
 // ══ STATS ══
@@ -1460,7 +1981,7 @@ function updateStats(){
   for(const sh of shelves){ for(const ck in sh.cells||{}){ const c=sh.cells[ck]; (c.expiries||[]).forEach(e=>{ if(daysUntil(e)<=settings.warnDays) alerts++; }); } }
   const oos=Object.values(data).filter(d=>d.oos).length+oosManual.length;
   const total=Object.keys(data).length;
-  const dbOnly=Object.keys(data).filter(k=>isDbOnly(k)).length;
+  const dbOnly=Object.keys(data).filter(k=>isDbOnly(k)&&!isReplaced(k)).length;
 
   document.getElementById('alertCount').textContent=alerts;
   document.getElementById('alertCountBadge').textContent=alerts;
@@ -1477,7 +1998,7 @@ function updateStats(){
 function renderAlerts(){
   const list=document.getElementById('alertList'); list.innerHTML='';
   const items=[];
-  for(const key in data){ for(const e of data[key].expiries){ const d=daysUntil(e); if(d<=settings.warnDays) items.push({key,name:data[key].name,date:e,days:d}); } }
+  for(const key in data){ if(isDbOnly(key)) continue; for(const e of data[key].expiries){ const d=daysUntil(e); if(d<=settings.warnDays) items.push({key,name:data[key].name,date:e,days:d}); } }
   for(const sh of shelves){ for(const ck in sh.cells||{}){ const c=sh.cells[ck]; (c.expiries||[]).forEach(e=>{ const d=daysUntil(e); if(d<=settings.warnDays) items.push({key:`📦 ${sh.name} ${ck}`,name:c.drug||ck,date:e,days:d}); }); } }
   items.sort((a,b)=>a.days-b.days);
   document.getElementById('alertCountBadge').textContent=items.length;
@@ -1499,10 +2020,11 @@ function doSearch(){
   const q=document.getElementById('searchInput').value.trim().toLowerCase();
   const f=document.getElementById('searchFilter').value;
   const container=document.getElementById('searchResults');
-  if(!q&&f==='all'){container.innerHTML='<div class="empty"><div class="icon">🔍</div>اكتب اسم الدواء للبحث</div>';return;}
+  if(!q&&f==='all'){container.innerHTML='<div class="empty"><div class="icon">🔍</div>اكتب اسم الدواء للبحث أو استخدم 🎙️</div>';lastSearchResults=[];return;}
   const results=[];
   for(const key in data){
     const item=data[key];
+    if(isDbOnly(key)&&f!=='db-only') continue;
     const nm=!q||item.name.toLowerCase().includes(q);
     let tm=true;
     if(f==='hazard') tm=item.types.includes('hazard');
@@ -1516,6 +2038,11 @@ function doSearch(){
     if(nm&&tm) results.push({key,item});
   }
   results.sort((a,b)=>{ const pa=parseKey(a.key), pb=parseKey(b.key); if(!pa||!pb) return 0; return pa.dr!==pb.dr?pa.dr-pb.dr:pa.sl.localeCompare(pb.sl); });
+  lastSearchResults = results;
+  if(listPreviewOpen){
+    const prev=document.getElementById('searchListPreview');
+    if(prev){ prev.textContent=buildDrugListText(results.map(r=>r.key),'نتائج البحث'); prev.classList.add('show'); }
+  }
   if(!results.length){container.innerHTML='<div class="empty"><div class="icon">😕</div>لا توجد نتائج</div>';return;}
   container.innerHTML='';
   results.forEach(({key,item})=>{
@@ -1530,12 +2057,13 @@ function doSearch(){
     if(item.oos)   badges+=`<span class="oos-badge">🚫 OOS</span>`;
     if(isCustom)   badges+=`<span class="custom-badge">✨ مضاف يدوياً</span>`;
     if(isDbOnly(key)) badges+=`<span class="db-only-badge">غير موزّع</span>`;
+    if(isReplaced(key)) badges+=`<span class="replaced-badge">🔄 مستبدل</span>`;
     const expsHtml=item.expiries.length
       ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)} (${daysLabel(d)})</span>`;}).join('')
       :'<span style="color:var(--text3);font-size:10px">لا يوجد تاريخ</span>';
     const div=document.createElement('div'); div.className='search-result';
     div.innerHTML=`
-      <div class="loc-badge">درج ${p.dr}<br>${p.sl}</div>
+      <div class="loc-badge">${isDbOnly(key)?'قاعدة<br>فقط':`درج ${p.dr}<br>${p.sl}`}</div>
       <div class="info">
         <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">${badges}</div>
         <div class="name">${hl}</div>
@@ -1594,7 +2122,7 @@ function renderTable(){
 function renderOOS(){
   const list=document.getElementById('oosList'); list.innerHTML='';
   const items=[];
-  for(const key in data){ if(data[key].oos){ const p=parseKey(key); items.push({key,name:data[key].name,note:data[key].notes,loc:`درج ${p.dr}-${p.sl}`,fromData:true}); } }
+  for(const key in data){ if(isDbOnly(key)) continue; if(data[key].oos){ const p=parseKey(key); items.push({key,name:data[key].name,note:data[key].notes,loc:`درج ${p.dr}-${p.sl}`,fromData:true}); } }
   for(const m of oosManual) items.push({key:'—',name:m.name,note:m.note,id:m.id,loc:'—',fromData:false});
   document.getElementById('oosCountBadge').textContent=items.length;
   document.getElementById('oosCount').textContent=items.length;
@@ -2247,7 +2775,7 @@ initData();
 sbLoad().then(()=>{
   RAW_DRUGS.forEach((row,ri)=>row.forEach((name,ci)=>{
     const k=makeKey(ri+1,ORIG_SLOTS[ci]);
-    if(data[k]&&!customKeys.has(k)) data[k].name=name;
+    if(data[k]&&!customKeys.has(k)) data[k].name=normalizeDrugName(name);
   }));
   refreshAll();
 }).catch(()=>refreshAll());
