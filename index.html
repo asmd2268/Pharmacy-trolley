@@ -206,6 +206,9 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 .shelf-col-header{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text3);text-align:center;padding:2px 0;}
 .shelf-cell{border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:56px;min-width:70px;padding:5px 4px;cursor:pointer;background:var(--surface2);transition:all .18s;text-align:center;font-size:10px;color:var(--text3);gap:2px;position:relative;}
 .shelf-cell:hover{border-color:var(--accent);transform:scale(1.03);z-index:2}
+.shelf-cell[draggable=true]{cursor:grab}
+.shelf-cell.dragging{opacity:.45;transform:scale(.98)}
+.shelf-cell.drop-target{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(0,153,255,.24);transform:scale(1.03);z-index:3}
 .shelf-cell.filled{background:rgba(35,209,96,.08);border-color:rgba(35,209,96,.35);}
 .shelf-cell.filled.warn  {background:rgba(240,165,0,.09);border-color:rgba(240,165,0,.4)}
 .shelf-cell.filled.danger{background:rgba(255,71,87,.09);border-color:rgba(255,71,87,.4)}
@@ -800,6 +803,8 @@ let oosManual = [];
 let settings  = { warnDays:30, critDays:7 };
 let theme     = 'dark';
 let editingKey = null, editingShelfId = null, editingCellKey = null;
+let shelfDrag = null;
+let shelfDragJustEnded = false;
 
 // ══ KEY PARSING ══
 // Keys can be like "1A", "50D", "51E", "101A"
@@ -809,6 +814,13 @@ function parseKey(key){
   return { dr: parseInt(m[1]), sl: m[2] };
 }
 function makeKey(dr, sl){ return `${dr}${sl}`; }
+function nextDbOnlyKey(){
+  let dr = 1000;
+  while(Object.keys(data).some(k=>parseKey(k)?.dr>=dr)) dr += 1000;
+  let n = dr;
+  while(data[makeKey(n,'A')]) n++;
+  return makeKey(n,'A');
+}
 
 // ══ INIT ══
 function initData(){
@@ -1050,12 +1062,17 @@ function saveNewDrug(){
   const expiries = Array.from(expInputs).map(i=>i.value).filter(Boolean);
 
   const oldEntry = data[key];
+  if(oldEntry){
+    const keepKey = nextDbOnlyKey();
+    data[keepKey] = {...oldEntry, shelf:false};
+    customKeys.add(keepKey);
+  }
   data[key] = {
     name,
-    expiries: expiries.length ? expiries : (oldEntry ? oldEntry.expiries : []),
+    expiries,
     types,
-    oos: oldEntry ? oldEntry.oos : false,
-    shelf: oldEntry ? oldEntry.shelf : false,
+    oos: false,
+    shelf: false,
     notes: document.getElementById('newDrugNotes').value
   };
   customKeys.add(key);
@@ -1647,6 +1664,9 @@ function renderShelves(){
           else if((cell.types||[]).includes('hazard'))    cellCls+=' type-hazard';
         }
         div.className=cellCls;
+        div.dataset.shelfId=shelf.id;
+        div.dataset.cellKey=ck;
+        div.draggable=!!(cell&&cell.drug);
         if(cell&&cell.drug){
           let bestExp='', bestSt='ok';
           if(cell.expiries&&cell.expiries.length){ const sorted=[...cell.expiries].sort(); bestExp=sorted[0]; bestSt=expStatus(bestExp); if(bestSt==='critical') bestSt='danger'; }
@@ -1656,13 +1676,107 @@ function renderShelves(){
         } else {
           div.innerHTML=`<span class="cell-label" style="position:static;color:var(--text3);font-size:9px">${ck}</span><div class="cell-add">+</div>`;
         }
-        div.onclick=()=>openCellModal(shelf.id,ck,cell);
+        div.addEventListener('dragstart',handleShelfCellDragStart);
+        div.addEventListener('dragover',handleShelfCellDragOver);
+        div.addEventListener('dragleave',handleShelfCellDragLeave);
+        div.addEventListener('drop',handleShelfCellDrop);
+        div.addEventListener('dragend',handleShelfCellDragEnd);
+        div.onclick=()=>{
+          if(shelfDragJustEnded) return;
+          openCellModal(shelf.id,ck,cell);
+        };
         grid.appendChild(div);
       }
     }
     gwrap.appendChild(grid); section.appendChild(gwrap); wrap.appendChild(section);
   });
   updateStats();
+}
+
+function getShelfById(id){
+  return shelves.find(s=>s.id===id);
+}
+function getShelfCellKeys(sh){
+  const keys=[];
+  const cols=sh.cols||5, rows=sh.rows||4;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++) keys.push(`${rowLabel(r)}${c+1}`);
+  }
+  return keys;
+}
+function moveShelfCell(fromShelfId,fromKey,toShelfId,toKey){
+  if(fromShelfId===toShelfId && fromKey===toKey) return false;
+  const fromShelf=getShelfById(fromShelfId);
+  const toShelf=getShelfById(toShelfId);
+  if(!fromShelf||!toShelf||!fromShelf.cells||!fromShelf.cells[fromKey]) return false;
+  if(!toShelf.cells) toShelf.cells={};
+
+  const moving={...fromShelf.cells[fromKey]};
+  if(fromShelfId===toShelfId){
+    const keys=getShelfCellKeys(fromShelf);
+    const fromIdx=keys.indexOf(fromKey), toIdx=keys.indexOf(toKey);
+    if(fromIdx<0||toIdx<0) return false;
+    if(!fromShelf.cells[toKey]){
+      delete fromShelf.cells[fromKey];
+      fromShelf.cells[toKey]=moving;
+      return true;
+    }
+    if(fromIdx<toIdx){
+      for(let i=fromIdx;i<toIdx;i++){
+        const next=keys[i+1];
+        if(fromShelf.cells[next]) fromShelf.cells[keys[i]]=fromShelf.cells[next];
+        else delete fromShelf.cells[keys[i]];
+      }
+    } else {
+      for(let i=fromIdx;i>toIdx;i--){
+        const prev=keys[i-1];
+        if(fromShelf.cells[prev]) fromShelf.cells[keys[i]]=fromShelf.cells[prev];
+        else delete fromShelf.cells[keys[i]];
+      }
+    }
+    fromShelf.cells[toKey]=moving;
+    return true;
+  }
+
+  const target=toShelf.cells[toKey];
+  delete fromShelf.cells[fromKey];
+  toShelf.cells[toKey]=moving;
+  if(target) fromShelf.cells[fromKey]=target;
+  return true;
+}
+function handleShelfCellDragStart(e){
+  if(!this.draggable) return e.preventDefault();
+  shelfDrag={shelfId:this.dataset.shelfId,cellKey:this.dataset.cellKey};
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',`${shelfDrag.shelfId}:${shelfDrag.cellKey}`);
+}
+function handleShelfCellDragOver(e){
+  if(!shelfDrag) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  this.classList.add('drop-target');
+}
+function handleShelfCellDragLeave(){
+  this.classList.remove('drop-target');
+}
+function handleShelfCellDrop(e){
+  if(!shelfDrag) return;
+  e.preventDefault();
+  this.classList.remove('drop-target');
+  const moved=moveShelfCell(shelfDrag.shelfId,shelfDrag.cellKey,this.dataset.shelfId,this.dataset.cellKey);
+  shelfDrag=null;
+  if(moved){
+    saveData();
+    renderShelves();
+    showToast('✅ تم نقل وترتيب الخانة');
+  }
+}
+function handleShelfCellDragEnd(){
+  document.querySelectorAll('.shelf-cell.dragging,.shelf-cell.drop-target').forEach(el=>el.classList.remove('dragging','drop-target'));
+  shelfDrag=null;
+  shelfDragJustEnded=true;
+  setTimeout(()=>{shelfDragJustEnded=false;},0);
 }
 
 function openAddShelfModal(){
