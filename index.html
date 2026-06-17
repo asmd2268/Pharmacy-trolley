@@ -2034,8 +2034,12 @@ const ARABIC_NUMS_ORD=[
 ];
 const ARABIC_MONTHS={'يناير':'01','جانفي':'01','فبراير':'02','شباط':'02','مارس':'03','آذار':'03','أبريل':'04','نيسان':'04','إبريل':'04','ابريل':'04','مايو':'05','أيار':'05','ماي':'05','يونيو':'06','حزيران':'06','يونيه':'06','يوليو':'07','تموز':'07','يوليه':'07','أغسطس':'08','آب':'08','اغسطس':'08','سبتمبر':'09','أيلول':'09','أكتوبر':'10','تشرين الأول':'10','نوفمبر':'11','تشرين الثاني':'11','ديسمبر':'12','كانون الأول':'12'};
 const ENGLISH_MONTHS={'january':'01','jan':'01','february':'02','feb':'02','march':'03','mar':'03','april':'04','apr':'04','may':'05','june':'06','jun':'06','july':'07','jul':'07','august':'08','aug':'08','september':'09','sep':'09','october':'10','oct':'10','november':'11','nov':'11','december':'12','dec':'12'};
+let voiceFinalText='', voiceProcessTimer=null;
 
 function arabicNorm(t){let s=t.trim();for(const[k,v]of ARABIC_NUMS_ORD)s=s.replace(new RegExp(k,'g'),v);return s;}
+function normalizeVoiceYear(y){return y.length===2?'20'+y:y.padStart(4,'0');}
+function isValidVoiceMonth(mo){const n=parseInt(mo);return n>=1&&n<=12;}
+function lastDayOfMonth(y,mo){return String(new Date(parseInt(y),parseInt(mo),0).getDate()).padStart(2,'0');}
 function extractSlot(raw){
   const inlineEn=raw.match(/\b\d{1,2}\s*([A-Da-d])\b/);if(inlineEn)return inlineEn[1].toUpperCase();
   const standEn=raw.match(/(?:^|\s)([A-Da-d])(?:\s|$)/);if(standEn)return standEn[1].toUpperCase();
@@ -2058,16 +2062,20 @@ function extractDrawer(rawOriginal){
 function extractDate(raw){
   let t=arabicNorm(raw);
   let m=t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(m){let[,d,mo,y]=m;if(y.length===2)y='20'+y;return`${y.padStart(4,'0')}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;}
+  if(m){let[,d,mo,y]=m;y=normalizeVoiceYear(y);return`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;}
+  m=t.match(/(?:^|\s)(\d{1,2})[\/\-](\d{2,4})(?:\s|$)/);
+  if(m){let[,mo,y]=m;if(!isValidVoiceMonth(mo))return null;y=normalizeVoiceYear(y);mo=mo.padStart(2,'0');return`${y}-${mo}-${lastDayOfMonth(y,mo)}`;}
   const monthKeys=Object.keys(ARABIC_MONTHS).sort((a,b)=>b.length-a.length);
-  for(const mn of monthKeys){const mv=ARABIC_MONTHS[mn];const re2=new RegExp('(\\d{1,2})\\s+'+mn+'\\s+(\\d{2,4})','i');m=t.match(re2);if(m){let[,d,y]=m;if(y.length===2)y='20'+y;return`${y}-${mv}-${d.padStart(2,'0')}`;}const re1=new RegExp(mn+'\\s+(\\d{2,4})','i');m=t.match(re1);if(m){let y=m[1];if(y.length===2)y='20'+y;return`${y}-${mv}-01`;}}
+  for(const mn of monthKeys){const mv=ARABIC_MONTHS[mn];const re2=new RegExp('(\\d{1,2})\\s+'+mn+'\\s+(\\d{2,4})','i');m=t.match(re2);if(m){let[,d,y]=m;y=normalizeVoiceYear(y);return`${y}-${mv}-${d.padStart(2,'0')}`;}const re1=new RegExp(mn+'\\s+(\\d{2,4})','i');m=t.match(re1);if(m){let y=normalizeVoiceYear(m[1]);return`${y}-${mv}-${lastDayOfMonth(y,mv)}`;}}
   return null;
 }
 function extractDateEnglish(raw){
   const t=raw.toLowerCase();
   let m=t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(m){let[,d,mo,y]=m;if(y.length===2)y='20'+y;return`${y.padStart(4,'0')}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;}
-  for(const[mn,mv]of Object.entries(ENGLISH_MONTHS)){const re2=new RegExp('(\\d{1,2})\\s+'+mn+'\\s+(\\d{2,4})','i');m=t.match(re2);if(m){let[,d,y]=m;if(y.length===2)y='20'+y;return`${y}-${mv}-${d.padStart(2,'0')}`;}const re1=new RegExp(mn+'\\s+(\\d{2,4})','i');m=t.match(re1);if(m){let y=m[1];if(y.length===2)y='20'+y;return`${y}-${mv}-01`;}}
+  if(m){let[,d,mo,y]=m;y=normalizeVoiceYear(y);return`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;}
+  m=t.match(/(?:^|\s)(\d{1,2})[\/\-](\d{2,4})(?:\s|$)/);
+  if(m){let[,mo,y]=m;if(!isValidVoiceMonth(mo))return null;y=normalizeVoiceYear(y);mo=mo.padStart(2,'0');return`${y}-${mo}-${lastDayOfMonth(y,mo)}`;}
+  for(const[mn,mv]of Object.entries(ENGLISH_MONTHS)){const re2=new RegExp('(\\d{1,2})\\s+'+mn+'\\s+(\\d{2,4})','i');m=t.match(re2);if(m){let[,d,y]=m;y=normalizeVoiceYear(y);return`${y}-${mv}-${d.padStart(2,'0')}`;}const re1=new RegExp(mn+'\\s+(\\d{2,4})','i');m=t.match(re1);if(m){let y=normalizeVoiceYear(m[1]);return`${y}-${mv}-${lastDayOfMonth(y,mv)}`;}}
   return null;
 }
 function matchDrugByName(raw){
@@ -2086,17 +2094,32 @@ function initVoice(){
   voiceRecognition.onresult=e=>{
     let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}
-    document.getElementById('voiceInterim').textContent=interim||final;
-    if(final)processVoiceFinal(final);
+    if(final) voiceFinalText=(voiceFinalText+' '+final).trim();
+    document.getElementById('voiceInterim').textContent=interim||voiceFinalText||'';
+    if(final){
+      clearTimeout(voiceProcessTimer);
+      voiceProcessTimer=setTimeout(()=>processVoiceFinal(voiceFinalText),550);
+    }
   };
   voiceRecognition.onerror=e=>{setVoiceStatus('error','❌ خطأ: '+e.error);setVoiceBtn('idle');};
-  voiceRecognition.onend=()=>{if(voiceState==='listening')setVoiceBtn('idle');};
+  voiceRecognition.onend=()=>{
+    if(voiceState==='listening'&&voiceFinalText){
+      clearTimeout(voiceProcessTimer);
+      processVoiceFinal(voiceFinalText);
+      return;
+    }
+    if(voiceState==='listening')setVoiceBtn('idle');
+  };
 }
-function startVoice(){if(!voiceRecognition){initVoice();if(!voiceRecognition)return;}voiceState='listening';document.getElementById('voiceInterim').textContent='';try{voiceRecognition.start();}catch(e){}setVoiceBtn('listening');setVoiceStatus('listening','🎙️ جارٍ الاستماع...');}
-function stopVoice(){voiceState='idle';try{voiceRecognition&&voiceRecognition.stop();}catch(e){}setVoiceBtn('idle');}
+function startVoice(){if(!voiceRecognition){initVoice();if(!voiceRecognition)return;}voiceState='listening';voiceFinalText='';clearTimeout(voiceProcessTimer);document.getElementById('voiceInterim').textContent='تحدث الآن...';try{voiceRecognition.start();}catch(e){}setVoiceBtn('listening');setVoiceStatus('listening','🎙️ جارٍ الاستماع...');}
+function stopVoice(){voiceState='idle';clearTimeout(voiceProcessTimer);try{voiceRecognition&&voiceRecognition.stop();}catch(e){}setVoiceBtn('idle');}
 function setVoiceBtn(state){const btn=document.getElementById('voiceMicBtn');if(!btn)return;if(state==='listening'){btn.textContent='⏹ إيقاف';btn.className='btn btn-danger';btn.onclick=stopVoice;}else{btn.textContent='🎙️ تسجيل جديد';btn.className='btn btn-primary';btn.onclick=startVoice;}}
 function setVoiceStatus(type,msg){const el=document.getElementById('voiceStatus');if(!el)return;el.textContent=msg;el.className='voice-status voice-status-'+type;}
 function processVoiceFinal(text){
+  if(!text||voiceState==='processing') return;
+  voiceState='processing';
+  voiceFinalText='';
+  clearTimeout(voiceProcessTimer);
   try{voiceRecognition&&voiceRecognition.stop();}catch(e){}
   setVoiceBtn('idle');setVoiceStatus('processing','⏳ جارٍ التحليل...');
   const loc=extractDrawer(text);
