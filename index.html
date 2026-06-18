@@ -1043,12 +1043,20 @@ function formatDrugName(name, asHtml){
 function normalizeDrugDosageLine(line){
   let s = line.trim();
   if(!s) return s;
-  s = s.replace(/\b(MG|MCG|ML|G|IU|I\.U\.|MICROGRAMS?)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, u, n) => `${n} ${u.replace(/\./g,'').toUpperCase()}`);
-  s = s.replace(/\b(mg|mcg|ml|g|iu)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, _u, n) => `${n} MG`);
-  s = s.replace(/(\d+(?:\.\d+)?)(MG|MCG|ML|G|IU)(?=$|\s|\+|\)|,|\/)/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
-  s = s.replace(/(\d+(?:\.\d+)?)(mg|mcg|ml|g|iu)(?=$|\s|\+|\)|,|\/)/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
+  // unit BEFORE number → swap to number UNIT (e.g. "MG 500" → "500 MG")
+  s = s.replace(/\b(MG|MCG|ML|G|IU|I\.U\.|MICROGRAMS?)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi,
+    (_, u, n) => `${n} ${u.replace(/\./g,'').toUpperCase()}`);
+  s = s.replace(/\b(mg|mcg|ml|g|iu)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi,
+    (_, u, n) => `${n} ${u.toUpperCase()}`);
+  // number immediately attached to unit (no space) → add space  (e.g. "500mg" → "500 MG")
+  s = s.replace(/(\d+(?:\.\d+)?)(MG|MCG|ML|G|IU)(?=$|\s|\+|\)|,|\/)/gi,
+    (_, n, u) => `${n} ${u.toUpperCase()}`);
+  s = s.replace(/(\d+(?:\.\d+)?)(mg|mcg|ml|g|iu)(?=$|\s|\+|\)|,|\/)/gi,
+    (_, n, u) => `${n} ${u.toUpperCase()}`);
+  // I.U. handling
   s = s.replace(/\bI\.?\s*U\.?\s+(\d+(?:\.\d+)?)\b/gi, (_, n) => `${n} I.U.`);
   s = s.replace(/\b(\d+(?:\.\d+)?)\s*I\.?\s*U\.?\b/gi, (_, n) => `${n} I.U.`);
+  // ensure space between number and unit if still missing
   s = s.replace(/\b(\d+(?:\.\d+)?)\s*(MG|MCG|ML|G)\b/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
   return s.replace(/\s{2,}/g,' ').trim();
 }
