@@ -596,11 +596,13 @@ code{font-family:var(--mono)}
       </div>
       <div class="voice-rule">
         <strong>📋 قاعدة الإدخال الصوتي لتواريخ الانتهاء:</strong><br>
-        قلها بالترتيب فقط بدون كلمة "درج" أو "خانة": <code>رقم الدرج</code> ← <code>حرف الخانة</code> ← <code>تاريخ الانتهاء</code>.<br>
-        • مثال: <code>5 أ سبتمبر 2026</code> أو <code>12 B 09/2026</code> أو <code>3 د 15 مارس 2027</code>.<br>
-        • إذا ذكرت <strong>الشهر والسنة فقط</strong> (بدون يوم) → سيُعتمد <strong>آخر يوم في الشهر</strong> تلقائياً.<br>
-        • حرف الخانة يُقبل بالعربي (أ ب ج د) أو الإنجليزي (A B C D).<br>
-        • ⚠️ <strong>لا تقل "ألف" أو "1000"</strong> — النظام يقرأها كرقم وليس كخانة. قل <strong>"أ"</strong> أو <strong>"A"</strong> فقط للخانة الأولى.
+        قل بالترتيب: <code>رقم الدرج</code> ← <code>حرف الخانة</code> ← <code>تاريخ الانتهاء</code>.<br>
+        • النظام يتجاهل كلمات مثل "درج" و"خانة" تلقائياً — يمكنك قولها أو تجاهلها.<br>
+        • مثال: <code>5 بي مايو 2028</code> أو <code>درج 12 B سبتمبر 2027</code> أو <code>3 د 15 مارس 2027</code>.<br>
+        • الخانات المقبولة: <strong>A B C D</strong> أو <strong>بي جيم/سي دال/دي</strong>.<br>
+        • ⚠️ خانة A: قل <strong>"A"</strong> بالإنجليزي فقط — "أ" بالعربي لا تُعرَّف بشكل موثوق.<br>
+        • الشهر + السنة فقط = آخر يوم في الشهر تلقائياً.<br>
+        • يُقبل العربي أو الإنجليزي أو خليط بينهما.
         <br><br><strong>التاريخ الجديد يستبدل القديم تلقائياً.</strong>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -2649,14 +2651,17 @@ function extractSlot(raw){
   return null;
 }
 function slotFromToken(token){
-  const t=(token||'').trim();
+  const t=(token||'').trim().toLowerCase();
   if(!t) return null;
-  if(/^(الف|ألف|آلف|A)$/u.test(t)) return 'A';
-  if(/^[Aaأآ]$/u.test(t)) return 'A';
-  if(/^[Bbب]$/u.test(t)) return 'B';
-  if(/^[Ccج]$/u.test(t)) return 'C';
-  if(/^[Ddد]$/u.test(t)) return 'D';
-  for(const[word,en]of AR_SLOT_WORDS){ if(t===word) return en; }
+  // A variants: أ آ a A
+  if(/^(أ|آ|a)$/.test(t)) return 'A';
+  // B variants: ب b + spoken: بي بيه باء
+  if(/^(ب|b|بي|بيه|باء)$/.test(t)) return 'B';
+  // C variants: ج c + spoken: جيم سي سيه
+  if(/^(ج|c|جيم|سي|سيه)$/.test(t)) return 'C';
+  // D variants: د d + spoken: دال دي ديه
+  if(/^(د|d|دال|دي|ديه)$/.test(t)) return 'D';
+  for(const[word,en]of AR_SLOT_WORDS){ if(t===word.toLowerCase()) return en; }
   return null;
 }
 
@@ -2682,7 +2687,9 @@ function preNormSlot1000(raw){
 }
 
 function normalizeVoiceForOrder(raw){
-  let s = preNormSlot1000(raw);
+  // Strip noise words: درج/خانة/رقم etc. so they don't block token parsing
+  let s = raw.replace(/\b(درج|الدرج|خانة|الخانة|رقم|الرقم|في|من)\b/gu,' ');
+  s = preNormSlot1000(s);
   return arabicNorm(s)
     .replace(/([0-9٠-٩]{1,2})([A-Da-dأآبجد])/g,'$1 $2')
     .replace(/([A-Da-dأآبجد])([0-9٠-٩]{1,2})/g,'$1 $2')
