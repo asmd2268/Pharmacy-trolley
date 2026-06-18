@@ -2651,7 +2651,7 @@ function extractSlot(raw){
 function slotFromToken(token){
   const t=(token||'').trim();
   if(!t) return null;
-  if(/^(1000|١٠٠٠|الف|ألف|آلف)$/u.test(t)) return 'A';
+  if(/^(الف|ألف|آلف|A)$/u.test(t)) return 'A';
   if(/^[Aaأآ]$/u.test(t)) return 'A';
   if(/^[Bbب]$/u.test(t)) return 'B';
   if(/^[Ccج]$/u.test(t)) return 'C';
@@ -2659,8 +2659,25 @@ function slotFromToken(token){
   for(const[word,en]of AR_SLOT_WORDS){ if(t===word) return en; }
   return null;
 }
+
+// Intercept "5000", "5 000", "١٠٠٠" patterns → treat as drawer# + slot A
+// Any 1-2 digit number followed by exactly 3 zeros = drawer number + slot A
+function preNormSlot1000(raw){
+  let s = raw;
+  // "5000" or "12000" → "5 A" / "12 A"
+  s = s.replace(/\b([1-9][0-9]?)000\b/g, '$1 A');
+  // "5 000" (with space)
+  s = s.replace(/\b([1-9][0-9]?)\s+000\b/g, '$1 A');
+  // Standalone "1000" → "A"
+  s = s.replace(/\b1000\b/g, 'A');
+  // Arabic-Indic ١٠٠٠ → A
+  s = s.replace(/١٠٠٠/gu, 'A');
+  return s;
+}
+
 function normalizeVoiceForOrder(raw){
-  return arabicNorm(raw)
+  let s = preNormSlot1000(raw);
+  return arabicNorm(s)
     .replace(/([0-9٠-٩]{1,2})([A-Da-dأآبجد])/g,'$1 $2')
     .replace(/([A-Da-dأآبجد])([0-9٠-٩]{1,2})/g,'$1 $2')
     .replace(/[،,؛:]/g,' ')
