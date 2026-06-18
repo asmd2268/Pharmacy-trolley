@@ -16,7 +16,7 @@
   --high:#ff4757;   --high-bg:rgba(255,71,87,.13);
   --noexp:#a78bfa; --noexp-border:rgba(167,139,250,.3); --noexp-bg:rgba(167,139,250,.06);
   --custom:#e879f9; --custom-bg:rgba(232,121,249,.10); --custom-border:rgba(232,121,249,.35);
-  --replaced:#f0a500; --replaced-bg:rgba(240,165,0,.14); --replaced-border:rgba(240,165,0,.45);
+  --replaced:#38bdf8; --replaced-bg:rgba(56,189,248,.12); --replaced-border:rgba(56,189,248,.45);
   --font:'IBM Plex Sans Arabic',sans-serif;
   --mono:'JetBrains Mono',monospace;
   --radius:10px;
@@ -30,7 +30,7 @@ body.light {
   --high-bg:rgba(255,71,87,.15);
   --noexp:#7c3aed; --noexp-border:rgba(124,58,237,.3); --noexp-bg:rgba(124,58,237,.06);
   --custom:#a21caf; --custom-bg:rgba(162,28,175,.08); --custom-border:rgba(162,28,175,.3);
-  --replaced-bg:rgba(240,165,0,.18); --replaced-border:rgba(240,165,0,.5);
+  --replaced-bg:rgba(56,189,248,.15); --replaced-border:rgba(56,189,248,.55);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .3s,color .3s}
@@ -104,6 +104,8 @@ main{padding:12px 16px;max-width:1680px;margin:0 auto}
 .drawer-row.no-expiry{background:var(--noexp-bg);border-right:2px solid var(--noexp-border)}
 .drawer-row.has-alert{background:rgba(255,71,87,.04)}
 .drawer-row.has-warn {background:rgba(240,165,0,.04)}
+.drawer-row.replaced-row{background:var(--replaced-bg);border-right:3px solid var(--replaced-border)}
+.drawer-row.replaced-row .row-drug{color:var(--replaced)}
 .drawer-row.type-hazard    {border-right:2px solid var(--hazard)}
 .drawer-row.type-lasa      {border-right:2px solid var(--lasa)}
 .drawer-row.type-high-alert{border-right:2px solid var(--high)}
@@ -140,7 +142,7 @@ main{padding:12px 16px;max-width:1680px;margin:0 auto}
 .drawers-table tr.db-only-row td{background:var(--custom-bg)}
 .drawers-table tr.db-only-row:hover td{background:rgba(232,121,249,.16)}
 .drawers-table tr.replaced-row td{background:var(--replaced-bg);border-right:3px solid var(--replaced-border)}
-.drawers-table tr.replaced-row:hover td{background:rgba(240,165,0,.22)}
+.drawers-table tr.replaced-row:hover td{background:rgba(56,189,248,.2)}
 .drawers-table tr.replaced-row .name-cell{color:var(--replaced)}
 .drawers-table th.sortable{cursor:pointer;user-select:none;transition:color .15s}
 .drawers-table th.sortable:hover{color:var(--accent)}
@@ -178,8 +180,6 @@ main{padding:12px 16px;max-width:1680px;margin:0 auto}
 .exp-tag.warn   {background:rgba(240,165,0,.14);color:var(--warn);border:1px solid rgba(240,165,0,.3)}
 .exp-tag.danger {background:rgba(255,71,87,.14);color:var(--danger);border:1px solid rgba(255,71,87,.3)}
 .exp-tag.expired{background:rgba(255,71,87,.2);color:var(--danger);border:1px solid rgba(255,71,87,.4);text-decoration:line-through}
-.exp-tag.replaced-date{background:rgba(0,212,170,.16);color:var(--accent);border:1px solid rgba(0,212,170,.45);text-decoration:none;font-weight:700}
-.exp-tag.replaced-date::after{content:' ✔ مستبدل';font-family:var(--font);font-size:8px;color:var(--accent);opacity:.85}
 .add-exp-btn{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--text3);background:none;border:1px dashed var(--border);border-radius:3px;padding:2px 7px;cursor:pointer;font-family:var(--font);margin-top:4px;transition:all .2s;}
 .add-exp-btn:hover{border-color:var(--accent);color:var(--accent)}
 
@@ -231,7 +231,7 @@ main{padding:12px 16px;max-width:1680px;margin:0 auto}
 
 /* DB-ONLY BADGE */
 .db-only-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(232,121,249,.18);color:var(--custom);border:1px solid var(--custom-border);}
-.replaced-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(240,165,0,.12);color:var(--warn);border:1px solid rgba(240,165,0,.35);}
+.replaced-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(56,189,248,.12);color:var(--replaced);border:1px solid rgba(56,189,248,.35);}
 
 /* SEARCH RESULTS */
 .search-result{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;display:flex;align-items:flex-start;gap:12px;margin-bottom:7px;}
@@ -306,9 +306,6 @@ body.light .oos-badge{background:rgba(88,96,105,.35);color:#24292f;border-color:
 .voice-status-ok        {color:var(--success);background:rgba(35,209,96,.1)}
 .voice-status-error     {color:var(--danger);background:rgba(255,71,87,.1)}
 @keyframes pulse{from{opacity:.7}to{opacity:1}}
-.voice-rule{width:100%;background:rgba(0,153,255,.08);border:1px solid rgba(0,153,255,.25);border-radius:8px;padding:9px 12px;color:var(--text2);font-size:12px;line-height:1.7}
-.voice-rule strong{color:var(--accent2)}
-.voice-rule code{color:var(--accent);background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.18);border-radius:4px;padding:1px 5px}
 .voice-confirm-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:10px}
 .voice-confirm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .voice-lbl{font-size:11px;color:var(--text3);min-width:120px;text-align:left}
@@ -593,17 +590,6 @@ code{font-family:var(--mono)}
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
         <div style="font-weight:600;color:var(--accent);font-size:14px">🎙️ الإدخال الصوتي لتواريخ الانتهاء</div>
         <button class="btn btn-secondary btn-sm" onclick="lockVoice()">🔒 قفل</button>
-      </div>
-      <div class="voice-rule">
-        <strong>📋 قاعدة الإدخال الصوتي لتواريخ الانتهاء:</strong><br>
-        قل بالترتيب: <code>رقم الدرج</code> ← <code>حرف الخانة</code> ← <code>تاريخ الانتهاء</code>.<br>
-        • النظام يتجاهل كلمات مثل "درج" و"خانة" تلقائياً — يمكنك قولها أو تجاهلها.<br>
-        • مثال: <code>5 بي مايو 2028</code> أو <code>درج 12 B سبتمبر 2027</code> أو <code>3 د 15 مارس 2027</code>.<br>
-        • الخانات المقبولة: <strong>A B C D</strong> أو <strong>بي جيم/سي دال/دي</strong>.<br>
-        • ⚠️ خانة A: قل <strong>"A"</strong> بالإنجليزي فقط — "أ" بالعربي لا تُعرَّف بشكل موثوق.<br>
-        • الشهر + السنة فقط = آخر يوم في الشهر تلقائياً.<br>
-        • يُقبل العربي أو الإنجليزي أو خليط بينهما.
-        <br><br><strong>التاريخ الجديد يستبدل القديم تلقائياً.</strong>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" id="voiceMicBtn" onclick="startVoice()">🎙️ ابدأ التسجيل</button>
@@ -961,7 +947,7 @@ function normalizeDrugDosageLine(line){
   let s = line.trim();
   if(!s) return s;
   s = s.replace(/\b(MG|MCG|ML|G|IU|I\.U\.|MICROGRAMS?)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, u, n) => `${n} ${u.replace(/\./g,'').toUpperCase()}`);
-  s = s.replace(/\b(mg|mcg|ml|g|iu)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, u, n) => `${n} ${u.toUpperCase()}`);
+  s = s.replace(/\b(mg|mcg|ml|g|iu)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, _u, n) => `${n} MG`);
   s = s.replace(/(\d+(?:\.\d+)?)(MG|MCG|ML|G|IU)(?=$|\s|\+|\)|,|\/)/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
   s = s.replace(/(\d+(?:\.\d+)?)(mg|mcg|ml|g|iu)(?=$|\s|\+|\)|,|\/)/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
   s = s.replace(/\bI\.?\s*U\.?\s+(\d+(?:\.\d+)?)\b/gi, (_, n) => `${n} I.U.`);
@@ -1074,56 +1060,6 @@ function formatDate(s){ if(!s)return''; const[y,m,d]=s.split('-'); return`${d}/$
 function daysLabel(n){ if(n<0)return`منتهي منذ ${Math.abs(n)}د`; if(n===0)return'اليوم!'; return`${n}يوم`; }
 function uid(){ return Math.random().toString(36).slice(2); }
 function rowLabel(r){ return ROW_LABELS[r]||String(r+1); }
-function expTagHtml(date,item,extraStyle='',withDays=false){
-  const replaced = !!(item&&item.expiryReplaced);
-  const s = expStatus(date);
-  const cls = replaced ? 'replaced-date' : (s==='critical'?'danger':s);
-  const days = withDays ? `<span style="font-size:8px;margin-right:2px">(${daysLabel(daysUntil(date))})</span>` : '';
-  return `<span class="exp-tag ${cls}" style="${extraStyle}">${formatDate(date)}${days}</span>`;
-}
-const DRUG_SYNONYMS = [
-  ['paracetamol','panadol','fevadol','فيفادول','بنادول','باراسيتامول','اسيتامينوفين','acetaminophen','tylenol'],
-  ['ibuprofen','brufen','بروفين','ايبوبروفين','ibufen','advil'],
-  ['diclofenac','voltaren','فولتارين','دكلوفيناك'],
-  ['omeprazole','losec','اوميبرازول','لوسيك'],
-  ['pantoprazole','controloc','بانتوبرازول','كونترولوك'],
-  ['amoxicillin','amoxil','اموكسيسيلين','اموكسل'],
-  ['azithromycin','zithromax','زيثروماكس','ازيثرومايسين'],
-  ['cetirizine','zyrtec','زيرتك','سيتريزين'],
-  ['loratadine','claritine','كلاريتين','لوراتادين'],
-  ['salbutamol','ventolin','فنتولين','سالبوتامول'],
-  ['metformin','glucophage','جلوكوفاج','ميتفورمين'],
-  ['atorvastatin','lipitor','ليبيتور','اتورفاستاتين'],
-  ['aspirin','اسبرين','أسبرين'],
-  ['insulin','انسولين','إنسولين']
-];
-function normalizeSearchText(text){
-  return (text||'').toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
-}
-function expandDrugSearchTerms(query){
-  const q=normalizeSearchText(query);
-  if(!q) return [];
-  const terms=new Set(q.split(/\s+/).filter(Boolean));
-  terms.add(q);
-  for(const group of DRUG_SYNONYMS){
-    const normalized=group.map(normalizeSearchText);
-    if(normalized.some(alias=>alias&&q.includes(alias))){
-      normalized.forEach(alias=>{ if(alias) terms.add(alias); });
-    }
-  }
-  return [...terms].filter(t=>t.length>=2);
-}
-function drugMatchesQuery(item,key,query){
-  const terms=expandDrugSearchTerms(query);
-  if(!terms.length) return true;
-  const hay=normalizeSearchText(`${item.name.replace(/\n/g,' ')} ${key}`);
-  return terms.some(t=>hay.includes(t));
-}
-function drugMatchScore(item,key,query){
-  const terms=expandDrugSearchTerms(query);
-  const hay=normalizeSearchText(`${item.name.replace(/\n/g,' ')} ${key}`);
-  return terms.reduce((score,t)=>score+(hay.includes(t)?t.length:0),0);
-}
 
 // ══ IS DB-ONLY? ══
 // A drug is "db-only" if it's not assigned to any original drawer slot (1-50 A-D)
@@ -1473,9 +1409,7 @@ function saveExpiries(){
     }
   }
 
-  const newExpiries = Array.from(inputs).map(i=>i.value).filter(Boolean);
-  data[editingKey].expiryReplaced = data[editingKey].expiryReplaced && newExpiries.length===1 && data[editingKey].expiries.length===1 && data[editingKey].expiries[0]===newExpiries[0];
-  data[editingKey].expiries = newExpiries;
+  data[editingKey].expiries = Array.from(inputs).map(i=>i.value).filter(Boolean);
   data[editingKey].types    = types;
   data[editingKey].oos      = document.getElementById('flagOOS').checked;
   data[editingKey].shelf    = document.getElementById('flagShelf').checked;
@@ -1525,7 +1459,8 @@ function dbStatusRank(key, item){
   return 1;
 }
 function passesDbItemFilters(key, item, q, f){
-  const nm = !q || drugMatchesQuery(item,key,q);
+  const queries=q?expandSearchQuery(q):[];
+  const nm = !q || drugMatchesQuery(item.name,queries) || key.toLowerCase().includes(q);
   if(!nm) return false;
   const exSt = slotExpSt(key);
   const isCustom = customKeys.has(key);
@@ -1722,7 +1657,7 @@ function renderDB(){
     const parsed=parseKey(key);
     const nameClean=formatDrugName(item.name);
     const exHtml=item.expiries.length
-      ?item.expiries.map(e=>expTagHtml(e,item,'margin-left:3px',true)).join('')
+      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}" style="margin-left:3px">${formatDate(e)}<span style="font-size:8px;margin-right:2px">(${daysLabel(d)})</span></span>`;}).join('')
       :`<span style="color:var(--noexp);font-size:11px;font-weight:600">— بدون تاريخ</span>`;
     let tHtml='';
     if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️ Hazard</span> `;
@@ -1815,7 +1750,7 @@ function renderDrawers(){
     const mapDrawers = sortedDrawers.filter(dr=>dr>=1&&dr<=50);
     for(const dr of mapDrawers){
       const rowKeys=Object.keys(data).filter(k=>{const p=parseKey(k);return p&&p.dr===dr&&!isDbOnly(k);});
-      if(q&&!rowKeys.some(k=>drugMatchesQuery(data[k],k,q))) continue;
+      if(q&&!rowKeys.some(k=>data[k].name.toLowerCase().includes(q))) continue;
       map.insertAdjacentHTML('beforeend',`<div class="drawer-map-drawer">${dr}</div>`);
       for(const sl of ORIG_SLOTS){
         const key=makeKey(dr,sl), item=data[key];
@@ -1823,14 +1758,14 @@ function renderDrawers(){
           map.insertAdjacentHTML('beforeend','<div class="drawer-map-cell map-empty">—</div>');
           continue;
         }
-        const dim=q&&!drugMatchesQuery(item,key,q);
+        const dim=q&&!item.name.toLowerCase().includes(q);
         const exp=item.expiries.length?[...item.expiries].sort()[0]:'';
         const cell=document.createElement('div');
         cell.className='drawer-map-cell'+(item?'':' map-empty');
         if(dim) cell.style.opacity='.18';
         cell.innerHTML=`<div style="font-weight:700">${formatDrugName(item.name,true)}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
-            ${exp?expTagHtml(exp,item):'<span class="db-only-badge" style="color:var(--noexp);border-color:var(--noexp-border);background:var(--noexp-bg)">بدون تاريخ</span>'}
+            ${exp?`<span class="exp-tag ${expStatus(exp)==='critical'?'danger':expStatus(exp)}">${formatDate(exp)}</span>`:'<span class="db-only-badge" style="color:var(--noexp);border-color:var(--noexp-border);background:var(--noexp-bg)">بدون تاريخ</span>'}
             ${item.oos?'<span class="oos-badge">OOS</span>':''}
           </div>`;
         cell.onclick=()=>openExpModal(key);
@@ -1861,12 +1796,12 @@ function renderDrawers(){
     for(const key of sortedKeys){
       if(isDbOnly(key)) continue;
       const item=data[key];
-      if(q&&!drugMatchesQuery(item,key,q)) continue;
+      if(q&&!item.name.toLowerCase().includes(q)) continue;
       const p=parseKey(key);
       const exSt=slotExpSt(key);
       const isCustom=customKeys.has(key);
       const expsHtml=item.expiries.length
-        ?item.expiries.map(e=>expTagHtml(e,item)).join(' ')
+        ?item.expiries.map(e=>{const s=expStatus(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)}</span>`;}).join(' ')
         :'<span style="color:var(--text3)">—</span>';
       let tHtml='';
       if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️</span>`;
@@ -1898,15 +1833,14 @@ function renderDrawers(){
   }
 
   // ── CARD VIEW ──
-  grid.style.display='grid';
-  let renderedCards=0;
+  grid.style.display='';
   for(const dr of sortedDrawers){
     // Get all slots for this drawer
     const drawerKeys = Object.keys(data)
       .filter(k=>{ const p=parseKey(k); return p&&p.dr===dr&&!isDbOnly(k); })
       .sort((a,b)=>{ const pa=parseKey(a), pb=parseKey(b); return pa.sl.localeCompare(pb.sl); });
 
-    const anyMatch=!q||drawerKeys.some(k=>drugMatchesQuery(data[k],k,q));
+    const anyMatch=!q||drawerKeys.some(k=>data[k].name.toLowerCase().includes(q));
     if(!anyMatch) continue;
 
     const card=document.createElement('div'); card.className='drawer-card';
@@ -1937,14 +1871,15 @@ function renderDrawers(){
     for(const key of drawerKeys){
       const item=data[key];
       const p=parseKey(key);
-      const dim=q&&!drugMatchesQuery(item,key,q);
+      const dim=q&&!item.name.toLowerCase().includes(q);
       const exSt=slotExpSt(key);
       const isCustom=customKeys.has(key);
 
       let rowCls='drawer-row';
       if(dim){ rowCls+=' dimmed'; }
       else{
-        if(!item.expiries.length) rowCls+=' no-expiry';
+        if(isReplaced(key))      rowCls+=' replaced-row';
+        else if(!item.expiries.length) rowCls+=' no-expiry';
         else if(exSt==='danger')  rowCls+=' has-alert';
         else if(exSt==='warn')    rowCls+=' has-warn';
         if(isCustom) rowCls+=' custom-drug';
@@ -1967,7 +1902,8 @@ function renderDrawers(){
       let expHtml='';
       if(item.expiries.length){
         const earliest=[...item.expiries].sort()[0];
-        expHtml=expTagHtml(earliest,item,'font-size:8px;padding:0 4px');
+        const s=expStatus(earliest);
+        expHtml=`<span class="exp-tag ${s==='critical'?'danger':s}" style="font-size:8px;padding:0 4px">${formatDate(earliest)}</span>`;
       }
 
       const nameHtml=formatDrugName(item.name,true);
@@ -1996,9 +1932,7 @@ function renderDrawers(){
       card.appendChild(row);
     }
     grid.appendChild(card);
-    renderedCards++;
   }
-  if(!renderedCards) grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="icon">🗄️</div>لا توجد أدراج مطابقة للبحث</div>';
   updateStats();
 }
 
@@ -2086,17 +2020,129 @@ function renderAlerts(){
   });
 }
 
+// ══ DRUG SYNONYMS (Brand → Generic) ══
+const DRUG_SYNONYMS = {
+  // Paracetamol / Acetaminophen
+  'panadol':'paracetamol','panadol':'paracetamol','فانادول':'paracetamol',
+  'fevadol':'paracetamol','فيفادول':'paracetamol',
+  'tylenol':'paracetamol','تيلينول':'paracetamol',
+  'calpol':'paracetamol','أدول':'paracetamol','adol':'paracetamol',
+  'abimol':'paracetamol','ابيمول':'paracetamol',
+  'acetaminophen':'paracetamol',
+  // Ibuprofen
+  'brufen':'ibuprofen','بروفين':'ibuprofen',
+  'advil':'ibuprofen','ادفيل':'ibuprofen',
+  'nurofen':'ibuprofen','نيوروفين':'ibuprofen',
+  'nurofen':'ibuprofen',
+  // Amoxicillin
+  'amoxil':'amoxicillin','اموكسيل':'amoxicillin',
+  'augmentin':'amoxicillin','اوجمنتين':'amoxicillin','أوجمنتين':'amoxicillin',
+  // Omeprazole
+  'losec':'omeprazole','لوسيك':'omeprazole',
+  'prilosec':'omeprazole',
+  'omez':'omeprazole','اوميز':'omeprazole',
+  // Pantoprazole
+  'controloc':'pantoprazole','كنترولوك':'pantoprazole',
+  'pantoloc':'pantoprazole',
+  // Metformin
+  'glucophage':'metformin','جلوكوفاج':'metformin',
+  // Atorvastatin
+  'lipitor':'atorvastatin','ليبيتور':'atorvastatin',
+  // Amlodipine
+  'norvasc':'amlodipine','نورفاسك':'amlodipine',
+  'amcard':'amlodipine',
+  // Metoprolol
+  'betaloc':'metoprolol','بيتالوك':'metoprolol',
+  'lopresor':'metoprolol',
+  // Cetirizine
+  'zyrtec':'cetirizine','زيرتك':'cetirizine',
+  'reactine':'cetirizine',
+  // Loratadine
+  'claritin':'loratadine','كلاريتين':'loratadine',
+  // Azithromycin
+  'zithromax':'azithromycin','زيثروماكس':'azithromycin',
+  'azithrocin':'azithromycin',
+  // Ceftriaxone
+  'rocephin':'ceftriaxone','روسيفين':'ceftriaxone',
+  // Diclofenac
+  'voltaren':'diclofenac','فولتارين':'diclofenac','فولتارين':'diclofenac',
+  'cataflam':'diclofenac','كتافلام':'diclofenac',
+  // Dexamethasone
+  'decadron':'dexamethasone','ديكادرون':'dexamethasone',
+  // Prednisolone
+  'solupred':'prednisolone','سولوبريد':'prednisolone',
+  // Furosemide
+  'lasix':'furosemide','لاسيكس':'furosemide',
+  // Spironolactone
+  'aldactone':'spironolactone','الداكتون':'spironolactone',
+  // Lisinopril
+  'zestril':'lisinopril',
+  'prinivil':'lisinopril',
+  // Warfarin
+  'coumadin':'warfarin','كومادين':'warfarin',
+  // Clopidogrel
+  'plavix':'clopidogrel','بلافيكس':'clopidogrel',
+  // Ranitidine / famotidine
+  'zantac':'ranitidine','زانتاك':'ranitidine',
+  'pepcid':'famotidine',
+  // Ondansetron
+  'zofran':'ondansetron','زوفران':'ondansetron',
+  // Tramadol
+  'tramal':'tramadol','ترامال':'tramadol',
+  // Insulin
+  'lantus':'insulin','لانتوس':'insulin',
+  'novorapid':'insulin','نوفورابيد':'insulin',
+  'actrapid':'insulin','اكترابيد':'insulin',
+  // Salbutamol
+  'ventolin':'salbutamol','فنتولين':'salbutamol',
+  // Montelukast
+  'singulair':'montelukast','سنجيلار':'montelukast',
+  // Fluoxetine
+  'prozac':'fluoxetine','بروزاك':'fluoxetine',
+  // Sertraline
+  'zoloft':'sertraline','زولوفت':'sertraline',
+  // Alprazolam
+  'xanax':'alprazolam','زاناكس':'alprazolam',
+  // Clonazepam
+  'rivotril':'clonazepam','ريفوتريل':'clonazepam',
+};
+function expandSearchQuery(q){
+  const lower=q.toLowerCase().trim();
+  const expanded=[lower];
+  // Direct synonym lookup
+  if(DRUG_SYNONYMS[lower]) expanded.push(DRUG_SYNONYMS[lower]);
+  // Reverse: if searching generic, also match brands
+  for(const[brand,generic]of Object.entries(DRUG_SYNONYMS)){
+    if(generic===lower||generic.includes(lower)||lower.includes(generic)){
+      expanded.push(brand);
+      expanded.push(generic);
+    }
+  }
+  // Partial match in synonyms
+  for(const[brand,generic]of Object.entries(DRUG_SYNONYMS)){
+    if(brand.includes(lower)||lower.includes(brand)){
+      expanded.push(generic);
+    }
+  }
+  return [...new Set(expanded)];
+}
+function drugMatchesQuery(itemName, queries){
+  const name=itemName.toLowerCase().replace(/\n/g,' ');
+  return queries.some(q=>name.includes(q));
+}
+
 // ══ SEARCH ══
 function doSearch(){
   const q=document.getElementById('searchInput').value.trim().toLowerCase();
   const f=document.getElementById('searchFilter').value;
   const container=document.getElementById('searchResults');
   if(!q&&f==='all'){container.innerHTML='<div class="empty"><div class="icon">🔍</div>اكتب اسم الدواء للبحث أو استخدم 🎙️</div>';lastSearchResults=[];return;}
+  const queries=q?expandSearchQuery(q):[];
   const results=[];
   for(const key in data){
     const item=data[key];
     if(isDbOnly(key)&&f!=='db-only') continue;
-    const nm=!q||drugMatchesQuery(item,key,q);
+    const nm=!q||drugMatchesQuery(item.name,queries);
     let tm=true;
     if(f==='hazard') tm=item.types.includes('hazard');
     else if(f==='lasa') tm=item.types.includes('lasa');
@@ -2117,9 +2163,8 @@ function doSearch(){
   if(!results.length){container.innerHTML='<div class="empty"><div class="icon">😕</div>لا توجد نتائج</div>';return;}
   container.innerHTML='';
   results.forEach(({key,item})=>{
-    const plainName=item.name.replace(/\n/g,' ');
-    const directTerm=expandDrugSearchTerms(q).find(t=>normalizeSearchText(plainName).includes(t));
-    const hl=directTerm ? plainName.replace(new RegExp(directTerm.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark>${m}</mark>`) : plainName;
+    const displayQ=q||'';
+    const hl=item.name.replace(/\n/g,' ').replace(new RegExp(displayQ.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark>${m}</mark>`);
     const p=parseKey(key);
     const isCustom=customKeys.has(key);
     let badges='';
@@ -2132,7 +2177,7 @@ function doSearch(){
     if(isDbOnly(key)) badges+=`<span class="db-only-badge">غير موزّع</span>`;
     if(isReplaced(key)) badges+=`<span class="replaced-badge">🔄 مستبدل</span>`;
     const expsHtml=item.expiries.length
-      ?item.expiries.map(e=>expTagHtml(e,item,'',true)).join('')
+      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)} (${daysLabel(d)})</span>`;}).join('')
       :'<span style="color:var(--text3);font-size:10px">لا يوجد تاريخ</span>';
     const div=document.createElement('div'); div.className='search-result';
     div.innerHTML=`
@@ -2158,9 +2203,8 @@ function renderTable(){
     return pa.dr!==pb.dr?pa.dr-pb.dr:pa.sl.localeCompare(pb.sl);
   });
   for(const key of sortedKeys){
-    if(isDbOnly(key)) continue;
     const item=data[key];
-    if(q&&!drugMatchesQuery(item,key,q)&&!key.toLowerCase().includes(q)) continue;
+    if(q&&!item.name.toLowerCase().includes(q)&&!key.toLowerCase().includes(q)) continue;
     const isCustom=customKeys.has(key);
     let tm=true;
     if(tf==='hazard') tm=item.types.includes('hazard');
@@ -2171,7 +2215,7 @@ function renderTable(){
     else if(tf==='custom') tm=isCustom;
     if(!tm) continue;
     const p=parseKey(key);
-    const exHtml=item.expiries.length?item.expiries.map(e=>expTagHtml(e,item)).join(' '):'<span style="color:var(--text3)">—</span>';
+    const exHtml=item.expiries.length?item.expiries.map(e=>{const s=expStatus(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)}</span>`;}).join(' '):'<span style="color:var(--text3)">—</span>';
     let tHtml='';
     if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️</span>`;
     if(item.types.includes('lasa'))       tHtml+=`<span class="type-badge lasa">🔵</span>`;
@@ -2620,7 +2664,13 @@ function lockVoice(){
 }
 
 const AR_SLOT_RAW={'أ':'A','آ':'A','ب':'B','ج':'C','د':'D'};
-const AR_SLOT_WORDS=[['باء','B'],['بي','B'],['بيه','B'],['جيم','C'],['سي','C'],['دال','D'],['دي','D'],['ديه','D'],['ألف','A'],['الف','A'],['آلف','A']];
+const AR_SLOT_WORDS=[['باء','B'],['بي','B'],['بيه','B'],['جيم','C'],['سي','C'],['دال','D'],['دي','D'],['ديه','D'],['ألف','A'],['الف','A'],['آلف','A'],['ألفا','A'],['الفا','A']];
+// 1000 in voice = slot A (not drawer number 1000)
+function preprocess1000AsSlotA(raw){
+  // If text contains 1000 preceded/followed by a drawer number → treat 1000 as slot A
+  // e.g. "درج 5 ألف" or "5 1000" or "١ ألف" → drawer 5 slot A
+  return raw.replace(/\b1000\b/g,'ألف').replace(/١٠٠٠/g,'ألف');
+}
 const ARABIC_NUMS_ORD=[
   ['واحد وخمسون','51'],['اثنان وخمسون','52'],['خمسون','50'],['تسعة وأربعون','49'],['ثمانية وأربعون','48'],
   ['سبعة وأربعون','47'],['ستة وأربعون','46'],['خمسة وأربعون','45'],['أربعة وأربعون','44'],['ثلاثة وأربعون','43'],
@@ -2643,76 +2693,26 @@ function normalizeVoiceYear(y){return y.length===2?'20'+y:y.padStart(4,'0');}
 function isValidVoiceMonth(mo){const n=parseInt(mo);return n>=1&&n<=12;}
 function lastDayOfMonth(y,mo){return String(new Date(parseInt(y),parseInt(mo),0).getDate()).padStart(2,'0');}
 function extractSlot(raw){
-  if(/(?:^|[\s،,])(1000|١٠٠٠|الف|ألف|آلف)(?=[\s،,]|$)/u.test(raw)) return 'A';
   const inlineEn=raw.match(/\b\d{1,2}\s*([A-Da-d])\b/);if(inlineEn)return inlineEn[1].toUpperCase();
   const standEn=raw.match(/(?:^|\s)([A-Da-d])(?:\s|$)/);if(standEn)return standEn[1].toUpperCase();
   for(const[ar,en]of Object.entries(AR_SLOT_RAW)){const re=new RegExp('(?:^|[\\s\\u060C\\u060D،,])'+ar+'(?=[\\s\\u060C،,]|$)');if(re.test(raw))return en;}
   for(const[word,en]of AR_SLOT_WORDS){const re=new RegExp('(?:^|\\s)'+word+'(?:\\s|$)','u');if(re.test(raw))return en;}
   return null;
 }
-function slotFromToken(token){
-  const t=(token||'').trim().toLowerCase();
-  if(!t) return null;
-  // A variants: أ آ a A
-  if(/^(أ|آ|a)$/.test(t)) return 'A';
-  // B variants: ب b + spoken: بي بيه باء
-  if(/^(ب|b|بي|بيه|باء)$/.test(t)) return 'B';
-  // C variants: ج c + spoken: جيم سي سيه
-  if(/^(ج|c|جيم|سي|سيه)$/.test(t)) return 'C';
-  // D variants: د d + spoken: دال دي ديه
-  if(/^(د|d|دال|دي|ديه)$/.test(t)) return 'D';
-  for(const[word,en]of AR_SLOT_WORDS){ if(t===word.toLowerCase()) return en; }
-  return null;
-}
-
-// Intercept "5000", "5 000", "١٠٠٠" patterns → treat as drawer# + slot A
-// Any 1-2 digit number followed by exactly 3 zeros = drawer number + slot A
-function preNormSlot1000(raw){
-  let s = raw;
-  // "5 ألف" / "5 الف" / "5 آلف" with space (spoken Arabic) → "5 A"
-  s = s.replace(/\b([1-9][0-9]?)\s+(ألف|الف|آلف)\b/gu, '$1 A');
-  // "5ألف" no space → "5 A"
-  s = s.replace(/\b([1-9][0-9]?)(ألف|الف|آلف)\b/gu, '$1 A');
-  // "5000" or "12000" → "5 A" / "12 A"
-  s = s.replace(/\b([1-9][0-9]?)000\b/g, '$1 A');
-  // "5 000" (number space three-zeros)
-  s = s.replace(/\b([1-9][0-9]?)\s+000\b/g, '$1 A');
-  // Standalone "1000" → "A"
-  s = s.replace(/\b1000\b/g, 'A');
-  // Arabic-Indic ١٠٠٠ → A
-  s = s.replace(/١٠٠٠/gu, 'A');
-  // Standalone ألف/الف/آلف not preceded by digit → slot A
-  s = s.replace(/(^|\s)(ألف|الف|آلف)(\s|$)/gu, '$1A$3');
-  return s;
-}
-
-function normalizeVoiceForOrder(raw){
-  // Strip noise words: درج/خانة/رقم etc. so they don't block token parsing
-  let s = raw.replace(/\b(درج|الدرج|خانة|الخانة|رقم|الرقم|في|من)\b/gu,' ');
-  s = preNormSlot1000(s);
-  return arabicNorm(s)
-    .replace(/([0-9٠-٩]{1,2})([A-Da-dأآبجد])/g,'$1 $2')
-    .replace(/([A-Da-dأآبجد])([0-9٠-٩]{1,2})/g,'$1 $2')
-    .replace(/[،,؛:]/g,' ')
-    .replace(/\s+/g,' ')
-    .trim();
-}
 function extractDrawer(rawOriginal){
-  const ordered=normalizeVoiceForOrder(rawOriginal);
-  const tokens=ordered.split(/\s+/).filter(Boolean);
-  for(let i=0;i<tokens.length;i++){
-    const dr=parseInt(tokens[i].replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-    if(!Number.isInteger(dr)||dr<1||dr>50) continue;
-    for(let j=i+1;j<Math.min(tokens.length,i+5);j++){
-      const sl=slotFromToken(tokens[j]);
-      if(sl) return {dr,sl};
-    }
-    return {dr,sl:null};
-  }
+  const slot=extractSlot(rawOriginal);
+  let stripped=rawOriginal;
+  stripped=stripped.replace(/\b(\d{1,2})\s*[A-Da-dأآبجد]\b/g,'$1');
+  const allSlotWords=Object.keys(AR_SLOT_RAW).concat(AR_SLOT_WORDS.map(x=>x[0]));
+  for(const w of allSlotWords) stripped=stripped.replace(new RegExp('(?:^|\\s)'+w+'(?=\\s|$)','g'),' ');
+  const t=arabicNorm(stripped);
+  const m=t.match(/\b([1-9]|[1-4]\d|50)\b/);
+  if(m&&slot)return{dr:parseInt(m[1]),sl:slot};
+  if(m)return{dr:parseInt(m[1]),sl:null};
   return null;
 }
 function extractDate(raw){
-  let t=arabicNorm(preNormSlot1000(raw));
+  let t=arabicNorm(raw);
   let m=t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if(m){let[,d,mo,y]=m;y=normalizeVoiceYear(y);return`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;}
   m=t.match(/(?:^|\s)(\d{1,2})[\/\-](\d{2,4})(?:\s|$)/);
@@ -2722,7 +2722,7 @@ function extractDate(raw){
   return null;
 }
 function extractDateEnglish(raw){
-  const t=preNormSlot1000(raw).toLowerCase();
+  const t=raw.toLowerCase();
   let m=t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if(m){let[,d,mo,y]=m;y=normalizeVoiceYear(y);return`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;}
   m=t.match(/(?:^|\s)(\d{1,2})[\/\-](\d{2,4})(?:\s|$)/);
@@ -2733,7 +2733,7 @@ function extractDateEnglish(raw){
 function matchDrugByName(raw){
   const q=raw.toLowerCase().trim();if(!q||q.length<3)return null;
   let best=null,bestScore=0;
-  for(const[key,item]of Object.entries(data)){if(isDbOnly(key))continue;let score=drugMatchScore(item,key,q);if(score>bestScore){bestScore=score;best={key,name:item.name.replace(/\n/g,' ')};}}
+  for(const[key,item]of Object.entries(data)){const name=item.name.toLowerCase().replace(/\n/g,' ');const words=q.split(/\s+/).filter(w=>w.length>=3);let score=0;for(const w of words){if(name.includes(w))score+=w.length;}if(score>bestScore){bestScore=score;best={key,name:item.name.replace(/\n/g,' ')};}}
   return bestScore>=3?best:null;
 }
 
@@ -2774,13 +2774,35 @@ function processVoiceFinal(text){
   clearTimeout(voiceProcessTimer);
   try{voiceRecognition&&voiceRecognition.stop();}catch(e){}
   setVoiceBtn('idle');setVoiceStatus('processing','⏳ جارٍ التحليل...');
+  text=preprocess1000AsSlotA(text);
   const loc=extractDrawer(text);
   const date=extractDate(text)||extractDateEnglish(text);
   let resolved=null;
-  if(loc&&loc.sl){const key=makeKey(loc.dr,loc.sl);if(data[key])resolved={key,name:data[key].name.replace(/\n/g,' ')};}
-  if(!resolved)resolved=matchDrugByName(text);
+  // 1) Try location first (drawer + slot)
+  if(loc&&loc.sl){
+    const key=makeKey(loc.dr,loc.sl);
+    if(data[key]) resolved={key,name:data[key].name.replace(/\n/g,' ')};
+  }
+  // 1b) If loc found drawer but no slot → try slot A first, then B/C/D
+  if(!resolved&&loc&&loc.dr){
+    for(const sl of ['A','B','C','D']){
+      const key=makeKey(loc.dr,sl);
+      if(data[key]){resolved={key,name:data[key].name.replace(/\n/g,' ')};break;}
+    }
+  }
+  // 2) Fallback: try matching by drug name (strip date/number noise first)
+  if(!resolved){
+    const cleanText=text
+      .replace(/\b\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\b/g,' ')  // remove dates
+      .replace(/\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/g,' ')
+      .replace(/\b(يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)\b/gi,' ')
+      .replace(/\bدرج\s*\d+\b/gi,' ')
+      .replace(/\b\d{1,2}\b/g,' ')  // remove short numbers (drawer/slot numbers)
+      .trim();
+    resolved=matchDrugByName(cleanText);
+  }
   if(!date)setVoiceStatus('error','❌ لم أتعرف على التاريخ');
-  else if(!resolved)setVoiceStatus('error','❌ لم أتعرف على الدرج');
+  else if(!resolved)setVoiceStatus('error','❌ لم أتعرف على اسم العلاج أو الدرج');
   else setVoiceStatus('ok','✅ تم التعرف — أكّد البيانات');
   showVoiceConfirm(text,resolved,date,loc);
 }
@@ -2790,8 +2812,9 @@ function showVoiceConfirm(raw,resolved,date,loc){
   const drawerVal=loc?loc.dr:'';
   const dr=resolvedKey.match(/\d+/)?.[0]||drawerVal||'';
   const sl=resolvedKey.match(/[A-Z]/)?.[0]||(loc&&loc.sl)||'A';
+  const locDisplay=dr?(loc&&loc.sl?`درج ${dr} — ${sl}`:`درج ${dr} — ${sl} (افتراضي)`):resolvedKey?`درج ${dr} — ${sl}`:'—';
   const resolvedNameDisplay=resolved?`<strong style="color:var(--accent)">${resolved.name}</strong>`:'<span style="color:var(--warn)">— لم يُعثر</span>';
-  const existing=resolved?(data[resolved.key].expiries.map(e=>expTagHtml(e,data[resolved.key])).join(' ')||'<span style="color:var(--text3)">لا يوجد</span>'):'—';
+  const existing=resolved?(data[resolved.key].expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' ')||'<span style="color:var(--text3)">لا يوجد</span>'):'—';
   box.innerHTML=`<div class="voice-confirm-card" style="margin-top:10px">
     <div style="font-size:11px;color:var(--text3);font-style:italic">📝 ${raw}</div>
     <div class="voice-confirm-row" style="flex-direction:column;align-items:flex-start;gap:5px;width:100%">
@@ -2803,7 +2826,7 @@ function showVoiceConfirm(raw,resolved,date,loc){
     </div>
     <div class="voice-confirm-row">
       <span class="voice-lbl">الموقع</span>
-      <span id="vcLocDisplay" style="font-family:var(--mono);font-size:13px;color:var(--accent2);font-weight:700;background:rgba(0,153,255,.1);padding:2px 9px;border-radius:5px">${dr?'درج '+dr+' — '+sl:'—'}</span>
+      <span id="vcLocDisplay" style="font-family:var(--mono);font-size:13px;color:var(--accent2);font-weight:700;background:rgba(0,153,255,.1);padding:2px 9px;border-radius:5px">${locDisplay}</span>
     </div>
     <input type="hidden" id="vcDr" value="${dr}">
     <input type="hidden" id="vcSl" value="${sl}">
@@ -2819,23 +2842,60 @@ function showVoiceConfirm(raw,resolved,date,loc){
       <span class="voice-lbl">📅 التاريخ الجديد</span>
       <input type="date" id="vcDate" value="${date||''}" style="background:var(--surface2);border:1px solid var(--accent);border-radius:6px;padding:5px 9px;color:var(--text);font-family:var(--mono);font-size:13px">
     </div>
+    <div class="voice-confirm-row">
+      <span class="voice-lbl">الوضع</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+        <input type="checkbox" id="vcReplace" style="width:14px;height:14px"> استبدال التواريخ القديمة
+      </label>
+    </div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="confirmVoiceSave()">✅ تأكيد وحفظ</button>
       <button class="btn btn-secondary" onclick="dismissVoiceConfirm()">⏭️ تخطّ</button>
     </div>
   </div>`;
   box.style.display='block';
-  setTimeout(()=>vcFilterDrugs(resolved?resolved.name.replace(/\n/g,' '):''),30);
+  // If already resolved, hide dropdown; otherwise show search results
+  setTimeout(()=>{
+    if(resolved){
+      const dd=document.getElementById('vcDropdown');
+      if(dd){dd.innerHTML='';dd.style.display='none';}
+    } else {
+      vcFilterDrugs('');
+    }
+  },30);
 }
 function vcShowDropdown(){const inp=document.getElementById('vcDrugSearch');if(inp)vcFilterDrugs(inp.value||'');}
 function vcFilterDrugs(q){
   const dd=document.getElementById('vcDropdown'); if(!dd)return;
   const sq=(q||'').trim().toLowerCase();
   let results;
-  if(!sq){ results=Object.entries(data).filter(([k])=>!isDbOnly(k)).slice(0,50).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')})); }
-  else { results=Object.entries(data).filter(([k,v])=>!isDbOnly(k)&&drugMatchesQuery(v,k,sq)).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')})).slice(0,50); }
+  if(!sq){
+    results=Object.entries(data).slice(0,50).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')}));
+  } else {
+    // Use synonym expansion for smarter matching
+    const queries=expandSearchQuery(sq);
+    results=Object.entries(data)
+      .filter(([k,v])=>{
+        const nm=v.name.toLowerCase().replace(/\n/g,' ');
+        return queries.some(qw=>nm.includes(qw))||k.toLowerCase().includes(sq)||k.replace(/[^\d]/g,'').includes(sq);
+      })
+      .map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')}))
+      .slice(0,50);
+  }
+  // If exactly one result and its name matches the input exactly → hide dropdown (already resolved)
+  if(results.length===1 && results[0].name.toLowerCase()===sq){
+    dd.innerHTML=''; dd.style.display='none'; return;
+  }
+  dd.style.display='';
   if(!results.length){dd.innerHTML='<div style="padding:8px 12px;font-size:11px;color:var(--text3)">لا توجد نتائج</div>';return;}
-  dd.innerHTML=results.map(r=>{const p=parseKey(r.key);const hi=sq?r.name.replace(new RegExp(sq.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark style="background:rgba(0,212,170,.3);color:var(--accent);border-radius:2px;padding:0 1px">${m}</mark>`):r.name;return`<div onclick="vcSelectDrug('${r.key}')" style="padding:7px 11px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'"><span style="font-family:var(--mono);font-size:10px;color:var(--accent2);min-width:48px;flex-shrink:0;font-weight:700">د${p.dr}/${p.sl}</span><span style="flex:1;line-height:1.35">${hi}</span></div>`;}).join('');
+  dd.innerHTML=results.map(r=>{
+    const p=parseKey(r.key);
+    const hi=sq?r.name.replace(new RegExp(sq.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark style="background:rgba(0,212,170,.3);color:var(--accent);border-radius:2px;padding:0 1px">${m}</mark>`):r.name;
+    return`<div onclick="vcSelectDrug('${r.key}')" style="padding:7px 11px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--accent2);min-width:48px;flex-shrink:0;font-weight:700">د${p.dr}/${p.sl}</span>
+      <span style="flex:1;line-height:1.35">${hi}</span>
+    </div>`;
+  }).join('');
 }
 function vcSelectDrug(key){
   const item=data[key];if(!item)return;
@@ -2845,20 +2905,20 @@ function vcSelectDrug(key){
   document.getElementById('vcSl').value=p.sl;
   document.getElementById('vcLocDisplay').textContent=`درج ${p.dr} — ${p.sl}`;
   document.getElementById('vcDrugName').innerHTML=`<strong style="color:var(--accent)">${item.name.replace(/\n/g,' ')}</strong>`;
-  document.getElementById('vcExisting').innerHTML=item.expiries.length?item.expiries.map(e=>expTagHtml(e,item)).join(' '):'<span style="color:var(--text3)">لا يوجد</span>';
+  document.getElementById('vcExisting').innerHTML=item.expiries.length?item.expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' '):'<span style="color:var(--text3)">لا يوجد</span>';
 }
 function confirmVoiceSave(){
   const dr=document.getElementById('vcDr').value;
   const sl=document.getElementById('vcSl').value;
   const dateVal=document.getElementById('vcDate').value;
+  const replace=document.getElementById('vcReplace').checked;
   const key=makeKey(dr,sl);
   if(!data[key])return setVoiceStatus('error','❌ الدرج غير موجود');
   if(!dateVal)return setVoiceStatus('error','⚠️ أدخل التاريخ');
-  // Always replace old dates with new one
-  data[key].expiries=[dateVal];
-  data[key].expiryReplaced=true;
+  if(replace)data[key].expiries=[dateVal];
+  else if(!data[key].expiries.includes(dateVal))data[key].expiries.push(dateVal);
   saveData();refreshAll();
-  voiceSessionLog.push({key,name:data[key].name.replace(/\n/g,' '),date:dateVal,replace:true,ts:new Date().toLocaleTimeString('ar-SA')});
+  voiceSessionLog.push({key,name:data[key].name.replace(/\n/g,' '),date:dateVal,replace,ts:new Date().toLocaleTimeString('ar-SA')});
   saveSessionLog();renderVoiceSessionList();
   document.getElementById('voiceConfirmBox').style.display='none';
   document.getElementById('voiceInterim').textContent='';
