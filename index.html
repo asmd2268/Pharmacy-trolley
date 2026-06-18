@@ -178,8 +178,8 @@ main{padding:12px 16px;max-width:1680px;margin:0 auto}
 .exp-tag.warn   {background:rgba(240,165,0,.14);color:var(--warn);border:1px solid rgba(240,165,0,.3)}
 .exp-tag.danger {background:rgba(255,71,87,.14);color:var(--danger);border:1px solid rgba(255,71,87,.3)}
 .exp-tag.expired{background:rgba(255,71,87,.2);color:var(--danger);border:1px solid rgba(255,71,87,.4);text-decoration:line-through}
-.exp-tag.replaced-date{background:rgba(0,153,255,.14);color:var(--accent2);border:1px solid rgba(0,153,255,.36);text-decoration:none}
-.exp-tag.replaced-date::after{content:' مستبدل';font-family:var(--font);font-size:8px}
+.exp-tag.replaced-date{background:rgba(0,212,170,.16);color:var(--accent);border:1px solid rgba(0,212,170,.45);text-decoration:none;font-weight:700}
+.exp-tag.replaced-date::after{content:' ✔ مستبدل';font-family:var(--font);font-size:8px;color:var(--accent);opacity:.85}
 .add-exp-btn{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--text3);background:none;border:1px dashed var(--border);border-radius:3px;padding:2px 7px;cursor:pointer;font-family:var(--font);margin-top:4px;transition:all .2s;}
 .add-exp-btn:hover{border-color:var(--accent);color:var(--accent)}
 
@@ -595,10 +595,13 @@ code{font-family:var(--mono)}
         <button class="btn btn-secondary btn-sm" onclick="lockVoice()">🔒 قفل</button>
       </div>
       <div class="voice-rule">
-        <strong>قاعدة التسجيل:</strong>
-        قلها بالترتيب فقط: <code>رقم الدرج</code> ثم <code>حرف الخانة</code> ثم <code>تاريخ الانتهاء</code>.
-        مثال: <code>5 أ سبتمبر 2026</code> أو <code>5 A 09/2026</code>.
-        إذا ذكرت الشهر والسنة فقط سيتم اعتماد آخر يوم في الشهر.
+        <strong>📋 قاعدة الإدخال الصوتي لتواريخ الانتهاء:</strong><br>
+        قلها بالترتيب فقط بدون كلمة "درج" أو "خانة": <code>رقم الدرج</code> ← <code>حرف الخانة</code> ← <code>تاريخ الانتهاء</code>.<br>
+        • مثال: <code>5 أ سبتمبر 2026</code> أو <code>12 B 09/2026</code> أو <code>3 د 15 مارس 2027</code>.<br>
+        • إذا ذكرت <strong>الشهر والسنة فقط</strong> (بدون يوم) → سيُعتمد <strong>آخر يوم في الشهر</strong> تلقائياً.<br>
+        • حرف الخانة يُقبل بالعربي (أ ب ج د) أو الإنجليزي (A B C D).<br>
+        • كلمة <strong>"ألف"</strong> أو <strong>"1000"</strong> في التسجيل = <strong>خانة A</strong>.
+        <br><br><strong>التاريخ الجديد يستبدل القديم تلقائياً.</strong>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" id="voiceMicBtn" onclick="startVoice()">🎙️ ابدأ التسجيل</button>
@@ -1810,7 +1813,7 @@ function renderDrawers(){
     const mapDrawers = sortedDrawers.filter(dr=>dr>=1&&dr<=50);
     for(const dr of mapDrawers){
       const rowKeys=Object.keys(data).filter(k=>{const p=parseKey(k);return p&&p.dr===dr&&!isDbOnly(k);});
-      if(q&&!rowKeys.some(k=>data[k].name.toLowerCase().includes(q))) continue;
+      if(q&&!rowKeys.some(k=>drugMatchesQuery(data[k],k,q))) continue;
       map.insertAdjacentHTML('beforeend',`<div class="drawer-map-drawer">${dr}</div>`);
       for(const sl of ORIG_SLOTS){
         const key=makeKey(dr,sl), item=data[key];
@@ -1818,7 +1821,7 @@ function renderDrawers(){
           map.insertAdjacentHTML('beforeend','<div class="drawer-map-cell map-empty">—</div>');
           continue;
         }
-        const dim=q&&!item.name.toLowerCase().includes(q);
+        const dim=q&&!drugMatchesQuery(item,key,q);
         const exp=item.expiries.length?[...item.expiries].sort()[0]:'';
         const cell=document.createElement('div');
         cell.className='drawer-map-cell'+(item?'':' map-empty');
@@ -1856,7 +1859,7 @@ function renderDrawers(){
     for(const key of sortedKeys){
       if(isDbOnly(key)) continue;
       const item=data[key];
-      if(q&&!item.name.toLowerCase().includes(q)) continue;
+      if(q&&!drugMatchesQuery(item,key,q)) continue;
       const p=parseKey(key);
       const exSt=slotExpSt(key);
       const isCustom=customKeys.has(key);
@@ -1901,7 +1904,7 @@ function renderDrawers(){
       .filter(k=>{ const p=parseKey(k); return p&&p.dr===dr&&!isDbOnly(k); })
       .sort((a,b)=>{ const pa=parseKey(a), pb=parseKey(b); return pa.sl.localeCompare(pb.sl); });
 
-    const anyMatch=!q||drawerKeys.some(k=>data[k].name.toLowerCase().includes(q));
+    const anyMatch=!q||drawerKeys.some(k=>drugMatchesQuery(data[k],k,q));
     if(!anyMatch) continue;
 
     const card=document.createElement('div'); card.className='drawer-card';
@@ -1932,7 +1935,7 @@ function renderDrawers(){
     for(const key of drawerKeys){
       const item=data[key];
       const p=parseKey(key);
-      const dim=q&&!item.name.toLowerCase().includes(q);
+      const dim=q&&!drugMatchesQuery(item,key,q);
       const exSt=slotExpSt(key);
       const isCustom=customKeys.has(key);
 
@@ -2155,7 +2158,7 @@ function renderTable(){
   for(const key of sortedKeys){
     if(isDbOnly(key)) continue;
     const item=data[key];
-    if(q&&!item.name.toLowerCase().includes(q)&&!key.toLowerCase().includes(q)) continue;
+    if(q&&!drugMatchesQuery(item,key,q)&&!key.toLowerCase().includes(q)) continue;
     const isCustom=customKeys.has(key);
     let tm=true;
     if(tf==='hazard') tm=item.types.includes('hazard');
@@ -2786,12 +2789,6 @@ function showVoiceConfirm(raw,resolved,date,loc){
       <span class="voice-lbl">📅 التاريخ الجديد</span>
       <input type="date" id="vcDate" value="${date||''}" style="background:var(--surface2);border:1px solid var(--accent);border-radius:6px;padding:5px 9px;color:var(--text);font-family:var(--mono);font-size:13px">
     </div>
-    <div class="voice-confirm-row">
-      <span class="voice-lbl">الوضع</span>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
-        <input type="checkbox" id="vcReplace" style="width:14px;height:14px"> استبدال التواريخ القديمة
-      </label>
-    </div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="confirmVoiceSave()">✅ تأكيد وحفظ</button>
       <button class="btn btn-secondary" onclick="dismissVoiceConfirm()">⏭️ تخطّ</button>
@@ -2824,19 +2821,14 @@ function confirmVoiceSave(){
   const dr=document.getElementById('vcDr').value;
   const sl=document.getElementById('vcSl').value;
   const dateVal=document.getElementById('vcDate').value;
-  const replace=document.getElementById('vcReplace').checked;
   const key=makeKey(dr,sl);
   if(!data[key])return setVoiceStatus('error','❌ الدرج غير موجود');
   if(!dateVal)return setVoiceStatus('error','⚠️ أدخل التاريخ');
-  if(replace){
-    data[key].expiries=[dateVal];
-    data[key].expiryReplaced=true;
-  } else {
-    if(!data[key].expiries.includes(dateVal))data[key].expiries.push(dateVal);
-    data[key].expiryReplaced=false;
-  }
+  // Always replace old dates with new one
+  data[key].expiries=[dateVal];
+  data[key].expiryReplaced=true;
   saveData();refreshAll();
-  voiceSessionLog.push({key,name:data[key].name.replace(/\n/g,' '),date:dateVal,replace,ts:new Date().toLocaleTimeString('ar-SA')});
+  voiceSessionLog.push({key,name:data[key].name.replace(/\n/g,' '),date:dateVal,replace:true,ts:new Date().toLocaleTimeString('ar-SA')});
   saveSessionLog();renderVoiceSessionList();
   document.getElementById('voiceConfirmBox').style.display='none';
   document.getElementById('voiceInterim').textContent='';
