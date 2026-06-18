@@ -106,6 +106,9 @@ main{padding:12px 16px;max-width:1680px;margin:0 auto}
 .drawer-row.has-warn {background:rgba(240,165,0,.04)}
 .drawer-row.replaced-row{background:var(--replaced-bg);border-right:3px solid var(--replaced-border)}
 .drawer-row.replaced-row .row-drug{color:var(--replaced)}
+.drawer-row.oos-row{background:rgba(148,163,184,.14);border-right:3px solid rgba(148,163,184,.55)}
+.drawer-row.oos-row .row-drug{color:#94a3b8;font-style:italic}
+.drawer-row.oos-row .row-label{background:rgba(148,163,184,.22);color:#94a3b8}
 .drawer-row.type-hazard    {border-right:2px solid var(--hazard)}
 .drawer-row.type-lasa      {border-right:2px solid var(--lasa)}
 .drawer-row.type-high-alert{border-right:2px solid var(--high)}
@@ -179,7 +182,8 @@ main{padding:12px 16px;max-width:1680px;margin:0 auto}
 .exp-tag.ok     {background:rgba(35,209,96,.12);color:var(--success);border:1px solid rgba(35,209,96,.25)}
 .exp-tag.warn   {background:rgba(240,165,0,.14);color:var(--warn);border:1px solid rgba(240,165,0,.3)}
 .exp-tag.danger {background:rgba(255,71,87,.14);color:var(--danger);border:1px solid rgba(255,71,87,.3)}
-.exp-tag.expired{background:rgba(255,71,87,.2);color:var(--danger);border:1px solid rgba(255,71,87,.4);text-decoration:line-through}
+.exp-tag.expired{background:rgba(255,71,87,.1);color:rgba(255,71,87,.55);border:1px solid rgba(255,71,87,.2);opacity:.7}
+.exp-tag.new-date{background:rgba(56,189,248,.13);color:#38bdf8;border:1px solid rgba(56,189,248,.35);font-weight:700}
 .add-exp-btn{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--text3);background:none;border:1px dashed var(--border);border-radius:3px;padding:2px 7px;cursor:pointer;font-family:var(--font);margin-top:4px;transition:all .2s;}
 .add-exp-btn:hover{border-color:var(--accent);color:var(--accent)}
 
@@ -292,6 +296,9 @@ tr:hover td{background:var(--surface2)}
 
 mark{background:rgba(0,212,170,.25);color:var(--accent);border-radius:2px;padding:0 2px}
 body.light .oos-badge{background:rgba(88,96,105,.35);color:#24292f;border-color:rgba(88,96,105,.5)}
+body.light .drawer-row.oos-row{background:rgba(100,116,139,.12);border-right-color:rgba(100,116,139,.5)}
+body.light .drawer-row.oos-row .row-drug{color:#475569}
+body.light .drawer-row.oos-row .row-label{background:rgba(100,116,139,.18);color:#475569}
 .empty{text-align:center;padding:50px 20px;color:var(--text3)}
 .empty .icon{font-size:36px;margin-bottom:10px}
 
@@ -599,6 +606,96 @@ code{font-family:var(--mono)}
       <div id="voiceInterim" style="min-height:36px;font-size:14px;color:var(--text2);font-style:italic;padding:8px 12px;background:var(--surface2);border-radius:6px;width:100%;border:1px solid var(--border)"></div>
       <div id="voiceConfirmBox" style="display:none;width:100%"></div>
     </div>
+
+    <!-- ══ VOICE GUIDE ══ -->
+    <details style="margin-top:2px" open>
+      <summary style="cursor:pointer;font-weight:600;font-size:13px;color:var(--accent2);padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);list-style:none;display:flex;align-items:center;gap:8px;user-select:none">
+        <span>📖</span> <span>طريقة استخدام التسجيل الصوتي</span>
+        <span style="margin-right:auto;font-size:10px;color:var(--text3);font-weight:400">اضغط للطي/التوسيع</span>
+      </summary>
+      <div style="background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:14px 16px;display:flex;flex-direction:column;gap:14px">
+
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">
+          قل <strong style="color:var(--text)">رقم الدرج</strong> ثم <strong style="color:var(--text)">الخانة</strong> ثم <strong style="color:var(--text)">التاريخ</strong> في جملة واحدة.
+        </div>
+
+        <!-- صيغة الدرج -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">📦 رقم الدرج</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">
+            <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+              <div style="color:var(--text3);font-size:10px;margin-bottom:3px">مثال</div>
+              <div style="color:var(--text);font-family:var(--mono)">"درج خمسة"</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:6px;padding:8px 10px">
+              <div style="color:var(--text3);font-size:10px;margin-bottom:3px">مثال</div>
+              <div style="color:var(--text);font-family:var(--mono)">"درج اثنين وعشرين"</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- صيغة الخانة -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">🔤 الخانة (A / B / C / D)</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;font-size:11px;text-align:center">
+            <div style="background:var(--surface2);border-radius:6px;padding:8px 4px">
+              <div style="font-size:15px;font-weight:800;color:var(--accent)">A</div>
+              <div style="color:var(--text3);font-size:9px;margin-top:3px">أ / ألف / 1000</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:6px;padding:8px 4px">
+              <div style="font-size:15px;font-weight:800;color:var(--accent)">B</div>
+              <div style="color:var(--text3);font-size:9px;margin-top:3px">ب / باء / بي</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:6px;padding:8px 4px">
+              <div style="font-size:15px;font-weight:800;color:var(--accent)">C</div>
+              <div style="color:var(--text3);font-size:9px;margin-top:3px">ج / جيم / سي</div>
+            </div>
+            <div style="background:var(--surface2);border-radius:6px;padding:8px 4px">
+              <div style="font-size:15px;font-weight:800;color:var(--accent)">D</div>
+              <div style="color:var(--text3);font-size:9px;margin-top:3px">د / دال / دي</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- صيغة التاريخ -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">📅 التاريخ (انتهاء الصلاحية)</div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-size:11px">
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:6px;padding:7px 10px">
+              <span style="color:var(--text3);min-width:70px">شهر / سنة</span>
+              <span style="font-family:var(--mono);color:var(--text)">"سبعة وعشرين"  ←  07/27</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:6px;padding:7px 10px">
+              <span style="color:var(--text3);min-width:70px">يناير 2026</span>
+              <span style="font-family:var(--mono);color:var(--text)">"يناير ستة وعشرين"</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:6px;padding:7px 10px">
+              <span style="color:var(--text3);min-width:70px">تاريخ كامل</span>
+              <span style="font-family:var(--mono);color:var(--text)">"خمسة يناير 2027"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- أمثلة كاملة -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px">✅ أمثلة جمل كاملة</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.2);border-radius:6px;padding:8px 11px;font-size:12px;font-family:var(--mono);color:var(--text)">"درج خمسة ألف ثمانية وعشرين"</div>
+            <div style="color:var(--text3);font-size:10px;padding-right:4px;margin-bottom:4px">← درج 5، خانة A، انتهاء 28 (الشهر الثامن أو السنة 28)</div>
+            <div style="background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.2);border-radius:6px;padding:8px 11px;font-size:12px;font-family:var(--mono);color:var(--text)">"درج اثنا عشر باء مارس ستة وعشرين"</div>
+            <div style="color:var(--text3);font-size:10px;padding-right:4px;margin-bottom:4px">← درج 12، خانة B، انتهاء مارس 2026</div>
+            <div style="background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.2);border-radius:6px;padding:8px 11px;font-size:12px;font-family:var(--mono);color:var(--text)">"درج ثلاثة وأربعين دال سبعة سبعة وعشرين"</div>
+            <div style="color:var(--text3);font-size:10px;padding-right:4px">← درج 43، خانة D، انتهاء 07/2027</div>
+          </div>
+        </div>
+
+        <!-- تنبيه -->
+        <div style="background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.25);border-radius:6px;padding:9px 12px;font-size:11px;color:var(--text2);line-height:1.6">
+          ⚠️ <strong>ملاحظات:</strong> تأكد دائماً من البيانات قبل الحفظ. يمكنك تعديل الدرج أو الخانة أو التاريخ يدوياً من شاشة التأكيد. إذا لم يتعرف على الخانة تُضاف للخانة <strong>A</strong> افتراضياً.
+        </div>
+
+      </div>
+    </details>
     <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:10px;margin-top:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
         <div style="font-weight:600;color:var(--text);font-size:13px">📋 قائمة التسجيلات في هذه الجلسة</div>
@@ -1412,6 +1509,8 @@ function saveExpiries(){
   data[editingKey].expiries = Array.from(inputs).map(i=>i.value).filter(Boolean);
   data[editingKey].types    = types;
   data[editingKey].oos      = document.getElementById('flagOOS').checked;
+  // OOS = no expiry date needed → clear expiries automatically
+  if(data[editingKey].oos) data[editingKey].expiries = [];
   data[editingKey].shelf    = document.getElementById('flagShelf').checked;
   data[editingKey].notes    = document.getElementById('drugNotes').value;
 
@@ -1657,8 +1756,8 @@ function renderDB(){
     const parsed=parseKey(key);
     const nameClean=formatDrugName(item.name);
     const exHtml=item.expiries.length
-      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}" style="margin-left:3px">${formatDate(e)}<span style="font-size:8px;margin-right:2px">(${daysLabel(d)})</span></span>`;}).join('')
-      :`<span style="color:var(--noexp);font-size:11px;font-weight:600">— بدون تاريخ</span>`;
+      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);const cls=replaced?'new-date':(s==='critical'?'danger':s);return`<span class="exp-tag ${cls}" style="margin-left:3px">${formatDate(e)}<span style="font-size:8px;margin-right:2px">(${daysLabel(d)})</span></span>`;}).join('')
+      :item.oos?`<span class="oos-badge">🚫 OOS</span>`:`<span style="color:var(--noexp);font-size:11px;font-weight:600">— بدون تاريخ</span>`;
     let tHtml='';
     if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️ Hazard</span> `;
     if(item.types.includes('lasa'))       tHtml+=`<span class="type-badge lasa">🔵 LASA</span> `;
@@ -1801,8 +1900,8 @@ function renderDrawers(){
       const exSt=slotExpSt(key);
       const isCustom=customKeys.has(key);
       const expsHtml=item.expiries.length
-        ?item.expiries.map(e=>{const s=expStatus(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)}</span>`;}).join(' ')
-        :'<span style="color:var(--text3)">—</span>';
+        ?item.expiries.map(e=>{const s=expStatus(e);const cls=isReplaced(key)?'new-date':(s==='critical'?'danger':s);return`<span class="exp-tag ${cls}">${formatDate(e)}</span>`;}).join(' ')
+        :item.oos?`<span class="oos-badge">🚫 OOS</span>`:'<span style="color:var(--text3)">—</span>';
       let tHtml='';
       if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️</span>`;
       if(item.types.includes('lasa'))       tHtml+=`<span class="type-badge lasa">🔵</span>`;
@@ -1878,10 +1977,11 @@ function renderDrawers(){
       let rowCls='drawer-row';
       if(dim){ rowCls+=' dimmed'; }
       else{
-        if(isReplaced(key))      rowCls+=' replaced-row';
+        if(item.oos)             rowCls+=' oos-row';
+        else if(isReplaced(key)) rowCls+=' replaced-row';
         else if(!item.expiries.length) rowCls+=' no-expiry';
-        else if(exSt==='danger')  rowCls+=' has-alert';
-        else if(exSt==='warn')    rowCls+=' has-warn';
+        else if(exSt==='danger') rowCls+=' has-alert';
+        else if(exSt==='warn')   rowCls+=' has-warn';
         if(isCustom) rowCls+=' custom-drug';
         else if(item.types.includes('high-alert')) rowCls+=' type-high-alert';
         else if(item.types.includes('lasa'))  rowCls+=' type-lasa';
@@ -1896,11 +1996,12 @@ function renderDrawers(){
       if(item.types.includes('lasa'))       badgeHtml+=`<span class="type-badge lasa" style="padding:0 3px">🔵</span>`;
       if(item.types.includes('high-alert')) badgeHtml+=`<span class="type-badge high-alert" style="padding:0 3px">🔴</span>`;
       if(item.shelf)                        badgeHtml+=`<span class="shelf-badge" style="padding:0 3px">📦</span>`;
-      if(item.oos)                          badgeHtml+=`<span class="oos-badge" style="padding:0 3px">OOS</span>`;
       if(isCustom)                          badgeHtml+=`<span class="custom-badge" style="padding:0 3px">✨</span>`;
 
       let expHtml='';
-      if(item.expiries.length){
+      if(item.oos){
+        expHtml=`<span class="oos-badge" style="font-size:9px;padding:1px 5px">🚫 OOS</span>`;
+      } else if(item.expiries.length){
         const earliest=[...item.expiries].sort()[0];
         const s=expStatus(earliest);
         expHtml=`<span class="exp-tag ${s==='critical'?'danger':s}" style="font-size:8px;padding:0 4px">${formatDate(earliest)}</span>`;
@@ -2177,8 +2278,8 @@ function doSearch(){
     if(isDbOnly(key)) badges+=`<span class="db-only-badge">غير موزّع</span>`;
     if(isReplaced(key)) badges+=`<span class="replaced-badge">🔄 مستبدل</span>`;
     const expsHtml=item.expiries.length
-      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)} (${daysLabel(d)})</span>`;}).join('')
-      :'<span style="color:var(--text3);font-size:10px">لا يوجد تاريخ</span>';
+      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);const isRepl=isReplaced(key);const cls=isRepl?'new-date':(s==='critical'?'danger':s);return`<span class="exp-tag ${cls}">${formatDate(e)} (${daysLabel(d)})</span>`;}).join('')
+      :item.oos?`<span class="oos-badge">🚫 OOS</span>`:`<span style="color:var(--text3);font-size:10px">لا يوجد تاريخ</span>`;
     const div=document.createElement('div'); div.className='search-result';
     div.innerHTML=`
       <div class="loc-badge">${isDbOnly(key)?'قاعدة<br>فقط':`درج ${p.dr}<br>${p.sl}`}</div>
