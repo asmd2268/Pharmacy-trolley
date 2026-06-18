@@ -600,7 +600,7 @@ code{font-family:var(--mono)}
         • مثال: <code>5 أ سبتمبر 2026</code> أو <code>12 B 09/2026</code> أو <code>3 د 15 مارس 2027</code>.<br>
         • إذا ذكرت <strong>الشهر والسنة فقط</strong> (بدون يوم) → سيُعتمد <strong>آخر يوم في الشهر</strong> تلقائياً.<br>
         • حرف الخانة يُقبل بالعربي (أ ب ج د) أو الإنجليزي (A B C D).<br>
-        • كلمة <strong>"ألف"</strong> أو <strong>"1000"</strong> في التسجيل = <strong>خانة A</strong>.
+        • ⚠️ <strong>لا تقل "ألف" أو "1000"</strong> — النظام يقرأها كرقم وليس كخانة. قل <strong>"أ"</strong> أو <strong>"A"</strong> فقط للخانة الأولى.
         <br><br><strong>التاريخ الجديد يستبدل القديم تلقائياً.</strong>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -2664,14 +2664,20 @@ function slotFromToken(token){
 // Any 1-2 digit number followed by exactly 3 zeros = drawer number + slot A
 function preNormSlot1000(raw){
   let s = raw;
+  // "5 ألف" / "5 الف" / "5 آلف" with space (spoken Arabic) → "5 A"
+  s = s.replace(/\b([1-9][0-9]?)\s+(ألف|الف|آلف)\b/gu, '$1 A');
+  // "5ألف" no space → "5 A"
+  s = s.replace(/\b([1-9][0-9]?)(ألف|الف|آلف)\b/gu, '$1 A');
   // "5000" or "12000" → "5 A" / "12 A"
   s = s.replace(/\b([1-9][0-9]?)000\b/g, '$1 A');
-  // "5 000" (with space)
+  // "5 000" (number space three-zeros)
   s = s.replace(/\b([1-9][0-9]?)\s+000\b/g, '$1 A');
   // Standalone "1000" → "A"
   s = s.replace(/\b1000\b/g, 'A');
   // Arabic-Indic ١٠٠٠ → A
   s = s.replace(/١٠٠٠/gu, 'A');
+  // Standalone ألف/الف/آلف not preceded by digit → slot A
+  s = s.replace(/(^|\s)(ألف|الف|آلف)(\s|$)/gu, '$1A$3');
   return s;
 }
 
