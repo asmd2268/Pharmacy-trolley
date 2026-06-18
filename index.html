@@ -178,6 +178,8 @@ main{padding:12px 16px;max-width:1680px;margin:0 auto}
 .exp-tag.warn   {background:rgba(240,165,0,.14);color:var(--warn);border:1px solid rgba(240,165,0,.3)}
 .exp-tag.danger {background:rgba(255,71,87,.14);color:var(--danger);border:1px solid rgba(255,71,87,.3)}
 .exp-tag.expired{background:rgba(255,71,87,.2);color:var(--danger);border:1px solid rgba(255,71,87,.4);text-decoration:line-through}
+.exp-tag.replaced-date{background:rgba(0,153,255,.14);color:var(--accent2);border:1px solid rgba(0,153,255,.36);text-decoration:none}
+.exp-tag.replaced-date::after{content:' مستبدل';font-family:var(--font);font-size:8px}
 .add-exp-btn{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--text3);background:none;border:1px dashed var(--border);border-radius:3px;padding:2px 7px;cursor:pointer;font-family:var(--font);margin-top:4px;transition:all .2s;}
 .add-exp-btn:hover{border-color:var(--accent);color:var(--accent)}
 
@@ -304,6 +306,9 @@ body.light .oos-badge{background:rgba(88,96,105,.35);color:#24292f;border-color:
 .voice-status-ok        {color:var(--success);background:rgba(35,209,96,.1)}
 .voice-status-error     {color:var(--danger);background:rgba(255,71,87,.1)}
 @keyframes pulse{from{opacity:.7}to{opacity:1}}
+.voice-rule{width:100%;background:rgba(0,153,255,.08);border:1px solid rgba(0,153,255,.25);border-radius:8px;padding:9px 12px;color:var(--text2);font-size:12px;line-height:1.7}
+.voice-rule strong{color:var(--accent2)}
+.voice-rule code{color:var(--accent);background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.18);border-radius:4px;padding:1px 5px}
 .voice-confirm-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:10px}
 .voice-confirm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .voice-lbl{font-size:11px;color:var(--text3);min-width:120px;text-align:left}
@@ -588,6 +593,12 @@ code{font-family:var(--mono)}
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
         <div style="font-weight:600;color:var(--accent);font-size:14px">🎙️ الإدخال الصوتي لتواريخ الانتهاء</div>
         <button class="btn btn-secondary btn-sm" onclick="lockVoice()">🔒 قفل</button>
+      </div>
+      <div class="voice-rule">
+        <strong>قاعدة التسجيل:</strong>
+        قلها بالترتيب فقط: <code>رقم الدرج</code> ثم <code>حرف الخانة</code> ثم <code>تاريخ الانتهاء</code>.
+        مثال: <code>5 أ سبتمبر 2026</code> أو <code>5 A 09/2026</code>.
+        إذا ذكرت الشهر والسنة فقط سيتم اعتماد آخر يوم في الشهر.
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" id="voiceMicBtn" onclick="startVoice()">🎙️ ابدأ التسجيل</button>
@@ -945,7 +956,7 @@ function normalizeDrugDosageLine(line){
   let s = line.trim();
   if(!s) return s;
   s = s.replace(/\b(MG|MCG|ML|G|IU|I\.U\.|MICROGRAMS?)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, u, n) => `${n} ${u.replace(/\./g,'').toUpperCase()}`);
-  s = s.replace(/\b(mg|mcg|ml|g|iu)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, _u, n) => `${n} MG`);
+  s = s.replace(/\b(mg|mcg|ml|g|iu)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi, (_, u, n) => `${n} ${u.toUpperCase()}`);
   s = s.replace(/(\d+(?:\.\d+)?)(MG|MCG|ML|G|IU)(?=$|\s|\+|\)|,|\/)/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
   s = s.replace(/(\d+(?:\.\d+)?)(mg|mcg|ml|g|iu)(?=$|\s|\+|\)|,|\/)/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
   s = s.replace(/\bI\.?\s*U\.?\s+(\d+(?:\.\d+)?)\b/gi, (_, n) => `${n} I.U.`);
@@ -1058,6 +1069,56 @@ function formatDate(s){ if(!s)return''; const[y,m,d]=s.split('-'); return`${d}/$
 function daysLabel(n){ if(n<0)return`منتهي منذ ${Math.abs(n)}د`; if(n===0)return'اليوم!'; return`${n}يوم`; }
 function uid(){ return Math.random().toString(36).slice(2); }
 function rowLabel(r){ return ROW_LABELS[r]||String(r+1); }
+function expTagHtml(date,item,extraStyle='',withDays=false){
+  const replaced = !!(item&&item.expiryReplaced);
+  const s = expStatus(date);
+  const cls = replaced ? 'replaced-date' : (s==='critical'?'danger':s);
+  const days = withDays ? `<span style="font-size:8px;margin-right:2px">(${daysLabel(daysUntil(date))})</span>` : '';
+  return `<span class="exp-tag ${cls}" style="${extraStyle}">${formatDate(date)}${days}</span>`;
+}
+const DRUG_SYNONYMS = [
+  ['paracetamol','panadol','fevadol','فيفادول','بنادول','باراسيتامول','اسيتامينوفين','acetaminophen','tylenol'],
+  ['ibuprofen','brufen','بروفين','ايبوبروفين','ibufen','advil'],
+  ['diclofenac','voltaren','فولتارين','دكلوفيناك'],
+  ['omeprazole','losec','اوميبرازول','لوسيك'],
+  ['pantoprazole','controloc','بانتوبرازول','كونترولوك'],
+  ['amoxicillin','amoxil','اموكسيسيلين','اموكسل'],
+  ['azithromycin','zithromax','زيثروماكس','ازيثرومايسين'],
+  ['cetirizine','zyrtec','زيرتك','سيتريزين'],
+  ['loratadine','claritine','كلاريتين','لوراتادين'],
+  ['salbutamol','ventolin','فنتولين','سالبوتامول'],
+  ['metformin','glucophage','جلوكوفاج','ميتفورمين'],
+  ['atorvastatin','lipitor','ليبيتور','اتورفاستاتين'],
+  ['aspirin','اسبرين','أسبرين'],
+  ['insulin','انسولين','إنسولين']
+];
+function normalizeSearchText(text){
+  return (text||'').toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+}
+function expandDrugSearchTerms(query){
+  const q=normalizeSearchText(query);
+  if(!q) return [];
+  const terms=new Set(q.split(/\s+/).filter(Boolean));
+  terms.add(q);
+  for(const group of DRUG_SYNONYMS){
+    const normalized=group.map(normalizeSearchText);
+    if(normalized.some(alias=>alias&&q.includes(alias))){
+      normalized.forEach(alias=>{ if(alias) terms.add(alias); });
+    }
+  }
+  return [...terms].filter(t=>t.length>=2);
+}
+function drugMatchesQuery(item,key,query){
+  const terms=expandDrugSearchTerms(query);
+  if(!terms.length) return true;
+  const hay=normalizeSearchText(`${item.name.replace(/\n/g,' ')} ${key}`);
+  return terms.some(t=>hay.includes(t));
+}
+function drugMatchScore(item,key,query){
+  const terms=expandDrugSearchTerms(query);
+  const hay=normalizeSearchText(`${item.name.replace(/\n/g,' ')} ${key}`);
+  return terms.reduce((score,t)=>score+(hay.includes(t)?t.length:0),0);
+}
 
 // ══ IS DB-ONLY? ══
 // A drug is "db-only" if it's not assigned to any original drawer slot (1-50 A-D)
@@ -1407,7 +1468,9 @@ function saveExpiries(){
     }
   }
 
-  data[editingKey].expiries = Array.from(inputs).map(i=>i.value).filter(Boolean);
+  const newExpiries = Array.from(inputs).map(i=>i.value).filter(Boolean);
+  data[editingKey].expiryReplaced = data[editingKey].expiryReplaced && newExpiries.length===1 && data[editingKey].expiries.length===1 && data[editingKey].expiries[0]===newExpiries[0];
+  data[editingKey].expiries = newExpiries;
   data[editingKey].types    = types;
   data[editingKey].oos      = document.getElementById('flagOOS').checked;
   data[editingKey].shelf    = document.getElementById('flagShelf').checked;
@@ -1457,7 +1520,7 @@ function dbStatusRank(key, item){
   return 1;
 }
 function passesDbItemFilters(key, item, q, f){
-  const nm = !q || item.name.replace(/\n/g,' ').toLowerCase().includes(q) || key.toLowerCase().includes(q);
+  const nm = !q || drugMatchesQuery(item,key,q);
   if(!nm) return false;
   const exSt = slotExpSt(key);
   const isCustom = customKeys.has(key);
@@ -1654,7 +1717,7 @@ function renderDB(){
     const parsed=parseKey(key);
     const nameClean=formatDrugName(item.name);
     const exHtml=item.expiries.length
-      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}" style="margin-left:3px">${formatDate(e)}<span style="font-size:8px;margin-right:2px">(${daysLabel(d)})</span></span>`;}).join('')
+      ?item.expiries.map(e=>expTagHtml(e,item,'margin-left:3px',true)).join('')
       :`<span style="color:var(--noexp);font-size:11px;font-weight:600">— بدون تاريخ</span>`;
     let tHtml='';
     if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️ Hazard</span> `;
@@ -1762,7 +1825,7 @@ function renderDrawers(){
         if(dim) cell.style.opacity='.18';
         cell.innerHTML=`<div style="font-weight:700">${formatDrugName(item.name,true)}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">
-            ${exp?`<span class="exp-tag ${expStatus(exp)==='critical'?'danger':expStatus(exp)}">${formatDate(exp)}</span>`:'<span class="db-only-badge" style="color:var(--noexp);border-color:var(--noexp-border);background:var(--noexp-bg)">بدون تاريخ</span>'}
+            ${exp?expTagHtml(exp,item):'<span class="db-only-badge" style="color:var(--noexp);border-color:var(--noexp-border);background:var(--noexp-bg)">بدون تاريخ</span>'}
             ${item.oos?'<span class="oos-badge">OOS</span>':''}
           </div>`;
         cell.onclick=()=>openExpModal(key);
@@ -1798,7 +1861,7 @@ function renderDrawers(){
       const exSt=slotExpSt(key);
       const isCustom=customKeys.has(key);
       const expsHtml=item.expiries.length
-        ?item.expiries.map(e=>{const s=expStatus(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)}</span>`;}).join(' ')
+        ?item.expiries.map(e=>expTagHtml(e,item)).join(' ')
         :'<span style="color:var(--text3)">—</span>';
       let tHtml='';
       if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️</span>`;
@@ -1830,7 +1893,8 @@ function renderDrawers(){
   }
 
   // ── CARD VIEW ──
-  grid.style.display='';
+  grid.style.display='grid';
+  let renderedCards=0;
   for(const dr of sortedDrawers){
     // Get all slots for this drawer
     const drawerKeys = Object.keys(data)
@@ -1898,11 +1962,11 @@ function renderDrawers(){
       let expHtml='';
       if(item.expiries.length){
         const earliest=[...item.expiries].sort()[0];
-        const s=expStatus(earliest);
-        expHtml=`<span class="exp-tag ${s==='critical'?'danger':s}" style="font-size:8px;padding:0 4px">${formatDate(earliest)}</span>`;
+        expHtml=expTagHtml(earliest,item,'font-size:8px;padding:0 4px');
       }
 
       const nameHtml=formatDrugName(item.name,true);
+      const nameClean=formatDrugName(item.name);
       const drugCls='row-drug'+((!item.expiries.length&&!dim)?' no-expiry-text':'');
 
       row.innerHTML=`
@@ -1927,7 +1991,9 @@ function renderDrawers(){
       card.appendChild(row);
     }
     grid.appendChild(card);
+    renderedCards++;
   }
+  if(!renderedCards) grid.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="icon">🗄️</div>لا توجد أدراج مطابقة للبحث</div>';
   updateStats();
 }
 
@@ -2025,7 +2091,7 @@ function doSearch(){
   for(const key in data){
     const item=data[key];
     if(isDbOnly(key)&&f!=='db-only') continue;
-    const nm=!q||item.name.toLowerCase().includes(q);
+    const nm=!q||drugMatchesQuery(item,key,q);
     let tm=true;
     if(f==='hazard') tm=item.types.includes('hazard');
     else if(f==='lasa') tm=item.types.includes('lasa');
@@ -2046,7 +2112,9 @@ function doSearch(){
   if(!results.length){container.innerHTML='<div class="empty"><div class="icon">😕</div>لا توجد نتائج</div>';return;}
   container.innerHTML='';
   results.forEach(({key,item})=>{
-    const hl=item.name.replace(/\n/g,' ').replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark>${m}</mark>`);
+    const plainName=item.name.replace(/\n/g,' ');
+    const directTerm=expandDrugSearchTerms(q).find(t=>normalizeSearchText(plainName).includes(t));
+    const hl=directTerm ? plainName.replace(new RegExp(directTerm.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark>${m}</mark>`) : plainName;
     const p=parseKey(key);
     const isCustom=customKeys.has(key);
     let badges='';
@@ -2059,7 +2127,7 @@ function doSearch(){
     if(isDbOnly(key)) badges+=`<span class="db-only-badge">غير موزّع</span>`;
     if(isReplaced(key)) badges+=`<span class="replaced-badge">🔄 مستبدل</span>`;
     const expsHtml=item.expiries.length
-      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)} (${daysLabel(d)})</span>`;}).join('')
+      ?item.expiries.map(e=>expTagHtml(e,item,'',true)).join('')
       :'<span style="color:var(--text3);font-size:10px">لا يوجد تاريخ</span>';
     const div=document.createElement('div'); div.className='search-result';
     div.innerHTML=`
@@ -2085,6 +2153,7 @@ function renderTable(){
     return pa.dr!==pb.dr?pa.dr-pb.dr:pa.sl.localeCompare(pb.sl);
   });
   for(const key of sortedKeys){
+    if(isDbOnly(key)) continue;
     const item=data[key];
     if(q&&!item.name.toLowerCase().includes(q)&&!key.toLowerCase().includes(q)) continue;
     const isCustom=customKeys.has(key);
@@ -2097,7 +2166,7 @@ function renderTable(){
     else if(tf==='custom') tm=isCustom;
     if(!tm) continue;
     const p=parseKey(key);
-    const exHtml=item.expiries.length?item.expiries.map(e=>{const s=expStatus(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)}</span>`;}).join(' '):'<span style="color:var(--text3)">—</span>';
+    const exHtml=item.expiries.length?item.expiries.map(e=>expTagHtml(e,item)).join(' '):'<span style="color:var(--text3)">—</span>';
     let tHtml='';
     if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️</span>`;
     if(item.types.includes('lasa'))       tHtml+=`<span class="type-badge lasa">🔵</span>`;
@@ -2569,22 +2638,44 @@ function normalizeVoiceYear(y){return y.length===2?'20'+y:y.padStart(4,'0');}
 function isValidVoiceMonth(mo){const n=parseInt(mo);return n>=1&&n<=12;}
 function lastDayOfMonth(y,mo){return String(new Date(parseInt(y),parseInt(mo),0).getDate()).padStart(2,'0');}
 function extractSlot(raw){
+  if(/(?:^|[\s،,])(1000|١٠٠٠|الف|ألف|آلف)(?=[\s،,]|$)/u.test(raw)) return 'A';
   const inlineEn=raw.match(/\b\d{1,2}\s*([A-Da-d])\b/);if(inlineEn)return inlineEn[1].toUpperCase();
   const standEn=raw.match(/(?:^|\s)([A-Da-d])(?:\s|$)/);if(standEn)return standEn[1].toUpperCase();
   for(const[ar,en]of Object.entries(AR_SLOT_RAW)){const re=new RegExp('(?:^|[\\s\\u060C\\u060D،,])'+ar+'(?=[\\s\\u060C،,]|$)');if(re.test(raw))return en;}
   for(const[word,en]of AR_SLOT_WORDS){const re=new RegExp('(?:^|\\s)'+word+'(?:\\s|$)','u');if(re.test(raw))return en;}
   return null;
 }
+function slotFromToken(token){
+  const t=(token||'').trim();
+  if(!t) return null;
+  if(/^(1000|١٠٠٠|الف|ألف|آلف)$/u.test(t)) return 'A';
+  if(/^[Aaأآ]$/u.test(t)) return 'A';
+  if(/^[Bbب]$/u.test(t)) return 'B';
+  if(/^[Ccج]$/u.test(t)) return 'C';
+  if(/^[Ddد]$/u.test(t)) return 'D';
+  for(const[word,en]of AR_SLOT_WORDS){ if(t===word) return en; }
+  return null;
+}
+function normalizeVoiceForOrder(raw){
+  return arabicNorm(raw)
+    .replace(/([0-9٠-٩]{1,2})([A-Da-dأآبجد])/g,'$1 $2')
+    .replace(/([A-Da-dأآبجد])([0-9٠-٩]{1,2})/g,'$1 $2')
+    .replace(/[،,؛:]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
 function extractDrawer(rawOriginal){
-  const slot=extractSlot(rawOriginal);
-  let stripped=rawOriginal;
-  stripped=stripped.replace(/\b(\d{1,2})\s*[A-Da-dأآبجد]\b/g,'$1');
-  const allSlotWords=Object.keys(AR_SLOT_RAW).concat(AR_SLOT_WORDS.map(x=>x[0]));
-  for(const w of allSlotWords) stripped=stripped.replace(new RegExp('(?:^|\\s)'+w+'(?=\\s|$)','g'),' ');
-  const t=arabicNorm(stripped);
-  const m=t.match(/\b([1-9]|[1-4]\d|50)\b/);
-  if(m&&slot)return{dr:parseInt(m[1]),sl:slot};
-  if(m)return{dr:parseInt(m[1]),sl:null};
+  const ordered=normalizeVoiceForOrder(rawOriginal);
+  const tokens=ordered.split(/\s+/).filter(Boolean);
+  for(let i=0;i<tokens.length;i++){
+    const dr=parseInt(tokens[i].replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+    if(!Number.isInteger(dr)||dr<1||dr>50) continue;
+    for(let j=i+1;j<Math.min(tokens.length,i+5);j++){
+      const sl=slotFromToken(tokens[j]);
+      if(sl) return {dr,sl};
+    }
+    return {dr,sl:null};
+  }
   return null;
 }
 function extractDate(raw){
@@ -2609,7 +2700,7 @@ function extractDateEnglish(raw){
 function matchDrugByName(raw){
   const q=raw.toLowerCase().trim();if(!q||q.length<3)return null;
   let best=null,bestScore=0;
-  for(const[key,item]of Object.entries(data)){const name=item.name.toLowerCase().replace(/\n/g,' ');const words=q.split(/\s+/).filter(w=>w.length>=3);let score=0;for(const w of words){if(name.includes(w))score+=w.length;}if(score>bestScore){bestScore=score;best={key,name:item.name.replace(/\n/g,' ')};}}
+  for(const[key,item]of Object.entries(data)){if(isDbOnly(key))continue;let score=drugMatchScore(item,key,q);if(score>bestScore){bestScore=score;best={key,name:item.name.replace(/\n/g,' ')};}}
   return bestScore>=3?best:null;
 }
 
@@ -2667,7 +2758,7 @@ function showVoiceConfirm(raw,resolved,date,loc){
   const dr=resolvedKey.match(/\d+/)?.[0]||drawerVal||'';
   const sl=resolvedKey.match(/[A-Z]/)?.[0]||(loc&&loc.sl)||'A';
   const resolvedNameDisplay=resolved?`<strong style="color:var(--accent)">${resolved.name}</strong>`:'<span style="color:var(--warn)">— لم يُعثر</span>';
-  const existing=resolved?(data[resolved.key].expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' ')||'<span style="color:var(--text3)">لا يوجد</span>'):'—';
+  const existing=resolved?(data[resolved.key].expiries.map(e=>expTagHtml(e,data[resolved.key])).join(' ')||'<span style="color:var(--text3)">لا يوجد</span>'):'—';
   box.innerHTML=`<div class="voice-confirm-card" style="margin-top:10px">
     <div style="font-size:11px;color:var(--text3);font-style:italic">📝 ${raw}</div>
     <div class="voice-confirm-row" style="flex-direction:column;align-items:flex-start;gap:5px;width:100%">
@@ -2714,8 +2805,8 @@ function vcFilterDrugs(q){
   const dd=document.getElementById('vcDropdown'); if(!dd)return;
   const sq=(q||'').trim().toLowerCase();
   let results;
-  if(!sq){ results=Object.entries(data).slice(0,50).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')})); }
-  else { results=Object.entries(data).filter(([k,v])=>{const nm=v.name.toLowerCase();return nm.includes(sq)||k.toLowerCase().includes(sq)||k.replace(/[^\d]/g,'').includes(sq);}).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')})).slice(0,50); }
+  if(!sq){ results=Object.entries(data).filter(([k])=>!isDbOnly(k)).slice(0,50).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')})); }
+  else { results=Object.entries(data).filter(([k,v])=>!isDbOnly(k)&&drugMatchesQuery(v,k,sq)).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')})).slice(0,50); }
   if(!results.length){dd.innerHTML='<div style="padding:8px 12px;font-size:11px;color:var(--text3)">لا توجد نتائج</div>';return;}
   dd.innerHTML=results.map(r=>{const p=parseKey(r.key);const hi=sq?r.name.replace(new RegExp(sq.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark style="background:rgba(0,212,170,.3);color:var(--accent);border-radius:2px;padding:0 1px">${m}</mark>`):r.name;return`<div onclick="vcSelectDrug('${r.key}')" style="padding:7px 11px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'"><span style="font-family:var(--mono);font-size:10px;color:var(--accent2);min-width:48px;flex-shrink:0;font-weight:700">د${p.dr}/${p.sl}</span><span style="flex:1;line-height:1.35">${hi}</span></div>`;}).join('');
 }
@@ -2727,7 +2818,7 @@ function vcSelectDrug(key){
   document.getElementById('vcSl').value=p.sl;
   document.getElementById('vcLocDisplay').textContent=`درج ${p.dr} — ${p.sl}`;
   document.getElementById('vcDrugName').innerHTML=`<strong style="color:var(--accent)">${item.name.replace(/\n/g,' ')}</strong>`;
-  document.getElementById('vcExisting').innerHTML=item.expiries.length?item.expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' '):'<span style="color:var(--text3)">لا يوجد</span>';
+  document.getElementById('vcExisting').innerHTML=item.expiries.length?item.expiries.map(e=>expTagHtml(e,item)).join(' '):'<span style="color:var(--text3)">لا يوجد</span>';
 }
 function confirmVoiceSave(){
   const dr=document.getElementById('vcDr').value;
@@ -2737,8 +2828,13 @@ function confirmVoiceSave(){
   const key=makeKey(dr,sl);
   if(!data[key])return setVoiceStatus('error','❌ الدرج غير موجود');
   if(!dateVal)return setVoiceStatus('error','⚠️ أدخل التاريخ');
-  if(replace)data[key].expiries=[dateVal];
-  else if(!data[key].expiries.includes(dateVal))data[key].expiries.push(dateVal);
+  if(replace){
+    data[key].expiries=[dateVal];
+    data[key].expiryReplaced=true;
+  } else {
+    if(!data[key].expiries.includes(dateVal))data[key].expiries.push(dateVal);
+    data[key].expiryReplaced=false;
+  }
   saveData();refreshAll();
   voiceSessionLog.push({key,name:data[key].name.replace(/\n/g,' '),date:dateVal,replace,ts:new Date().toLocaleTimeString('ar-SA')});
   saveSessionLog();renderVoiceSessionList();
