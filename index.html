@@ -600,6 +600,7 @@ code{font-family:var(--mono)}
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn btn-primary" id="voiceMicBtn" onclick="startVoice()">🎙️ ابدأ التسجيل</button>
+      <button id="vcAutoSaveToggle" onclick="toggleVcAutoSave()" title="عند التشغيل: يحفظ تلقائياً بدون ضغط زر ويبدأ تسجيل جديد فوراً" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:11px;cursor:pointer;transition:all .25s;white-space:nowrap">⚡ حفظ تلقائي: إيقاف</button>
         <span id="voiceStatus" class="voice-status voice-status-idle">جاهز للتسجيل</span>
         <span id="voiceSessionCount" style="font-size:11px;color:var(--text3)"></span>
       </div>
@@ -616,7 +617,7 @@ code{font-family:var(--mono)}
       <div style="background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:14px 16px;display:flex;flex-direction:column;gap:14px">
 
         <div style="font-size:12px;color:var(--text2);line-height:1.7">
-          قل <strong style="color:var(--text)">رقم الدرج</strong> ثم <strong style="color:var(--text)">الخانة</strong> ثم <strong style="color:var(--text)">التاريخ</strong> في جملة واحدة.
+          قل <strong style="color:var(--text)">رقم الدرج</strong> ثم <strong style="color:var(--text)">الخانة</strong> ثم <strong style="color:var(--text)">التاريخ</strong> في جملة واحدة. الأدراج من <strong style="color:var(--accent)">1–50</strong> والأرفف من <strong style="color:var(--accent2)">51 وما فوق</strong>.
         </div>
 
         <!-- صيغة الدرج -->
@@ -1043,21 +1044,17 @@ function formatDrugName(name, asHtml){
 function normalizeDrugDosageLine(line){
   let s = line.trim();
   if(!s) return s;
-  // unit BEFORE number → swap to number UNIT (e.g. "MG 500" → "500 MG")
-  s = s.replace(/\b(MG|MCG|ML|G|IU|I\.U\.|MICROGRAMS?)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi,
-    (_, u, n) => `${n} ${u.replace(/\./g,'').toUpperCase()}`);
-  s = s.replace(/\b(mg|mcg|ml|g|iu)\s+(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?)\b/gi,
+  // Normalize MICROGRAMS text first
+  s = s.replace(/\bMICROGRAMS?\b/gi, 'MCG');
+  // unit BEFORE number → swap (e.g. "MG 500" → "500 MG")
+  s = s.replace(/\b(MG|MCG|ML|G|IU)\s+(\d+(?:\.\d+)?(?:\s*[-–]\s*\d+(?:\.\d+)?)?)\b/gi,
     (_, u, n) => `${n} ${u.toUpperCase()}`);
-  // number immediately attached to unit (no space) → add space  (e.g. "500mg" → "500 MG")
-  s = s.replace(/(\d+(?:\.\d+)?)(MG|MCG|ML|G|IU)(?=$|\s|\+|\)|,|\/)/gi,
-    (_, n, u) => `${n} ${u.toUpperCase()}`);
-  s = s.replace(/(\d+(?:\.\d+)?)(mg|mcg|ml|g|iu)(?=$|\s|\+|\)|,|\/)/gi,
+  // number attached to unit without space (e.g. "500mg" → "500 MG")
+  s = s.replace(/(\d+(?:\.\d+)?)\s*(MG|MCG|ML|G|IU)(?=$|\s|\+|\)|\-|,|\/)/gi,
     (_, n, u) => `${n} ${u.toUpperCase()}`);
   // I.U. handling
   s = s.replace(/\bI\.?\s*U\.?\s+(\d+(?:\.\d+)?)\b/gi, (_, n) => `${n} I.U.`);
   s = s.replace(/\b(\d+(?:\.\d+)?)\s*I\.?\s*U\.?\b/gi, (_, n) => `${n} I.U.`);
-  // ensure space between number and unit if still missing
-  s = s.replace(/\b(\d+(?:\.\d+)?)\s*(MG|MCG|ML|G)\b/gi, (_, n, u) => `${n} ${u.toUpperCase()}`);
   return s.replace(/\s{2,}/g,' ').trim();
 }
 function normalizeDrugName(name){
@@ -2383,14 +2380,15 @@ function renderShelves(){
   const filtered=shelves.filter(s=>!q||s.name.toLowerCase().includes(q));
   if(!filtered.length){wrap.innerHTML='<div class="empty"><div class="icon">📦</div>لا توجد أرفف. اضغط "إضافة رف"</div>';updateStats();return;}
   filtered.forEach(shelf=>{
-    const cols=shelf.cols||5, rows=shelf.rows||4;
+    const cols=shelf.cols||6, rows=shelf.rows||6;
     const cells=shelf.cells||{};
     const total=cols*rows;
     const filled=Object.keys(cells).length;
+    const startNum=shelf.drawerNum||51;
     const section=document.createElement('div'); section.className='shelf-section';
     const hdr=document.createElement('div'); hdr.className='shelf-header';
-    hdr.innerHTML=`<div class="shelf-title">📦 ${shelf.name}</div>
-      <div class="shelf-meta">${cols} عامود × ${rows} صف | ${filled}/${total} مملوء</div>
+    hdr.innerHTML=`<div class="shelf-title">📦 ${shelf.name} <span style="font-size:10px;color:var(--accent2);font-family:var(--mono)">[${startNum}–${startNum+cols-1}]</span></div>
+      <div class="shelf-meta">${cols} عامود × ${rows} خانة | ${filled}/${total} مملوء</div>
       <div style="display:flex;gap:5px">
         <button class="btn btn-secondary btn-sm" onclick="openEditShelfModal('${shelf.id}')">✏️ تعديل الرف</button>
       </div>`;
@@ -2398,15 +2396,22 @@ function renderShelves(){
     const gwrap=document.createElement('div'); gwrap.className='shelf-grid-wrap';
     const grid=document.createElement('div'); grid.className='shelf-grid';
     grid.style.gridTemplateColumns=`28px repeat(${cols},1fr)`;
-    const corner=document.createElement('div'); corner.style.cssText='display:flex;align-items:center;justify-content:center';
+    const corner=document.createElement('div'); corner.style.cssText='display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text3)';corner.textContent='#';
     grid.appendChild(corner);
+    // Column headers = drawer numbers (51, 52, ...)
     for(let c=0;c<cols;c++){
-      const h=document.createElement('div'); h.className='shelf-col-header'; h.textContent=c+1; grid.appendChild(h);
+      const h=document.createElement('div'); h.className='shelf-col-header';
+      h.textContent=startNum+c;
+      grid.appendChild(h);
     }
+    // Row headers = A,B,C,D,E,F (up to 6)
+    const SHELF_ROW_LABELS='ABCDEF';
     for(let r=0;r<rows;r++){
-      const rh=document.createElement('div'); rh.className='shelf-row-header'; rh.textContent=rowLabel(r); grid.appendChild(rh);
+      const rLabel=SHELF_ROW_LABELS[r]||String.fromCharCode(65+r);
+      const rh=document.createElement('div'); rh.className='shelf-row-header'; rh.textContent=rLabel; grid.appendChild(rh);
       for(let c=0;c<cols;c++){
-        const ck=`${rowLabel(r)}${c+1}`;
+        // cell key = colNum + rowLetter e.g. "51A", "52B"
+        const ck=`${startNum+c}${rLabel}`;
         const cell=cells[ck];
         const div=document.createElement('div');
         let cellCls='shelf-cell';
@@ -2453,9 +2458,12 @@ function getShelfById(id){
 }
 function getShelfCellKeys(sh){
   const keys=[];
-  const cols=sh.cols||5, rows=sh.rows||4;
+  const cols=sh.cols||6, rows=sh.rows||6;
+  const startNum=sh.drawerNum||51;
+  const SHELF_ROW_LABELS='ABCDEF';
   for(let r=0;r<rows;r++){
-    for(let c=0;c<cols;c++) keys.push(`${rowLabel(r)}${c+1}`);
+    const rLabel=SHELF_ROW_LABELS[r]||String.fromCharCode(65+r);
+    for(let c=0;c<cols;c++) keys.push(`${startNum+c}${rLabel}`);
   }
   return keys;
 }
@@ -2541,13 +2549,18 @@ function openAddShelfModal(){
   document.getElementById('newShelfRows').value=rows;
   document.getElementById('addShelfModal').classList.add('open');
 }
+function getNextShelfDrawerNum(){
+  const used=shelves.map(s=>s.drawerNum||0).filter(n=>n>=51);
+  let n=51; while(used.includes(n)) n++; return n;
+}
 function saveNewShelf(){
   const name=document.getElementById('newShelfName').value.trim();
   if(!name) return showToast('⚠️ أدخل اسم الرف');
-  const cols=parseInt(document.getElementById('newShelfCols').value)||5;
+  const cols=parseInt(document.getElementById('newShelfCols').value)||6;
   const rows=parseInt(document.getElementById('newShelfRows').value)||4;
-  shelves.push({id:uid(),name,cols,rows,cells:{}});
-  saveData();closeModal('addShelfModal');renderShelves();showToast('✅ تمت إضافة الرف');
+  const drawerNum=getNextShelfDrawerNum();
+  shelves.push({id:uid(),name,cols,rows,cells:{},drawerNum});
+  saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة الرف — رقم ${drawerNum}`);
 }
 function openEditShelfModal(id){
   editingShelfId=id;
@@ -2811,11 +2824,12 @@ function extractSlot(raw){
 function extractDrawer(rawOriginal){
   const slot=extractSlot(rawOriginal);
   let stripped=rawOriginal;
-  stripped=stripped.replace(/\b(\d{1,2})\s*[A-Da-dأآبجد]\b/g,'$1');
+  stripped=stripped.replace(/\b(\d{1,2})\s*[A-Fa-fأآبجدهو]\b/g,'$1');
   const allSlotWords=Object.keys(AR_SLOT_RAW).concat(AR_SLOT_WORDS.map(x=>x[0]));
   for(const w of allSlotWords) stripped=stripped.replace(new RegExp('(?:^|\\s)'+w+'(?=\\s|$)','g'),' ');
   const t=arabicNorm(stripped);
-  const m=t.match(/\b([1-9]|[1-4]\d|50)\b/);
+  // Support 1-50 (drawers) and 51-99 (shelves)
+  const m=t.match(/\b([1-9]|[1-4]\d|5[0-9]|6[0-9]|7[0-9]|8[0-9]|9[0-9])\b/);
   if(m&&slot)return{dr:parseInt(m[1]),sl:slot};
   if(m)return{dr:parseInt(m[1]),sl:null};
   return null;
@@ -2887,16 +2901,25 @@ function processVoiceFinal(text){
   const loc=extractDrawer(text);
   const date=extractDate(text)||extractDateEnglish(text);
   let resolved=null;
-  // 1) Try location first (drawer + slot)
+  // 1) Try location first (drawer + slot) — supports both drawers (1-50) and shelves (51+)
   if(loc&&loc.sl){
-    const key=makeKey(loc.dr,loc.sl);
-    if(data[key]) resolved={key,name:data[key].name.replace(/\n/g,' ')};
+    if(loc.dr<=50){
+      const key=makeKey(loc.dr,loc.sl);
+      if(data[key]) resolved={key,name:data[key].name.replace(/\n/g,' ')};
+    } else {
+      // Shelf cell
+      const sh=shelves.find(s=>(s.drawerNum||51)<=loc.dr&&loc.dr<(s.drawerNum||51)+(s.cols||6));
+      if(sh){const ck=`${loc.dr}${loc.sl}`;const cell=(sh.cells||{})[ck];if(cell&&cell.drug)resolved={key:`shelf:${sh.id}:${ck}`,name:cell.drug,shelfId:sh.id,cellKey:ck};}
+    }
   }
-  // 1b) If loc found drawer but no slot → try slot A first, then B/C/D
+  // 1b) If loc found drawer but no slot → try A-F
   if(!resolved&&loc&&loc.dr){
-    for(const sl of ['A','B','C','D']){
-      const key=makeKey(loc.dr,sl);
-      if(data[key]){resolved={key,name:data[key].name.replace(/\n/g,' ')};break;}
+    const slots=loc.dr<=50?['A','B','C','D']:['A','B','C','D','E','F'];
+    if(loc.dr<=50){
+      for(const sl of slots){const key=makeKey(loc.dr,sl);if(data[key]){resolved={key,name:data[key].name.replace(/\n/g,' ')};break;}}
+    } else {
+      const sh=shelves.find(s=>(s.drawerNum||51)<=loc.dr&&loc.dr<(s.drawerNum||51)+(s.cols||6));
+      if(sh){for(const sl of slots){const ck=`${loc.dr}${sl}`;const cell=(sh.cells||{})[ck];if(cell&&cell.drug){resolved={key:`shelf:${sh.id}:${ck}`,name:cell.drug,shelfId:sh.id,cellKey:ck};break;}}}
     }
   }
   // 2) Fallback: try matching by drug name (strip date/number noise first)
@@ -2913,6 +2936,33 @@ function processVoiceFinal(text){
   if(!date)setVoiceStatus('error','❌ لم أتعرف على التاريخ');
   else if(!resolved)setVoiceStatus('error','❌ لم أتعرف على اسم العلاج أو الدرج');
   else setVoiceStatus('ok','✅ تم التعرف — أكّد البيانات');
+
+  // Auto-save: skip confirm box, save immediately
+  if(vcAutoSave && resolved && date){
+    const key=resolved.key;
+    const drNum=parseInt(key);
+    if(resolved.shelfId){
+      const sh=shelves.find(s=>s.id===resolved.shelfId);
+      if(sh){
+        const ck=resolved.cellKey;
+        if(!sh.cells)sh.cells={};
+        if(!sh.cells[ck])sh.cells[ck]={drug:'',expiries:[]};
+        if(!sh.cells[ck].expiries.includes(date)) sh.cells[ck].expiries.push(date);
+      }
+    } else if(data[key]){
+      if(!data[key].expiries.includes(date)) data[key].expiries.push(date);
+    }
+    saveData(); refreshAll();
+    const dname=(resolved.name||key).replace(/\n/g,' ');
+    voiceSessionLog.push({key,name:dname,date,replace:false,ts:new Date().toLocaleTimeString('ar-SA')});
+    saveSessionLog(); renderVoiceSessionList();
+    setVoiceStatus('ok',`✅ حُفظ تلقائياً: ${dname} — ${formatDate(date)}`);
+    showToast(`✅ ${dname} | ${formatDate(date)}`);
+    document.getElementById('voiceInterim').textContent='';
+    setTimeout(()=>{ if(voiceUnlocked) startVoice(); }, 700);
+    return;
+  }
+
   showVoiceConfirm(text,resolved,date,loc);
 }
 function showVoiceConfirm(raw,resolved,date,loc){
@@ -3016,12 +3066,52 @@ function vcSelectDrug(key){
   document.getElementById('vcDrugName').innerHTML=`<strong style="color:var(--accent)">${item.name.replace(/\n/g,' ')}</strong>`;
   document.getElementById('vcExisting').innerHTML=item.expiries.length?item.expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' '):'<span style="color:var(--text3)">لا يوجد</span>';
 }
+let vcAutoSave=false;
+function toggleVcAutoSave(){
+  vcAutoSave=!vcAutoSave;
+  const btn=document.getElementById('vcAutoSaveToggle');
+  if(btn){btn.textContent=vcAutoSave?'⚡ حفظ تلقائي: تشغيل':'⚡ حفظ تلقائي: إيقاف';btn.style.background=vcAutoSave?'rgba(0,212,170,.2)':'var(--surface2)';btn.style.color=vcAutoSave?'var(--accent)':'var(--text2)';}
+}
+function getNextSlot(key){
+  const SLOTS=['A','B','C','D'];
+  const p=parseKey(key);if(!p)return null;
+  const ci=SLOTS.indexOf(p.sl);
+  if(ci<0)return null;
+  const nextSl=SLOTS[ci+1];
+  if(nextSl){const nk=makeKey(p.dr,nextSl);if(data[nk])return nk;}
+  const nextDr=p.dr+1;const nk2=makeKey(nextDr,'A');if(data[nk2])return nk2;
+  return null;
+}
 function confirmVoiceSave(){
   const dr=document.getElementById('vcDr').value;
   const sl=document.getElementById('vcSl').value;
   const dateVal=document.getElementById('vcDate').value;
   const replace=document.getElementById('vcReplace').checked;
   const key=makeKey(dr,sl);
+  const drNum=parseInt(dr);
+
+  // Shelf mode (51+)
+  if(drNum>=51){
+    const sh=shelves.find(s=>(s.drawerNum||51)<=drNum&&drNum<(s.drawerNum||51)+(s.cols||6));
+    if(!sh)return setVoiceStatus('error','❌ الرف غير موجود');
+    if(!dateVal)return setVoiceStatus('error','⚠️ أدخل التاريخ');
+    const ck=`${drNum}${sl}`;
+    if(!sh.cells)sh.cells={};
+    if(!sh.cells[ck])sh.cells[ck]={drug:'',expiries:[]};
+    if(replace)sh.cells[ck].expiries=[dateVal];
+    else if(!sh.cells[ck].expiries.includes(dateVal))sh.cells[ck].expiries.push(dateVal);
+    const drugName=sh.cells[ck].drug||ck;
+    saveData();refreshAll();
+    voiceSessionLog.push({key:ck,name:drugName,date:dateVal,replace,ts:new Date().toLocaleTimeString('ar-SA')});
+    saveSessionLog();renderVoiceSessionList();
+    document.getElementById('voiceConfirmBox').style.display='none';
+    document.getElementById('voiceInterim').textContent='';
+    setVoiceStatus('ok',`✅ تم الحفظ في رف ${drNum}-${sl}`);
+    showToast(`✅ حُفظ ${formatDate(dateVal)} في رف ${drNum}-${sl}`);
+    setTimeout(()=>{if(voiceUnlocked)startVoice();},1200);
+    return;
+  }
+
   if(!data[key])return setVoiceStatus('error','❌ الدرج غير موجود');
   if(!dateVal)return setVoiceStatus('error','⚠️ أدخل التاريخ');
   if(replace)data[key].expiries=[dateVal];
@@ -3029,11 +3119,23 @@ function confirmVoiceSave(){
   saveData();refreshAll();
   voiceSessionLog.push({key,name:data[key].name.replace(/\n/g,' '),date:dateVal,replace,ts:new Date().toLocaleTimeString('ar-SA')});
   saveSessionLog();renderVoiceSessionList();
-  document.getElementById('voiceConfirmBox').style.display='none';
-  document.getElementById('voiceInterim').textContent='';
-  setVoiceStatus('ok',`✅ تم الحفظ — جاهز لتسجيل جديد`);
-  showToast(`✅ تم حفظ ${formatDate(dateVal)} لـ درج ${dr}-${sl}`);
-  setTimeout(()=>{if(voiceUnlocked)startVoice();},1200);
+
+  if(vcAutoSave){
+    document.getElementById('voiceConfirmBox').style.display='none';
+    document.getElementById('voiceInterim').textContent='';
+    const nextKey=getNextSlot(key);
+    const nextP=nextKey?parseKey(nextKey):null;
+    const nextInfo=nextKey&&data[nextKey]?`درج ${nextP.dr} — ${nextP.sl}: ${data[nextKey].name.replace(/\n/g,' ')}`:'';
+    setVoiceStatus('ok',`✅ تم الحفظ${nextInfo?' | التالي: '+nextInfo:' | انتهى'}`);
+    showToast(`✅ حُفظ درج ${dr}-${sl}`+(nextInfo?` | التالي: ${nextInfo}`:''));
+    setTimeout(()=>{if(voiceUnlocked)startVoice();},900);
+  } else {
+    document.getElementById('voiceConfirmBox').style.display='none';
+    document.getElementById('voiceInterim').textContent='';
+    setVoiceStatus('ok',`✅ تم الحفظ — جاهز لتسجيل جديد`);
+    showToast(`✅ تم حفظ ${formatDate(dateVal)} لـ درج ${dr}-${sl}`);
+    setTimeout(()=>{if(voiceUnlocked)startVoice();},1200);
+  }
 }
 function dismissVoiceConfirm(){document.getElementById('voiceConfirmBox').style.display='none';document.getElementById('voiceInterim').textContent='';setVoiceStatus('idle','جاهز');setTimeout(()=>{if(voiceUnlocked)startVoice();},800);}
 function renderVoiceSessionList(){
