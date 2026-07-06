@@ -335,6 +335,9 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 }
 .shelf-cell.filled.warn  {background:rgba(240,165,0,.09);border-color:rgba(240,165,0,.4)}
 .shelf-cell.filled.danger{background:rgba(255,71,87,.09);border-color:rgba(255,71,87,.4)}
+.shelf-cell.filled.noexp{background:var(--noexp-bg);border-color:var(--noexp-border)}
+.shelf-cell.filled.noexp .cell-drug{color:var(--noexp)}
+.shelf-cell.filled.cell-oos{opacity:.55}
 .shelf-cell.filled.expired{background:rgba(110,118,129,.08);border-color:var(--border);opacity:.6}
 .shelf-cell.filled.type-hazard    {border-color:rgba(240,165,0,.6)}
 .shelf-cell.filled.type-lasa      {border-color:rgba(0,153,255,.6)}
@@ -352,6 +355,7 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 .cell-exp.ok     {color:var(--success)}
 .cell-exp.warn   {color:var(--warn)}
 .cell-exp.danger {color:var(--danger)}
+.cell-exp.noexp  {color:var(--noexp)}
 .cell-exp.expired{color:var(--text3);text-decoration:line-through}
 .cell-add{font-size:16px;color:var(--text3);opacity:.4}
 .shelf-cell:hover .cell-add{opacity:.8;color:var(--accent)}
@@ -669,6 +673,10 @@ code{font-family:var(--mono)}
 <div class="modal">
   <h2>⚙️ إعدادات الدواء</h2>
   <div class="drug-info" id="modalDrugInfo"></div>
+  <div class="form-group" id="modalNameGroup">
+    <label>اسم الدواء</label>
+    <input type="text" id="modalDrugName">
+  </div>
   <div class="form-group">
     <label>نوع الدواء</label>
     <div class="type-checks">
@@ -694,6 +702,7 @@ code{font-family:var(--mono)}
     <textarea id="drugNotes" rows="2" placeholder="أي ملاحظات..."></textarea>
   </div>
   <div class="modal-actions">
+    <button class="btn btn-danger" id="modalDeleteBtn" style="display:none" onclick="deleteShelfDrugEntry()">🗑️ حذف من الخانة</button>
     <button class="btn btn-secondary" onclick="closeModal('expModal')">إلغاء</button>
     <button class="btn btn-primary" onclick="saveExpiries()">حفظ</button>
   </div>
@@ -716,9 +725,41 @@ code{font-family:var(--mono)}
     <label>عدد الصفوف لهذا الرف</label>
     <input type="number" id="newShelfRows" value="4" min="1" max="26">
   </div>
+  <div class="form-group">
+    <label>صورة مرجعية للرف (اختياري)</label>
+    <input type="file" id="newShelfPhoto" accept="image/*">
+  </div>
   <div class="modal-actions">
     <button class="btn btn-secondary" onclick="closeModal('addShelfModal')">إلغاء</button>
     <button class="btn btn-primary" onclick="saveNewShelf()">إضافة</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL: Pick drug from database for a shelf cell ══ -->
+<div id="pickExtraModal" class="modal-overlay">
+<div class="modal">
+  <h2>🔍 اختر دواء من قاعدة البيانات</h2>
+  <div class="drug-info" id="pickExtraTargetInfo"></div>
+  <div class="form-group">
+    <label>ابحث بالاسم</label>
+    <input type="text" id="pickExtraSearch" placeholder="اكتب اسم الدواء..." oninput="renderPickExtraResults()">
+  </div>
+  <div id="pickExtraResults" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+  <div style="font-size:11px;color:var(--text3);margin-top:8px">ما تلقى الدواء؟ أضفه أولاً من تبويب "قاعدة البيانات" (إضافة دواء)، بعدها ارجع هنا واربطه بالخانة.</div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="closeModal('pickExtraModal')">إلغاء</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL: Shelf Photo Preview ══ -->
+<div id="shelfPhotoModal" class="modal-overlay">
+<div class="modal" style="max-width:520px;text-align:center">
+  <h2>📷 صورة الرف</h2>
+  <img id="shelfPhotoPreviewImg" src="" style="max-width:100%;border-radius:8px;border:1px solid var(--border)">
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="closeModal('shelfPhotoModal')">إغلاق</button>
   </div>
 </div>
 </div>
@@ -773,6 +814,15 @@ code{font-family:var(--mono)}
     <label>عدد الصفوف</label>
     <input type="number" id="editShelfRows" min="1" max="26">
   </div>
+  <div class="form-group">
+    <label>رقم بداية الترقيم (يكمل تلقائياً بعد آخر رف)</label>
+    <input type="number" id="editShelfStartNum" min="1">
+  </div>
+  <div class="form-group">
+    <label>صورة مرجعية للرف (اختياري)</label>
+    <input type="file" id="editShelfPhoto" accept="image/*">
+    <div id="editShelfPhotoCurrent" style="margin-top:6px"></div>
+  </div>
   <div class="modal-actions">
     <button class="btn btn-danger" onclick="deleteShelf()">🗑️ حذف الرف</button>
     <button class="btn btn-secondary" onclick="closeModal('editShelfModal')">إلغاء</button>
@@ -820,6 +870,8 @@ code{font-family:var(--mono)}
       <option value="B">B</option>
       <option value="C">C</option>
       <option value="D">D</option>
+      <option value="E">E</option>
+      <option value="F">F</option>
     </select>
     <div id="newDrugSlotWarn" style="display:none;margin-top:5px;font-size:11px;color:var(--danger);background:var(--high-bg);padding:6px 10px;border-radius:5px;border:1px solid rgba(255,71,87,.3)"></div>
   </div>
@@ -1010,6 +1062,8 @@ const ROW_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 // ══ STATE ══
 let data      = {};
+
+
 let shelves   = [];   // { id, name, cols, rows, cells: { "A1": {drug,types[],expiries[],notes} } }
 let oosManual = [];
 let settings  = { warnDays:30, critDays:7 };
@@ -1041,10 +1095,104 @@ function initData() {
       if(data[key].expiries.length===0 && KNOWN_EXP[key]) data[key].expiries=[...KNOWN_EXP[key]];
     });
   });
+  // Fix legacy shelves that predate the continuing-number system (e.g. an old
+  // "big box" shelf saved as columns 1-5): give them a startNum that continues
+  // right after the drawers (1-50), in the order they already appear.
+  normalizeShelves();
+  // Pull any drug names out of old-style shelf.cells into the real database.
+  migrateLegacyShelfCells();
+
+  // seed the 3 real shelf photos + their drug grids only if not already present
+  if (!shelves.some(s=>s.seedPhotoId)) {
+    const next1=getNextShelfStartNum();
+    shelves.push({id:uid(), seedPhotoId:'51', name:'درج العلب 1', cols:5, rows:6, startNum:next1, photo:SHELF_PHOTO_51});
+    seedShelfIntoData(next1, SHELF_GRID_51);
+    const next2=getNextShelfStartNum();
+    shelves.push({id:uid(), seedPhotoId:'56', name:'درج العلب 2 (Drawer 3)', cols:5, rows:6, startNum:next2, photo:SHELF_PHOTO_56});
+    seedShelfIntoData(next2, SHELF_GRID_56);
+    const next3=getNextShelfStartNum();
+    shelves.push({id:uid(), seedPhotoId:'61', name:'درج العلب 3 (Drawer 4)', cols:5, rows:6, startNum:next3, photo:SHELF_PHOTO_61});
+    seedShelfIntoData(next3, SHELF_GRID_61);
+  }
   document.getElementById('warnDays').value = settings.warnDays;
   document.getElementById('critDays').value  = settings.critDays;
   applyTheme();
   updateShelfCapLabel();
+}
+
+// Seed a shelf's drug grid straight into the main `data` object, using the
+// exact same key format as drawers (number+slot, e.g. "51A"). This is what
+// makes the shelf page a real, live view of the database instead of a
+// separate copy -- anything here shows up in search, alerts, and the DB tab too.
+function seedShelfIntoData(startNum,grid){
+  const rows='ABCDEF';
+  grid.forEach((row,ri)=>{
+    row.forEach((name,ci)=>{
+      if(!name) return;
+      const key=`${startNum+ci}${rows[ri]}`;
+      if(!data[key]) data[key]={name,expiries:[],types:[],oos:false,shelf:true,notes:''};
+    });
+  });
+}
+const SHELF_GRID_51 = [
+  ['ACETAZOLAMIDE TABLET 500 MG','MULTIENZYME TABLET','SEVELAMER TABLET 800 MG','TACROLIMUS TABLET 0.5 MG','WARFARIN TABLET 5 MG'],
+  ['AZATHIOPRINE TABLET 50 MG','OMEGA 3 1000 MG','SODIUM BICARBONATE TABLET 325 MG','WARFARIN TABLET 1 MG','VITAMIN D3 CHOLCALCIFEROL 1000 I.U.'],
+  ['LEVODOPA 200MG + BEZARAZIDE 50 MG','PHENYTOIN TABLET 100 MG','SULFASALAZINE TABLET 500 MG','TACROLIMUS TABLET 1 MG',''],
+  ['MESALAZINE TABLET 400-500 MG','POTASSIUM CHLORIDE TABLET 600 MG','SODIUM BICARBONATE TABLET 650 MG','WARFARIN TABLET 2 MG','VITAMIN D3 CHOLCALCIFEROL 5000 I.U.']
+];
+const SHELF_GRID_56 = [
+  ['AGOMELATINE TABLET 25 MG','ARIPIPRAZOLE TABLET 15 MG','ATOMOXETINE TABLET 40 MG','CLOMIPRAMINE HCL TABLET 25 MG','FLUOXETINE CAPSULE 20 MG'],
+  ['AMANTADINE TABLET 100 MG','ATOMOXETINE TABLET 10 MG','BUPROPION TABLET 150 MG','CLOZAPINE TABLET 25 MG','FLUPHENAZINE TABLET 25 MG'],
+  ['AMISULPRIDE TABLET 100 MG','BENZTROPINE MESYLATE TABLET 2 MG','CHLORPROMAZINE HCL TABLET 25 MG','DONEPEZIL TABLET 10 MG','FLUVOXAMINE MALEATE TABLET 50 MG'],
+  ['AMITRIPTYLINE HCL TABLET 10 MG','ATOMOXETINE TABLET 18 MG','CITALOPRAM HCL TABLET 20 MG','CLOZAPINE TABLET 100 MG','HALOPERIDOL TABLET 1.5 MG'],
+  ['ARIPIPRAZOLE TABLET 10 MG','BUPROPION TABLET 25 MG','CHLORPROMAZINE HCL TABLET 100 MG','DULOXETINE HCL CAPSULE 60 MG','FLUVOXAMINE MALEATE TABLET 100 MG'],
+  ['AMITRIPTYLINE HCL TABLET 25 MG','ATOMOXETINE TABLET 25 MG','CLOMIPRAMINE HCL TABLET 10 MG','CHLORPROMAZINE HCL TABLET 100 MG','HALOPERIDOL TABLET 5 MG']
+];
+const SHELF_GRID_61 = [
+  ['IMIPRAMINE HCL TABLET 10 MG','OLANZAPINE TABLET 5 MG','PAROXETINE CR CAPSULE OR TABLET 25 MG','RIVASTIGMINE PATCH 9.5 MG/24 HOURS','TRIFLUOPERAZINE TABLET 5 MG'],
+  ['LITHIUM CARBONATE TABLET 300-450 MG','PALPERIDONE TABLET 3 MG','QUETIAPINE CAPSULE OR TABLET 200 MG','SULPIRIDE TABLET 50 MG','VENLAFAXINE XR TABLET 150 MG'],
+  ['IMIPRAMINE HCL TABLET 25 MG','OLANZAPINE TABLET 10 MG','RISPERIDONE TABLET 2 MG','TRIFLUOPERAZINE TABLET 1 MG',''],
+  ['MAPROTILINE HCL TABLET 25 MG','PALPERIDONE TABLET 6 MG','QUETIAPINE CAPSULE OR TABLET 300 MG','SULPIRIDE TABLET 200 MG',''],
+  ['MEMANTINE TABLET 10 MG','PAROXETINE CR CAPSULE OR TABLET 12.5 MG','RISPERIDONE TABLET 4 MG','TRIFLUOPERAZINE TABLET 2 MG','VENLAFAXINE XR TABLET 75 MG'],
+  ['MIRTAZAPINE TABLET 30 MG','QUETIAPINE CAPSULE OR TABLET 100 MG','RIVASTIGMINE PATCH 4.6 MG/24 HOURS','','']
+];
+// One-time migration: pull drug names out of any legacy shelf.cells (from an
+// older version of this app) into the main `data` object so they become real,
+// searchable, database-linked entries instead of a disconnected copy.
+function migrateLegacyShelfCells(){
+  let changed=false;
+  shelves.forEach(sh=>{
+    if(!sh.cells) return;
+    const startNum=sh.startNum||1;
+    for(const ck in sh.cells){
+      const c=sh.cells[ck];
+      if(!c||!c.drug) continue;
+      const m=ck.match(/^([A-F])(\d+)$/); if(!m) continue;
+      const rowLetter=m[1], colIdx=parseInt(m[2],10)-1;
+      const key=`${startNum+colIdx}${rowLetter}`;
+      if(!data[key]){
+        data[key]={name:c.drug, expiries:c.expiries||[], types:c.types||[], oos:false, shelf:true, notes:c.notes||''};
+        changed=true;
+      }
+    }
+    delete sh.cells;
+  });
+  if(changed){ saveData(); if(typeof sbSaveNow==='function') sbSaveNow(); }
+}
+// Assign startNum (continuing right after drawers 1-50) to any shelf that
+// doesn't have one yet — fixes shelves saved before the numbering system
+// existed (they used to show columns starting at 1).
+function normalizeShelves(){
+  let changed=false;
+  let maxEnd=50;
+  shelves.forEach(s=>{
+    if(s.startNum==null){
+      s.startNum = maxEnd+1;
+      changed=true;
+    }
+    maxEnd = Math.max(maxEnd, s.startNum + (s.cols||5) - 1);
+  });
+  if(changed){ saveData(); if(typeof sbSaveNow==='function') sbSaveNow(); }
 }
 
 function saveData() {
@@ -1248,7 +1396,7 @@ function renderDB(){
       locHtml=`<span style="color:var(--warn);font-size:10px;font-style:italic">بدون درج</span>
         <button class="btn btn-secondary btn-sm" style="margin-top:3px;display:block;font-size:10px" onclick="event.stopPropagation();openAssignDrawerModal('${key}')">📍 تعيين</button>`;
     } else {
-      const dr=key.match(/\d+/)[0], sl=key.match(/[A-D]/)[0];
+      const dr=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
       locHtml=`<span style="font-family:var(--mono);font-size:11px;color:var(--accent2)">درج ${dr}—${sl}</span>
         <button class="btn btn-secondary btn-sm" style="margin-top:2px;display:block;font-size:10px" onclick="event.stopPropagation();openMoveDrawerModal('${key}')">🔀 نقل</button>`;
     }
@@ -1391,7 +1539,7 @@ let movingKey=null;
 function openMoveDrawerModal(key){
   movingKey=key;
   const item=data[key];
-  const dr=key.match(/\d+/)[0], sl=key.match(/[A-D]/)[0];
+  const dr=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
   document.getElementById('moveDrawerInfo').innerHTML=`<strong>${item.name.replace(/\n/g,' ')}</strong><br>
     الموقع الحالي: <span style="font-family:var(--mono);color:var(--accent)">درج ${dr} — ${sl}</span>`;
   document.getElementById('moveTargetDrawer').value='';
@@ -1621,10 +1769,14 @@ function updateStats(){
 function openExpModal(key){
   editingKey=key; const item=data[key];
   const isExtra=key.startsWith('x_');
+  const numMatch=key.match(/\d+/), slotMatch=key.match(/[A-F]/);
+  const num=numMatch?parseInt(numMatch[0],10):null;
+  const isShelfNum = num!=null && num>50;
   const locText=isExtra
     ? '<span style="color:var(--warn)">بدون موقع محدد</span>'
-    : `درج ${key.match(/\d+/)[0]} — خانة ${key.match(/[A-D]/)[0]}`;
+    : `${isShelfNum?'رقم':'درج'} ${numMatch[0]} — خانة ${slotMatch[0]}`;
   document.getElementById('modalDrugInfo').innerHTML=`<strong>${item.name.replace(/\n/g,' ')}</strong><br>الموقع: <span style="color:var(--accent);font-family:var(--mono)">${locText}</span>`;
+  document.getElementById('modalDrugName').value = item.name;
   document.getElementById('typeHazard').checked   =item.types.includes('hazard');
   document.getElementById('typeLasa').checked     =item.types.includes('lasa');
   document.getElementById('typeHighAlert').checked=item.types.includes('high-alert');
@@ -1632,7 +1784,16 @@ function openExpModal(key){
   document.getElementById('flagShelf').checked    =item.shelf;
   document.getElementById('drugNotes').value      =item.notes||'';
   renderExpRows(item.expiries,'expListEdit');
+  // only shelf-page entries (number > 50) can be deleted entirely from here —
+  // drawers 1-50 are fixed reference slots
+  document.getElementById('modalDeleteBtn').style.display = isShelfNum ? '' : 'none';
   document.getElementById('expModal').classList.add('open');
+}
+function deleteShelfDrugEntry(){
+  if(!editingKey) return;
+  if(!confirm('حذف هذا الدواء من الخانة؟')) return;
+  delete data[editingKey];
+  saveData(); closeModal('expModal'); refreshAll(); showToast('🗑️ تم الحذف');
 }
 function renderExpRows(expiries,containerId){
   const c=document.getElementById(containerId); c.innerHTML='';
@@ -1676,6 +1837,7 @@ function saveExpiries(){
   data[editingKey].oos     =document.getElementById('flagOOS').checked;
   data[editingKey].shelf   =document.getElementById('flagShelf').checked;
   data[editingKey].notes   =document.getElementById('drugNotes').value;
+  data[editingKey].name    =document.getElementById('modalDrugName').value.trim()||data[editingKey].name;
   saveData(); closeModal('expModal'); refreshAll(); showToast('✅ تم الحفظ');
 }
 
@@ -1723,7 +1885,8 @@ function doSearch(){
   container.innerHTML='';
   results.forEach(({key,item})=>{
     const hl=item.name.replace(/\n/g,' ').replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark>${m}</mark>`);
-    const dr=key.match(/\d+/)[0], sl=key.match(/[A-D]/)[0];
+    const isExtra=key.startsWith('x_');
+    const dr=isExtra?'':key.match(/\d+/)[0], sl=isExtra?'':key.match(/[A-F]/)[0];
     let badges='';
     if(item.types.includes('hazard'))     badges+=`<span class="type-badge hazard">⚠️ Hazard</span>`;
     if(item.types.includes('lasa'))       badges+=`<span class="type-badge lasa">🔵 LASA</span>`;
@@ -1753,6 +1916,7 @@ function renderTable(){
   const tbody=document.getElementById('tableBody'); tbody.innerHTML='';
   for(const key in data){
     const item=data[key];
+    if(key.startsWith('x_')) continue; // extras without a fixed drawer slot yet — skip in this table
     if(q&&!item.name.toLowerCase().includes(q)&&!key.toLowerCase().includes(q)) continue;
     let tm=true;
     if(tf==='hazard') tm=item.types.includes('hazard');
@@ -1761,7 +1925,10 @@ function renderTable(){
     else if(tf==='oos') tm=item.oos;
     else if(tf==='shelf') tm=item.shelf;
     if(!tm) continue;
-    const dr=key.match(/\d+/)[0], sl=key.match(/[A-D]/)[0];
+    const drMatch=key.match(/\d+/), slMatch=key.match(/[A-F]/);
+    if(!drMatch||!slMatch) continue; // safety: skip malformed keys instead of crashing
+    if(parseInt(drMatch[0],10)>50) continue; // this list is drawers 1-50 only; 51+ lives on the shelf page
+    const dr=drMatch[0], sl=slMatch[0];
     const exHtml=item.expiries.length?item.expiries.map(e=>{const s=expStatus(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)}</span>`;}).join(' '):'<span style="color:var(--text3)">—</span>';
     let tHtml='';
     if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️</span>`;
@@ -1826,15 +1993,17 @@ function renderShelves(){
 
   filtered.forEach(shelf=>{
     const cols=shelf.cols||5, rows=shelf.rows||4;
-    const cells=shelf.cells||{};
+    const startNum=shelf.startNum||1;
     const total=cols*rows;
-    const filled=Object.keys(cells).length;
+    let filled=0;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ if(data[`${startNum+c}${rowLabel(r)}`]) filled++; }
 
     const section=document.createElement('div'); section.className='shelf-section';
 
     // header
     const hdr=document.createElement('div'); hdr.className='shelf-header';
-    hdr.innerHTML=`<div class="shelf-title">📦 ${shelf.name}</div>
+    const photoHtml=shelf.photo?`<img src="${shelf.photo}" onclick="event.stopPropagation();openShelfPhotoPreview('${shelf.id}')" style="width:34px;height:34px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)">`:'';
+    hdr.innerHTML=`${photoHtml}<div class="shelf-title">📦 ${shelf.name} <span style="color:var(--accent2);font-family:var(--mono);font-size:11px">(${startNum}-${startNum+cols-1})</span></div>
       <div class="shelf-meta">${cols} عامود × ${rows} صف | ${filled}/${total} مملوء</div>
       <div style="display:flex;gap:5px">
         <button class="btn btn-secondary btn-sm" onclick="openEditShelfModal('${shelf.id}')">✏️ تعديل الرف</button>
@@ -1854,10 +2023,10 @@ function renderShelves(){
     corner.style.cssText='display:flex;align-items:center;justify-content:center';
     grid.appendChild(corner);
 
-    // column headers: 1, 2, 3 ...
+    // column headers: continuing numbers (51, 52, 53 ...)
     for(let c=0;c<cols;c++){
       const h=document.createElement('div'); h.className='shelf-col-header';
-      h.textContent=c+1; grid.appendChild(h);
+      h.textContent=startNum+c; grid.appendChild(h);
     }
 
     // rows
@@ -1866,38 +2035,43 @@ function renderShelves(){
       const rh=document.createElement('div'); rh.className='shelf-row-header';
       rh.textContent=rowLabel(r); grid.appendChild(rh);
 
-      // cells
+      // cells — read straight from the main `data` object, keyed exactly like
+      // drawers (e.g. "51A"), so anything in the database with a matching
+      // number+slot shows up here automatically and stays in sync everywhere.
       for(let c=0;c<cols;c++){
-        const ck=`${rowLabel(r)}${c+1}`; // e.g. A1, B3
-        const cell=cells[ck];
+        const num=startNum+c;
+        const key=`${num}${rowLabel(r)}`; // real database key, e.g. "51A"
+        const dispLabel=`${rowLabel(r)}${num}`; // e.g. A51 — shown to the user
+        const item=data[key];
         const div=document.createElement('div');
         let cellCls='shelf-cell';
-        if(cell && cell.drug){
-          const cSt=cellExpSt(cell);
-          const expCls=cSt==='danger'?'danger':cSt==='warn'?'warn':cSt==='none'?'':cSt;
+        if(item){
+          const cSt=slotExpSt(key);
+          const expCls=!item.expiries.length?'noexp':cSt==='danger'?'danger':cSt==='warn'?'warn':'ok';
           cellCls+=` filled ${expCls}`;
-          if((cell.types||[]).includes('high-alert'))     cellCls+=' type-high-alert';
-          else if((cell.types||[]).includes('lasa'))      cellCls+=' type-lasa';
-          else if((cell.types||[]).includes('hazard'))    cellCls+=' type-hazard';
+          if(item.types.includes('high-alert'))     cellCls+=' type-high-alert';
+          else if(item.types.includes('lasa'))      cellCls+=' type-lasa';
+          else if(item.types.includes('hazard'))    cellCls+=' type-hazard';
+          if(item.oos) cellCls+=' cell-oos';
         }
         div.className=cellCls;
 
-        if(cell&&cell.drug){
-          // best expiry
+        if(item){
           let bestExp='', bestSt='ok';
-          if(cell.expiries&&cell.expiries.length){
-            // show earliest
-            const sorted=[...cell.expiries].sort();
+          if(item.expiries.length){
+            const sorted=[...item.expiries].sort();
             bestExp=sorted[0]; bestSt=expStatus(bestExp);
             if(bestSt==='critical') bestSt='danger';
           }
-          div.innerHTML=`<span class="cell-label">${ck}</span>
-            <div class="cell-drug">${cell.drug}</div>
-            ${bestExp?`<div class="cell-exp ${bestSt}">${formatDate(bestExp)}</div>`:''}`;
+          div.innerHTML=`<span class="cell-label">${dispLabel}</span>
+            <div class="cell-drug">${item.name.replace(/\n/g,' ')}</div>
+            ${bestExp?`<div class="cell-exp ${bestSt}">${formatDate(bestExp)}</div>`:'<div class="cell-exp noexp">— بدون تاريخ</div>'}
+            ${item.oos?'<span class="oos-badge" style="position:absolute;top:2px;right:3px;font-size:7px">OOS</span>':''}`;
+          div.onclick=()=>openExpModal(key);
         } else {
-          div.innerHTML=`<span class="cell-label" style="position:static;color:var(--text3);font-size:9px">${ck}</span><div class="cell-add">+</div>`;
+          div.innerHTML=`<span class="cell-label" style="position:static;color:var(--text3);font-size:9px">${dispLabel}</span><div class="cell-add">+</div>`;
+          div.onclick=()=>createShelfDrug(key);
         }
-        div.onclick=()=>openCellModal(shelf.id,ck,cell);
         grid.appendChild(div);
       }
     }
@@ -1908,20 +2082,83 @@ function renderShelves(){
   updateStats();
 }
 
+// Clicking an empty shelf cell searches the database for an existing,
+// not-yet-placed drug and links it here — manual/free-text creation of new
+// drugs only happens from the "قاعدة البيانات" tab (openAddDrugModal).
+let pickExtraTargetKey=null;
+function createShelfDrug(key){
+  pickExtraTargetKey=key;
+  const num=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
+  document.getElementById('pickExtraTargetInfo').innerHTML=`الخانة: <span style="color:var(--accent);font-family:var(--mono)">${sl}${num}</span>`;
+  document.getElementById('pickExtraSearch').value='';
+  renderPickExtraResults();
+  document.getElementById('pickExtraModal').classList.add('open');
+}
+function renderPickExtraResults(){
+  const q=(document.getElementById('pickExtraSearch').value||'').trim().toLowerCase();
+  const box=document.getElementById('pickExtraResults'); box.innerHTML='';
+  const matches=Object.entries(data)
+    .filter(([k])=>k.startsWith('x_')) // only drugs not yet placed anywhere
+    .filter(([k,v])=>!q||v.name.toLowerCase().includes(q))
+    .slice(0,40);
+  if(!matches.length){
+    box.innerHTML=`<div class="empty" style="padding:14px"><div class="icon">🔎</div>${q?'لا توجد نتائج':'اكتب اسم الدواء للبحث، أو اعرض كل الأدوية غير المعينة'}</div>`;
+    return;
+  }
+  matches.forEach(([k,v])=>{
+    const row=document.createElement('div');
+    row.className='btn btn-secondary';
+    row.style.cssText='justify-content:flex-start;text-align:right;width:100%';
+    row.textContent=v.name.replace(/\n/g,' ');
+    row.onclick=()=>selectExtraForShelf(k);
+    box.appendChild(row);
+  });
+}
+function selectExtraForShelf(extraKey){
+  if(!pickExtraTargetKey) return;
+  if(data[pickExtraTargetKey]) return showToast('❌ هذه الخانة مشغولة بالفعل');
+  data[pickExtraTargetKey]={...data[extraKey], shelf:true};
+  delete data[extraKey];
+  saveData(); closeModal('pickExtraModal'); refreshAll();
+  showToast('✅ تم ربط الدواء بالخانة');
+}
+
 function openAddShelfModal(){
   document.getElementById('newShelfName').value='';
   const {cols,rows}=getNewShelfSize();
   document.getElementById('newShelfCols').value=cols;
   document.getElementById('newShelfRows').value=rows;
+  const photoInput=document.getElementById('newShelfPhoto'); if(photoInput) photoInput.value='';
+  const next=getNextShelfStartNum();
+  document.getElementById('addShelfModal').querySelector('h2').textContent=`📦 إضافة درج علب جديد (سيبدأ من ${next})`;
   document.getElementById('addShelfModal').classList.add('open');
+}
+function getNextShelfStartNum(){
+  let maxEnd=50;
+  shelves.forEach(s=>{
+    const start=s.startNum||1;
+    const cols=s.cols||5;
+    maxEnd=Math.max(maxEnd, start+cols-1);
+  });
+  return maxEnd+1;
 }
 function saveNewShelf(){
   const name=document.getElementById('newShelfName').value.trim();
   if(!name)return showToast('⚠️ أدخل اسم الرف');
   const cols=parseInt(document.getElementById('newShelfCols').value)||5;
   const rows=parseInt(document.getElementById('newShelfRows').value)||4;
-  shelves.push({id:uid(),name,cols,rows,cells:{}});
-  saveData();closeModal('addShelfModal');renderShelves();showToast('✅ تمت إضافة درج العلب');
+  const startNum=getNextShelfStartNum();
+  const photoInput=document.getElementById('newShelfPhoto');
+  const file=photoInput&&photoInput.files&&photoInput.files[0];
+  const finish=(photo)=>{
+    shelves.push({id:uid(),name,cols,rows,startNum,cells:{},photo:photo||null});
+    saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`);
+  };
+  if(file){
+    const reader=new FileReader();
+    reader.onload=()=>finish(reader.result);
+    reader.readAsDataURL(file);
+  } else finish(null);
 }
 
 function openEditShelfModal(id){
@@ -1930,7 +2167,17 @@ function openEditShelfModal(id){
   document.getElementById('editShelfName').value=sh.name;
   document.getElementById('editShelfCols').value=sh.cols;
   document.getElementById('editShelfRows').value=sh.rows;
+  document.getElementById('editShelfStartNum').value=sh.startNum||1;
+  document.getElementById('editShelfPhoto').value='';
+  document.getElementById('editShelfPhotoCurrent').innerHTML=sh.photo
+    ?`<img src="${sh.photo}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border)"> <button class="btn btn-secondary btn-sm" onclick="removeShelfPhoto()">🗑️ إزالة الصورة</button>`
+    :'<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
   document.getElementById('editShelfModal').classList.add('open');
+}
+function removeShelfPhoto(){
+  const sh=shelves.find(s=>s.id===editingShelfId);
+  if(sh) sh.photo=null;
+  document.getElementById('editShelfPhotoCurrent').innerHTML='<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
 }
 function saveEditShelf(){
   const sh=shelves.find(s=>s.id===editingShelfId);
@@ -1938,7 +2185,20 @@ function saveEditShelf(){
   sh.name=document.getElementById('editShelfName').value.trim()||sh.name;
   sh.cols=parseInt(document.getElementById('editShelfCols').value)||sh.cols;
   sh.rows=parseInt(document.getElementById('editShelfRows').value)||sh.rows;
-  saveData();closeModal('editShelfModal');renderShelves();showToast('✅ تم تعديل درج العلب');
+  sh.startNum=parseInt(document.getElementById('editShelfStartNum').value)||sh.startNum||1;
+  const photoInput=document.getElementById('editShelfPhoto');
+  const file=photoInput&&photoInput.files&&photoInput.files[0];
+  const finish=()=>{ saveData();closeModal('editShelfModal');renderShelves();showToast('✅ تم تعديل درج العلب'); };
+  if(file){
+    const reader=new FileReader();
+    reader.onload=()=>{ sh.photo=reader.result; finish(); };
+    reader.readAsDataURL(file);
+  } else finish();
+}
+function openShelfPhotoPreview(id){
+  const sh=shelves.find(s=>s.id===id); if(!sh||!sh.photo)return;
+  document.getElementById('shelfPhotoPreviewImg').src=sh.photo;
+  document.getElementById('shelfPhotoModal').classList.add('open');
 }
 function deleteShelf(){
   if(!confirm('حذف هذا الرف وكل محتوياته؟'))return;
@@ -1947,10 +2207,10 @@ function deleteShelf(){
 }
 
 // ══ CELL MODAL ══
-function openCellModal(shelfId,cellKey,cell){
+function openCellModal(shelfId,cellKey,cell,dispLabel){
   editingShelfId=shelfId; editingCellKey=cellKey;
   const sh=shelves.find(s=>s.id===shelfId);
-  document.getElementById('cellModalInfo').innerHTML=`<strong>${sh.name}</strong> — خلية <span style="font-family:var(--mono);color:var(--accent)">${cellKey}</span>`;
+  document.getElementById('cellModalInfo').innerHTML=`<strong>${sh.name}</strong> — خلية <span style="font-family:var(--mono);color:var(--accent)">${dispLabel||cellKey}</span>`;
   document.getElementById('cellDrugName').value=(cell&&cell.drug)||'';
   document.getElementById('cellHazard').checked   =(cell&&(cell.types||[]).includes('hazard'))||false;
   document.getElementById('cellLasa').checked     =(cell&&(cell.types||[]).includes('lasa'))||false;
@@ -2066,16 +2326,33 @@ async function sbLoad(){
     if(rows&&rows.length&&rows[0].payload){
       const p=rows[0].payload;
       if(p.data)      { Object.assign(data,p.data);   }
-      if(p.shelves)   shelves   = p.shelves;
+      if(p.shelves && p.shelves.length)   shelves   = p.shelves; // keep local seeded shelves if remote has none yet
       if(p.oosManual) oosManual = p.oosManual;
       if(p.settings)  settings  = Object.assign(settings,p.settings);
       if(p.theme)     theme     = p.theme;
       sbConnected=true;
       setSbStatus('connected');
+      // remote shelves may predate the numbering system (e.g. an old "big box"
+      // shelf saved as 1-5) or may not have the 3 reference photos yet — fix both
+      normalizeShelves();
+      migrateLegacyShelfCells();
+      if(!shelves.some(s=>s.seedPhotoId)){
+        const n1=getNextShelfStartNum();
+        shelves.push({id:uid(), seedPhotoId:'51', name:'درج العلب 1', cols:5, rows:6, startNum:n1, photo:SHELF_PHOTO_51});
+        seedShelfIntoData(n1, SHELF_GRID_51);
+        const n2=getNextShelfStartNum();
+        shelves.push({id:uid(), seedPhotoId:'56', name:'درج العلب 2 (Drawer 3)', cols:5, rows:6, startNum:n2, photo:SHELF_PHOTO_56});
+        seedShelfIntoData(n2, SHELF_GRID_56);
+        const n3=getNextShelfStartNum();
+        shelves.push({id:uid(), seedPhotoId:'61', name:'درج العلب 3 (Drawer 4)', cols:5, rows:6, startNum:n3, photo:SHELF_PHOTO_61});
+        seedShelfIntoData(n3, SHELF_GRID_61);
+      }
+      saveData();
+      sbSaveNow(); // push the corrected/completed shelves list back up to Supabase
     } else {
-      // first launch: upsert empty row so we can PATCH later
+      // first launch: upsert current local state (including the 3 seeded shelf photos) so we can PATCH later
       await sbFetch(`${SB_TABLE}`, {method:'POST',
-        body:JSON.stringify({id:1,payload:{data:{},shelves:[],oosManual:[],settings,theme}})});
+        body:JSON.stringify({id:1,payload:{data,shelves,oosManual,settings,theme}})});
       sbConnected=true;
       setSbStatus('connected');
     }
@@ -2418,7 +2695,7 @@ function showVoiceConfirm(raw, resolved, date, loc){
   const resolvedKey = resolved ? resolved.key : '';
   const drawerVal = loc ? loc.dr : '';
   const dr = resolvedKey.match(/\d+/)?.[0] || drawerVal || '';
-  const sl = resolvedKey.match(/[A-D]/)?.[0] || (loc&&loc.sl) || 'A';
+  const sl = resolvedKey.match(/[A-F]/)?.[0] || (loc&&loc.sl) || 'A';
   const resolvedNameDisplay = resolved
     ? `<strong style="color:var(--accent)">${resolved.name}</strong>`
     : '<span style="color:var(--warn)">— لم يُعثر، ابحث يدوياً</span>';
@@ -2501,9 +2778,10 @@ function vcFilterDrugs(q){
   const sq = (q||'').trim().toLowerCase();
   let results;
   if(!sq){
-    results = Object.entries(data).slice(0,50).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')}));
+    results = Object.entries(data).filter(([k])=>!k.startsWith('x_')).slice(0,50).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')}));
   } else {
     results = Object.entries(data)
+      .filter(([k])=>!k.startsWith('x_'))
       .filter(([k,v])=>{
         const nm=v.name.toLowerCase();
         return nm.includes(sq) || k.toLowerCase().includes(sq) ||
@@ -2517,7 +2795,7 @@ function vcFilterDrugs(q){
     return;
   }
   dd.innerHTML = results.map(r=>{
-    const drn=r.key.match(/\d+/)[0], sln=r.key.match(/[A-D]/)[0];
+    const drn=r.key.match(/\d+/)[0], sln=r.key.match(/[A-F]/)[0];
     const hi = sq ? r.name.replace(
       new RegExp(sq.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),
       m=>`<mark style="background:rgba(0,212,170,.3);color:var(--accent);border-radius:2px;padding:0 1px">${m}</mark>`
@@ -2534,7 +2812,7 @@ function vcFilterDrugs(q){
 
 function vcSelectDrug(key){
   const item=data[key]; if(!item) return;
-  const dr=key.match(/\d+/)[0], sl=key.match(/[A-D]/)[0];
+  const dr=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
   const inp=document.getElementById('vcDrugSearch');
   if(inp) inp.value=item.name.replace(/\n/g,' ');
   document.getElementById('vcDr').value=dr;
@@ -2614,7 +2892,7 @@ function renderVoiceSessionList(){
   el.innerHTML = `<div style="display:flex;flex-direction:column;gap:5px">` +
     voiceSessionLog.slice().reverse().map((item,i)=>{
       const idx = voiceSessionLog.length - 1 - i;
-      const dr = item.key.match(/\d+/)[0], sl = item.key.match(/[A-D]/)[0];
+      const dr = item.key.match(/\d+/)[0], sl = item.key.match(/[A-F]/)[0];
       const stEl = expStatus(item.date);
       return `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--surface2);border-radius:7px;border:1px solid var(--border)">
         <span style="font-family:var(--mono);font-size:11px;color:var(--accent2);min-width:60px">درج ${dr}–${sl}</span>
