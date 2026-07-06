@@ -18,6 +18,7 @@
   --lasa:#0099ff;   --lasa-bg:rgba(0,153,255,.13);
   --high:#ff4757;   --high-bg:rgba(255,71,87,.13);
   --noexp:#a78bfa; --noexp-border:rgba(167,139,250,.3); --noexp-bg:rgba(167,139,250,.06);
+  --oos-cell-bg:#3a3f47; --oos-cell-border:#565d68; --oos-cell-text:#e6e8eb;
   --font:'IBM Plex Sans Arabic',sans-serif;
   --mono:'JetBrains Mono',monospace;
   --radius:10px;
@@ -30,6 +31,7 @@ body.light {
   --lasa-bg:rgba(0,153,255,.15);
   --high-bg:rgba(255,71,87,.15);
   --noexp:#7c3aed; --noexp-border:rgba(124,58,237,.3); --noexp-bg:rgba(124,58,237,.06);
+  --oos-cell-bg:#c7cbd1; --oos-cell-border:#8b929c; --oos-cell-text:#20242a;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -72,6 +74,7 @@ header h1{font-size:15px;font-weight:700;color:var(--accent);flex:1;min-width:12
 .tab.active{color:var(--accent);background:var(--bg);border-color:var(--border);border-bottom-color:var(--bg);margin-bottom:-1px}
 
 main{padding:14px 18px;max-width:1600px;margin:0 auto}
+main.main-wide{max-width:100%}
 .tab-content{display:none}.tab-content.active{display:block}
 
 /* ══ BUTTONS ══ */
@@ -309,24 +312,25 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 
 /* shelf grid = rows (A,B,C...) × cols (1,2,3...) */
 .shelf-grid-wrap{padding:12px;overflow-x:auto}
-.shelf-grid{display:grid;gap:3px}
+.shelf-grid-wrap{padding:12px;overflow-x:auto}
+.shelf-grid{display:grid;gap:4px}
 /* row labels on right side */
 .shelf-row-header{
-  font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text2);
+  font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text2);
   display:flex;align-items:center;justify-content:center;
   background:var(--surface2);border-radius:4px;padding:2px 6px;min-width:26px;
 }
 .shelf-col-header{
-  font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text3);
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text3);
   text-align:center;padding:2px 0;
 }
 
 .shelf-cell{
   border:1px solid var(--border);border-radius:6px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:56px;min-width:70px;padding:5px 4px;cursor:pointer;
+  min-height:66px;min-width:82px;padding:6px 5px;cursor:pointer;
   background:var(--surface2);transition:all .18s;text-align:center;
-  font-size:10px;color:var(--text3);gap:2px;
+  font-size:12px;color:var(--text3);gap:2px;
   position:relative;
 }
 .shelf-cell:hover{border-color:var(--accent);transform:scale(1.03);z-index:2}
@@ -337,21 +341,30 @@ main{padding:14px 18px;max-width:1600px;margin:0 auto}
 .shelf-cell.filled.danger{background:rgba(255,71,87,.09);border-color:rgba(255,71,87,.4)}
 .shelf-cell.filled.noexp{background:var(--noexp-bg);border-color:var(--noexp-border)}
 .shelf-cell.filled.noexp .cell-drug{color:var(--noexp)}
-.shelf-cell.filled.cell-oos{opacity:.55}
 .shelf-cell.filled.expired{background:rgba(110,118,129,.08);border-color:var(--border);opacity:.6}
 .shelf-cell.filled.type-hazard    {border-color:rgba(240,165,0,.6)}
 .shelf-cell.filled.type-lasa      {border-color:rgba(0,153,255,.6)}
 .shelf-cell.filled.type-high-alert{border-color:rgba(255,71,87,.6)}
+/* Out of stock overrides every other color -- solid, unmistakable dark gray in both themes */
+.shelf-cell.filled.cell-oos,
+.shelf-cell.filled.cell-oos.warn,
+.shelf-cell.filled.cell-oos.danger,
+.shelf-cell.filled.cell-oos.noexp{
+  background:var(--oos-cell-bg)!important;border-color:var(--oos-cell-border)!important;opacity:1;
+}
+.shelf-cell.filled.cell-oos .cell-drug,
+.shelf-cell.filled.cell-oos .cell-label{color:var(--oos-cell-text)!important}
+.shelf-cell.filled.cell-oos .cell-exp{color:var(--oos-cell-text)!important;opacity:.75}
 
 .cell-label{
-  font-family:var(--mono);font-size:9px;color:var(--text3);font-weight:700;
+  font-family:var(--mono);font-size:10px;color:var(--text3);font-weight:700;
   position:absolute;top:3px;left:4px;
 }
-.cell-drug{font-size:9px;font-weight:600;line-height:1.3;color:var(--text);word-break:break-word}
+.cell-drug{font-size:11px;font-weight:600;line-height:1.35;color:var(--text);word-break:break-word}
 .shelf-cell.filled.type-hazard     .cell-drug{color:var(--hazard)}
 .shelf-cell.filled.type-lasa       .cell-drug{color:var(--lasa)}
 .shelf-cell.filled.type-high-alert .cell-drug{color:var(--high)}
-.cell-exp{font-family:var(--mono);font-size:8px;margin-top:2px}
+.cell-exp{font-family:var(--mono);font-size:10px;margin-top:2px}
 .cell-exp.ok     {color:var(--success)}
 .cell-exp.warn   {color:var(--warn)}
 .cell-exp.danger {color:var(--danger)}
@@ -417,6 +430,47 @@ code{font-family:var(--mono)}
 #sbStatus[data-s=saved]{color:var(--accent)}
 #sbStatus[data-s=offline]{color:var(--danger)}
 #sbStatus[data-s=syncing]{color:var(--warn)}
+
+/* ══ PRINT: one shelf, filling an A4 page with no empty space ══ */
+@media print{
+  @page{ size:A4; margin:8mm; }
+  body.printing-shelf > *{ visibility:hidden; }
+  body.printing-shelf #tab-shelf,
+  body.printing-shelf #tab-shelf *{ visibility:visible; }
+  body.printing-shelf #tab-shelf{
+    position:absolute; inset:0; margin:0; padding:0; display:block!important;
+  }
+  body.printing-shelf .shelf-section{ display:none!important; }
+  body.printing-shelf .shelf-section.print-target{
+    display:block!important; position:absolute; inset:0;
+    border:none; border-radius:0; width:100%; height:100%;
+  }
+  body.printing-shelf .no-print{ display:none!important; }
+  body.printing-shelf .shelf-header{
+    border-bottom:2px solid #000; background:#fff!important; padding:4mm 0;
+  }
+  body.printing-shelf .shelf-title{ font-size:18px; color:#000!important; }
+  body.printing-shelf .shelf-meta{ color:#000!important; }
+  body.printing-shelf .shelf-grid-wrap{
+    padding:0; margin-top:4mm; height:calc(100% - 26mm); overflow:visible;
+  }
+  body.printing-shelf .shelf-grid{
+    height:100%; width:100%; gap:2mm;
+  }
+  body.printing-shelf .shelf-cell{
+    min-height:0; min-width:0; border:1px solid #000!important; border-radius:2mm;
+    background:#fff!important; color:#000!important;
+  }
+  body.printing-shelf .shelf-cell.filled.cell-oos{ background:#ccc!important; }
+  body.printing-shelf .shelf-cell.filled.danger{ background:#ffd9dc!important; }
+  body.printing-shelf .shelf-cell.filled.warn{ background:#fff0cf!important; }
+  body.printing-shelf .shelf-cell.filled.noexp{ background:#ece5ff!important; }
+  body.printing-shelf .cell-drug{ font-size:11px; color:#000!important; }
+  body.printing-shelf .cell-label{ color:#000!important; }
+  body.printing-shelf .shelf-row-header, body.printing-shelf .shelf-col-header{
+    background:#fff!important; color:#000!important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1236,6 +1290,7 @@ function switchTab(name,el){
   document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   el.classList.add('active');
+  document.querySelector('main').classList.toggle('main-wide', name==='shelf');
   if(name==='alerts') renderAlerts();
   if(name==='db')     renderDB();
   if(name==='voice')  initVoice();
@@ -1998,14 +2053,15 @@ function renderShelves(){
     let filled=0;
     for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ if(data[`${startNum+c}${rowLabel(r)}`]) filled++; }
 
-    const section=document.createElement('div'); section.className='shelf-section';
+    const section=document.createElement('div'); section.className='shelf-section'; section.dataset.shelfId=shelf.id;
 
     // header
     const hdr=document.createElement('div'); hdr.className='shelf-header';
     const photoHtml=shelf.photo?`<img src="${shelf.photo}" onclick="event.stopPropagation();openShelfPhotoPreview('${shelf.id}')" style="width:34px;height:34px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)">`:'';
     hdr.innerHTML=`${photoHtml}<div class="shelf-title">📦 ${shelf.name} <span style="color:var(--accent2);font-family:var(--mono);font-size:11px">(${startNum}-${startNum+cols-1})</span></div>
       <div class="shelf-meta">${cols} عامود × ${rows} صف | ${filled}/${total} مملوء</div>
-      <div style="display:flex;gap:5px">
+      <div style="display:flex;gap:5px" class="no-print">
+        <button class="btn btn-secondary btn-sm" onclick="printShelf('${shelf.id}')">🖨️ طباعة</button>
         <button class="btn btn-secondary btn-sm" onclick="openEditShelfModal('${shelf.id}')">✏️ تعديل الرف</button>
       </div>`;
     section.appendChild(hdr);
@@ -2017,6 +2073,7 @@ function renderShelves(){
     const grid=document.createElement('div'); grid.className='shelf-grid';
     // grid-template-columns: header + cols
     grid.style.gridTemplateColumns=`28px repeat(${cols},1fr)`;
+    grid.style.gridTemplateRows=`auto repeat(${rows},1fr)`;
 
     // top-left empty corner
     const corner=document.createElement('div');
@@ -2086,6 +2143,18 @@ function renderShelves(){
 // not-yet-placed drug and links it here — manual/free-text creation of new
 // drugs only happens from the "قاعدة البيانات" tab (openAddDrugModal).
 let pickExtraTargetKey=null;
+// Print just one shelf, filling an A4 page with no empty margins.
+function printShelf(shelfId){
+  document.querySelectorAll('.shelf-section').forEach(s=>{
+    s.classList.toggle('print-target', s.dataset.shelfId===shelfId);
+  });
+  document.body.classList.add('printing-shelf');
+  window.print();
+}
+window.addEventListener('afterprint', ()=>{
+  document.body.classList.remove('printing-shelf');
+  document.querySelectorAll('.shelf-section').forEach(s=>s.classList.remove('print-target'));
+});
 function createShelfDrug(key){
   pickExtraTargetKey=key;
   const num=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
