@@ -567,7 +567,7 @@ code{font-family:var(--mono)}
 <!-- ══ DATABASE ══ -->
 <div id="tab-db" class="tab-content">
   <div class="toolbar">
-    <input type="text" class="search-input" id="dbSearch" placeholder="🔍 ابحث في قاعدة البيانات..." oninput="resetDbView()">
+    <input type="text" class="search-input" id="dbSearch" placeholder="🔍 ابحث في قاعدة البيانات..." oninput="dbSearchDebounced()">
     <select id="dbFilter" onchange="resetDbView()">
       <option value="all">كل الأدوية</option>
       <option value="has-exp">لديها تواريخ</option>
@@ -1139,6 +1139,23 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Write-auth password prompt (replaces blocking prompt()) ══ -->
+<div id="writeAuthModal" class="modal-overlay">
+<div class="modal" style="max-width:360px">
+  <h2>🔐 تأكيد الصلاحية</h2>
+  <div class="drug-info" id="writeAuthLabel"></div>
+  <div class="form-group">
+    <input type="password" id="writeAuthInput" placeholder="كلمة المرور" style="font-size:16px;letter-spacing:3px"
+      onkeydown="if(event.key==='Enter')_writeAuthSubmit()">
+  </div>
+  <div id="writeAuthError" style="display:none;color:var(--danger);font-size:12px;margin-top:-8px;margin-bottom:4px">❌ كلمة المرور غير صحيحة</div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="_writeAuthCancel()">إلغاء</button>
+    <button class="btn btn-primary" onclick="_writeAuthSubmit()">تأكيد</button>
+  </div>
+</div>
+</div>
+
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -1341,6 +1358,7 @@ function normalizeShelves(){
 }
 
 function saveData() {
+  invalidateDoseCountMap();
   localStorage.setItem('pharma_v3', JSON.stringify({data,shelves,oosManual,settings,theme}));
 }
 function saveSettings() {
@@ -1385,16 +1403,43 @@ function isWriteAuthFresh(){
   const last=parseInt(sessionStorage.getItem('pharma_write_auth_at')||'0',10);
   return Date.now()-last < authWindowMs();
 }
-function requireWriteAuth(actionLabel='التعديل'){
-  if(isWriteAuthFresh()) return true;
-  const pass=prompt(`أدخل كلمة المرور للسماح بعملية: ${actionLabel}\nستبقى الصلاحية فعالة لمدة ${settings.authMinutes||15} دقيقة.`);
-  if(pass===(settings.writePassword||'asmd')){
-    sessionStorage.setItem('pharma_write_auth_at', String(Date.now()));
-    showToast(`🔓 تم السماح لمدة ${settings.authMinutes||15} دقيقة`);
+// ── Write-auth: non-blocking modal replaces prompt() to avoid UI freeze ──
+let _writeAuthCallback=null;
+function requireWriteAuth(actionLabel='التعديل', callback){
+  // If called WITHOUT a callback (legacy pattern), use the old synchronous
+  // check only (already-authenticated path). If auth is fresh, return true.
+  // If auth is NOT fresh and no callback is given, open the modal and return
+  // false so the caller stops — the caller must use requireWriteAuth with a
+  // callback to resume after auth succeeds.
+  if(isWriteAuthFresh()) {
+    if(callback) callback();
     return true;
   }
-  if(pass!==null) showToast('❌ كلمة المرور غير صحيحة');
-  return false;
+  // open non-blocking modal
+  document.getElementById('writeAuthLabel').textContent=`أدخل كلمة المرور للسماح بعملية: ${actionLabel}`;
+  document.getElementById('writeAuthInput').value='';
+  document.getElementById('writeAuthError').style.display='none';
+  _writeAuthCallback=callback||null;
+  document.getElementById('writeAuthModal').classList.add('open');
+  setTimeout(()=>document.getElementById('writeAuthInput').focus(),80);
+  return false; // caller should stop; callback will resume the operation
+}
+function _writeAuthSubmit(){
+  const pass=document.getElementById('writeAuthInput').value;
+  if(pass===(settings.writePassword||'asmd')){
+    sessionStorage.setItem('pharma_write_auth_at', String(Date.now()));
+    closeModal('writeAuthModal');
+    showToast(`🔓 تم السماح لمدة ${settings.authMinutes||15} دقيقة`);
+    if(_writeAuthCallback){ const cb=_writeAuthCallback; _writeAuthCallback=null; cb(); }
+  } else {
+    document.getElementById('writeAuthError').style.display='';
+    document.getElementById('writeAuthInput').value='';
+    document.getElementById('writeAuthInput').focus();
+  }
+}
+function _writeAuthCancel(){
+  _writeAuthCallback=null;
+  closeModal('writeAuthModal');
 }
 function openSecurityModal(){
   document.getElementById('authIntervalMinutes').value=settings.authMinutes||15;
@@ -1402,12 +1447,13 @@ function openSecurityModal(){
   document.getElementById('securityModal').classList.add('open');
 }
 function saveSecuritySettings(){
-  if(!requireWriteAuth('تغيير إعدادات الحماية')) return;
+  requireWriteAuth('تغيير إعدادات الحماية', ()=>{
   settings.authMinutes=Math.max(1,Math.min(480,parseInt(document.getElementById('authIntervalMinutes').value,10)||15));
   const newPass=document.getElementById('authNewPassword').value;
   if(newPass) settings.writePassword=newPass;
   saveData();closeModal('securityModal');
   showToast(`✅ تم تحديث الحماية: كل ${settings.authMinutes} دقيقة`);
+  });
 }
 function cancelWriteAuth(){ closeModal('writeAuthModal'); }
 function submitWriteAuth(){ closeModal('writeAuthModal'); }
@@ -1424,15 +1470,38 @@ function applyDeletedKeys(){
   (settings.deletedKeys||[]).forEach(k=>{ delete data[k]; });
 }
 // ── duplicate-name badge helper ──
+// Build a map: baseName → count of all drugs (regardless of dupType)
+// sharing the same base name. Recomputed only when data changes.
+let _doseCountMap = null;
+function getDoseCountMap(){
+  if(_doseCountMap) return _doseCountMap;
+  _doseCountMap = new Map();
+  Object.entries(data).forEach(([key,item])=>{
+    if(!item||!item.name) return;
+    const base = baseDrugName(item.name) || cleanName(item.name).toLowerCase();
+    _doseCountMap.set(base, (_doseCountMap.get(base)||0) + 1);
+  });
+  return _doseCountMap;
+}
+function invalidateDoseCountMap(){ _doseCountMap = null; }
+
 function dupBadgeHtml(item, key){
-  const norm=cleanName(item.name).toLowerCase();
-  const hasDup=Object.keys(data).some(k=>k!==key &&
-    data[k].name&&cleanName(data[k].name).toLowerCase()===norm);
-  if(!hasDup) return '';
-  const dt=item.dupType||'';
-  if(dt==='dose')  return `<span class="dup-badge dup-dose" title="نفس الدواء — جرعة مختلفة">💊 جرعة مختلفة</span>`;
-  if(dt==='dup')   return `<span class="dup-badge" title="مكرر — يحتاج مراجعة">🔁 مكرر</span>`;
-  return `<span class="dup-badge" title="يوجد دواء آخر بنفس الاسم — انقر لتحديد النوع">🔁 تكرار</span>`;
+  const map = getDoseCountMap();
+  const base = baseDrugName(item.name) || cleanName(item.name).toLowerCase();
+  const count = map.get(base) || 0;
+  const dt = item.dupType || '';
+  if(dt === 'dose'){
+    // already confirmed as different doses — show pill count badge
+    const n = count > 1 ? ` ×${count}` : '';
+    return `<span class="dup-badge dup-dose" title="نفس الدواء — جرعات مختلفة (${count})">💊${n}</span>`;
+  }
+  if(count > 1){
+    const n = ` ×${count}`;
+    if(dt === 'dup')
+      return `<span class="dup-badge" title="مكرر — يحتاج مراجعة (${count})">🔁${n}</span>`;
+    return `<span class="dup-badge" title="يوجد ${count} أدوية بنفس الاسم — انقر لتحديد النوع">🔁${n}</span>`;
+  }
+  return '';
 }
 function rowLabel(r){ return ROW_LABELS[r]||String(r+1); } // A,B,C...
 
@@ -1602,7 +1671,7 @@ function getActiveDbMode(){
 function deleteSelectedDbRows(){
   const keys=[...dbSelectedKeys].filter(k=>data[k]);
   if(!keys.length) return showToast('لا يوجد أدوية محددة');
-  if(!requireWriteAuth('حذف عدة أدوية')) return;
+  requireWriteAuth('حذف عدة أدوية', ()=>{
   if(!confirm(`حذف ${keys.length} دواء/خانة محددة؟`)) return;
   if(!settings.deletedKeys) settings.deletedKeys=[];
   keys.forEach(key=>{
@@ -1613,6 +1682,7 @@ function deleteSelectedDbRows(){
   saveData();refreshAll();
   if(getActiveDbMode()==='duplicates') renderDuplicateReview();
   showToast(`🗑️ تم حذف ${keys.length} عنصر`);
+  });
 }
 function getFilteredDbEntries(){
   const q=(document.getElementById('dbSearch').value||'').trim().toLowerCase();
@@ -1621,12 +1691,14 @@ function getFilteredDbEntries(){
   for(const key in data){
     const item=data[key];
     if(!item||!item.name) continue;
-    const nm=!q||cleanName(item.name).toLowerCase().includes(q)||key.toLowerCase().includes(q);
+    const nameClean=item.name.replace(/\n/g,' ');
+    const nm=!q||nameClean.toLowerCase().includes(q)||key.toLowerCase().includes(q);
     if(!nm) continue;
-    const exSt=slotExpSt(key);
-    const assignedDrawer=isAssignedToDrawer(key);
-    const assignedShelf=isAssignedToShelf(item.name);
+    const assignedDrawer=!key.startsWith('x_');
+    const numMatch=key.match(/\d+/);
+    const assignedShelf=item.shelf||(!!numMatch&&parseInt(numMatch[0],10)>50);
     let pass=true;
+    const exSt=pass?slotExpSt(key):'';
     if(f==='has-exp')    pass=item.expiries.length>0;
     else if(f==='no-exp')  pass=item.expiries.length===0;
     else if(f==='expired') pass=exSt==='danger'&&item.expiries.some(e=>daysUntil(e)<0);
@@ -1635,11 +1707,11 @@ function getFilteredDbEntries(){
     else if(f==='lasa')    pass=item.types.includes('lasa');
     else if(f==='high-alert') pass=item.types.includes('high-alert');
     else if(f==='oos')     pass=item.oos;
-    else if(f==='shelf')   pass=item.shelf||assignedShelf;
+    else if(f==='shelf')   pass=assignedShelf;
     else if(f==='unassigned-drawer') pass=!assignedDrawer;
     else if(f==='unassigned-shelf')  pass=!assignedShelf;
     else if(f==='unassigned-all')    pass=!assignedDrawer&&!assignedShelf;
-    if(pass) entries.push({key,item,exSt,assignedDrawer,assignedShelf});
+    if(pass) entries.push({key,item,exSt,assignedDrawer,assignedShelf,nameClean});
   }
   return entries;
 }
@@ -1816,91 +1888,91 @@ function unmarkDoseVariant(key){
 function deleteDrugFromDuplicateReview(key){
   const item=data[key];
   if(!item) return;
-  if(!requireWriteAuth('حذف دواء')) return;
+  requireWriteAuth('حذف دواء', ()=>{
   delete data[key];
   if(!settings.deletedKeys) settings.deletedKeys=[];
   if(!key.startsWith('x_')&&!settings.deletedKeys.includes(key)) settings.deletedKeys.push(key);
   saveData();refreshAll();renderDuplicateReview();
   showToast('🗑️ تم حذف الدواء');
+  });
 }
 function renderDB(){
   const dupBox=document.getElementById('duplicateReview');
-  if(dupBox&&dupBox.style.display!=='none'){
-    renderDuplicateReview();
-    return;
-  }
+  if(dupBox&&dupBox.style.display!=='none'){ renderDuplicateReview(); return; }
   hideDuplicateReview();
-  const q=(document.getElementById('dbSearch').value||'').trim().toLowerCase();
   const f=document.getElementById('dbFilter').value;
   if(f==='dup-name'){
     document.getElementById('duplicateReview').style.display='';
     document.getElementById('doseVariantsPage').style.display='none';
     document.getElementById('dbTable').style.display='none';
     document.getElementById('dbLoadMoreWrap').style.display='none';
-    renderDuplicateReview();
-    return;
+    renderDuplicateReview(); return;
   }
-  if(f==='dose-variants'){
-    showDoseVariants();
-    return;
-  }
+  if(f==='dose-variants'){ showDoseVariants(); return; }
+
   const tbody=document.getElementById('dbTableBody');
-  tbody.innerHTML='';
   const entries=getFilteredDbEntries();
   const visible=entries.slice(0,dbVisibleLimit);
   dbVisibleKeys=visible.map(x=>x.key);
+
   if(!entries.length){
-    tbody.innerHTML='<tr><td colspan="7" class="empty">لا توجد نتائج</td></tr>';
-    document.getElementById('dbCountLabel').textContent='0 دواء';
+    tbody.innerHTML='<tr><td colspan="7" class="empty">\u0644\u0627 \u062a\u0648\u062c\u062f \u0646\u062a\u0627\u0626\u062c</td></tr>';
+    document.getElementById('dbCountLabel').textContent='0 \u062f\u0648\u0627\u0621';
     document.getElementById('dbLoadMoreWrap').style.display='none';
-    updateDbBulkBar();
-    return;
+    updateDbBulkBar(); return;
   }
-  const frag=document.createDocumentFragment();
-  visible.forEach(({key,item,exSt,assignedDrawer,assignedShelf})=>{
-    const nameClean=item.name.replace(/\n/g,' ');
+
+  // Pre-compute dose-count map once for this render pass
+  const doseMap=getDoseCountMap();
+
+  // Build all rows as one HTML string -> single DOM parse, faster than createElement per row
+  let html='';
+  visible.forEach(({key,item,exSt,assignedDrawer,assignedShelf,nameClean})=>{
     const exHtml=item.expiries.length
-      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}" style="margin-left:3px">${formatDate(e)}<span style="font-size:8px;margin-right:2px">(${daysLabel(d)})</span></span>`;}).join('')
-      :`<span style="color:var(--noexp);font-size:11px;font-weight:600">— بدون تاريخ</span>`;
+      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)} <small>(${daysLabel(d)})</small></span>`;}).join(' ')
+      :'<span style="color:var(--noexp);font-size:11px;font-weight:600">\u2014 \u0628\u062f\u0648\u0646 \u062a\u0627\u0631\u064a\u062e</span>';
     let tHtml='';
-    if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard" style="margin-left:2px">⚠️ Hazard</span>`;
-    if(item.types.includes('lasa'))       tHtml+=`<span class="type-badge lasa" style="margin-left:2px">🔵 LASA</span>`;
-    if(item.types.includes('high-alert')) tHtml+=`<span class="type-badge high-alert" style="margin-left:2px">🔴 High</span>`;
-    if(item.shelf||assignedShelf) tHtml+=`<span class="shelf-badge" style="margin-left:2px">📦</span>`;
-    if(item.oos)   tHtml+=`<span class="oos-badge" style="margin-left:2px">OOS</span>`;
-    tHtml+=dupBadgeHtml(item,key);
-    const stIcon=!item.expiries.length?`<span style="color:var(--noexp)">●</span>`:exSt==='danger'?'🔴':exSt==='warn'?'🟡':'🟢';
-    // location cell
-    let locHtml='';
+    if(item.types.includes('hazard'))     tHtml+='<span class="type-badge hazard">\u26a0\ufe0fH</span> ';
+    if(item.types.includes('lasa'))       tHtml+='<span class="type-badge lasa">\ud83d\udd35L</span> ';
+    if(item.types.includes('high-alert')) tHtml+='<span class="type-badge high-alert">\ud83d\udd34!</span> ';
+    if(item.oos)  tHtml+='<span class="oos-badge">OOS</span> ';
+    if(assignedShelf) tHtml+='<span class="shelf-badge">\ud83d\udce6</span> ';
+    const base=baseDrugName(item.name)||nameClean.trim().toLowerCase();
+    const dc=(doseMap.get(base)||0);
+    if(dc>1){
+      const dt=item.dupType||'';
+      if(dt==='dose') tHtml+=`<span class="dup-badge dup-dose">\ud83d\udc8a\xd7${dc}</span>`;
+      else tHtml+=`<span class="dup-badge">\ud83d\udd01\xd7${dc}</span>`;
+    }
+    const stIcon=item.oos?'\u2b1b':!item.expiries.length?`<span style="color:var(--noexp)">\u25cf</span>`:exSt==='danger'?'\ud83d\udd34':exSt==='warn'?'\ud83d\udfe1':'\ud83d\udfe2';
+    const checked=dbSelectedKeys.has(key)?'checked':'';
+    const oosClass=item.oos?' class="oos-row"':'';
+    let locHtml;
     if(!assignedDrawer){
-      locHtml=`<span style="color:var(--warn);font-size:10px;font-style:italic">بدون درج</span>
-        <button class="btn btn-secondary btn-sm" style="margin-top:3px;display:block;font-size:10px" onclick="event.stopPropagation();openAssignDrawerModal('${key}')">📍 تعيين</button>`;
+      locHtml=`<span style="color:var(--warn);font-size:10px;font-style:italic">\u0628\u062f\u0648\u0646 \u062f\u0631\u062c</span>
+        <button class="btn btn-secondary btn-sm" style="margin-top:3px;display:block;font-size:10px" onclick="event.stopPropagation();openAssignDrawerModal('${key}')">\ud83d\udccd \u062a\u0639\u064a\u064a\u0646</button>`;
     } else {
       const dr=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
-      locHtml=`<span style="font-family:var(--mono);font-size:11px;color:var(--accent2)">درج ${dr}—${sl}</span>
-        <button class="btn btn-secondary btn-sm" style="margin-top:2px;display:block;font-size:10px" onclick="event.stopPropagation();openMoveDrawerModal('${key}')">🔀 نقل</button>`;
+      locHtml=`<span style="font-family:var(--mono);font-size:11px;color:var(--accent2)">\u062f\u0631\u062c ${dr}\u2014${sl}</span>
+        <button class="btn btn-secondary btn-sm" style="margin-top:2px;display:block;font-size:10px" onclick="event.stopPropagation();openMoveDrawerModal('${key}')">\ud83d\udd00 \u0646\u0642\u0644</button>`;
     }
-    const tr=document.createElement('tr');
-    tr.style.cursor='pointer';
-    if(item.oos) tr.classList.add('cell-oos');
-    tr.onclick=()=>openExpModal(key);
-    tr.innerHTML=`
-      <td style="text-align:center"><input type="checkbox" ${dbSelectedKeys.has(key)?'checked':''} onclick="event.stopPropagation()" onchange="toggleDbKey('${key}',this.checked)"></td>
-      <td class="loc-cell" style="vertical-align:top;padding-top:8px">${locHtml}</td>
-      <td class="name-cell" style="max-width:260px;word-break:break-word;white-space:normal;line-height:1.4">${nameClean}</td>
-      <td>${tHtml||'<span style="color:var(--text3)">—</span>'}</td>
+    html+=`<tr${oosClass} style="cursor:pointer" onclick="openExpModal('${key}')">
+      <td style="text-align:center"><input type="checkbox" ${checked} onclick="event.stopPropagation()" onchange="toggleDbKey('${key}',this.checked)"></td>
+      <td style="vertical-align:top;padding-top:8px">${locHtml}</td>
+      <td style="max-width:260px;word-break:break-word;white-space:normal;line-height:1.4;font-weight:600">${nameClean}</td>
+      <td>${tHtml||'<span style="color:var(--text3)">\u2014</span>'}</td>
       <td>${exHtml}</td>
       <td style="text-align:center;font-size:14px">${stIcon}</td>
-      <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openExpModal('${key}')">✏️</button></td>`;
-    frag.appendChild(tr);
+      <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openExpModal('${key}')">\u270f\ufe0f</button></td>
+    </tr>`;
   });
-  tbody.appendChild(frag);
-  document.getElementById('dbCountLabel').textContent=`${Math.min(entries.length,dbVisibleLimit)} من ${entries.length} دواء`;
+  tbody.innerHTML=html;
+  document.getElementById('dbCountLabel').textContent=`${Math.min(entries.length,dbVisibleLimit)} \u0645\u0646 ${entries.length} \u062f\u0648\u0627\u0621`;
   document.getElementById('dbLoadMoreWrap').style.display=entries.length>dbVisibleLimit?'block':'none';
   updateDbBulkBar();
 }
-
-// ══ ADD NEW DRUG ══
+let _dbSearchTimer=null;
+function dbSearchDebounced(){ clearTimeout(_dbSearchTimer); _dbSearchTimer=setTimeout(renderDB,120); }
 function openAddDrugModal(){
   document.getElementById('newDrugName').value='';
   document.getElementById('newDrugDrawer').value='';
@@ -1938,7 +2010,7 @@ function checkNewDrugNameDup(nameVal){
   } else { dupWarn.style.display='none'; }
 }
 function saveNewDrug(){
-  if(!requireWriteAuth('إضافة دواء')) return;
+  requireWriteAuth('إضافة دواء', ()=>{
   const nameVal=document.getElementById('newDrugName').value.trim();
   if(!nameVal) return showToast('⚠️ أدخل اسم الدواء');
   // dup check
@@ -1983,6 +2055,7 @@ function saveNewDrug(){
   }
   saveData(); refreshAll(); closeModal('addDrugModal');
   showToast('✅ تمت إضافة الدواء للقاعدة'+(dr?` (درج ${dr}—${sl})`:'، بدون موقع بعد'));
+  });
 }
 
 // ══ BULK ADD (paste table) ══
@@ -2020,7 +2093,7 @@ function parseBulkDrugs(){
   preview._parsed=parsed;
 }
 function saveBulkDrugs(){
-  if(!requireWriteAuth('إضافة أدوية')) return;
+  requireWriteAuth('إضافة أدوية', ()=>{
   const preview=document.getElementById('bulkPreviewArea');
   const parsed=preview._parsed;
   if(!parsed||!parsed.length) return showToast('⚠️ اضغط "معاينة" أولاً');
@@ -2039,6 +2112,7 @@ function saveBulkDrugs(){
   });
   saveData();refreshAll();closeModal('bulkAddModal');
   showToast(`✅ تمت إضافة ${added} دواء، تخطي ${skipped} مكرر/خانة مشغولة`);
+  });
 }
 
 // ══ MOVE DRAWER ══
@@ -2070,7 +2144,7 @@ function checkMoveTarget(){
   } else { warn.style.display='none'; }
 }
 function confirmMoveDrawer(){
-  if(!requireWriteAuth('نقل دواء')) return;
+  requireWriteAuth('نقل دواء', ()=>{
   const dr=document.getElementById('moveTargetDrawer').value.trim();
   const sl=document.getElementById('moveTargetSlot').value;
   if(!dr) return showToast('⚠️ أدخل رقم الدرج');
@@ -2109,6 +2183,7 @@ function confirmMoveDrawer(){
   delete data[movingKey];
   saveData();refreshAll();closeModal('moveDrawerModal');
   showToast(`✅ تم نقل الدواء إلى درج ${dr}—${sl}`);
+  });
 }
 
 // ══ ASSIGN DRAWER (for x_ extras) ══
@@ -2137,7 +2212,7 @@ function checkAssignTarget(){
   } else { warn.style.display='none'; }
 }
 function confirmAssignDrawer(){
-  if(!requireWriteAuth('تعيين موقع دواء')) return;
+  requireWriteAuth('تعيين موقع دواء', ()=>{
   const dr=document.getElementById('assignTargetDrawer').value.trim();
   const sl=document.getElementById('assignTargetSlot').value;
   if(!dr) return showToast('⚠️ أدخل رقم الدرج');
@@ -2174,6 +2249,7 @@ function confirmAssignDrawer(){
   delete data[assigningKey];
   saveData();refreshAll();closeModal('assignDrawerModal');
   showToast(`✅ تم تعيين الدواء في درج ${dr}—${sl}`);
+  });
 }
 
 // ══ DRAWERS ══
@@ -2316,12 +2392,13 @@ function renderDrawers(){
 
       const nameClean=item.name.replace(/\n/g,' ');
       const drugCls='row-drug'+((!item.expiries.length&&!dim)?' no-expiry-text':'');
+      const db=dupBadgeHtml(item,key);
 
       row.innerHTML=`
         <div class="row-label">${sl}</div>
         <div class="row-body">
           ${badgeHtml?`<div class="row-badges">${badgeHtml}</div>`:''}
-          <div class="${drugCls}" title="${nameClean}">${nameClean}</div>
+          <div class="${drugCls}" title="${nameClean}">${nameClean}${db?`<span style="margin-right:4px;vertical-align:middle">${db}</span>`:''}</div>
         </div>
         <div class="row-right">
           ${expHtml}
@@ -2393,17 +2470,18 @@ function openExpModal(key){
 }
 function deleteShelfDrugEntry(){
   if(!editingKey) return;
-  if(!requireWriteAuth('حذف دواء')) return;
+  requireWriteAuth('حذف دواء', ()=>{
   if(!confirm('حذف هذا الدواء من الخانة؟')) return;
   delete data[editingKey];
   if(!settings.deletedKeys) settings.deletedKeys=[];
   if(!editingKey.startsWith('x_')&&!settings.deletedKeys.includes(editingKey)) settings.deletedKeys.push(editingKey);
   saveData(); closeModal('expModal'); refreshAll(); showToast('🗑️ تم الحذف');
+  });
 }
 // unassign: move drawer slot drug to x_ key so it stays in DB without a location
 function unassignDrugSlot(){
   if(!editingKey) return;
-  if(!requireWriteAuth('إلغاء موقع دواء')) return;
+  requireWriteAuth('إلغاء موقع دواء', ()=>{
   if(!confirm('سيُبقى الدواء في قاعدة البيانات لكن بدون موقع محدد. تأكيد؟')) return;
   const newKey='x_'+uid();
   data[newKey]={...data[editingKey], drawerNum:null, drawerSlot:null, extra:true};
@@ -2411,6 +2489,7 @@ function unassignDrugSlot(){
   editingKey=newKey;
   saveData(); closeModal('expModal'); refreshAll();
   showToast('📤 تم إلغاء الموقع — الدواء لا يزال في قاعدة البيانات بدون تعيين');
+  });
 }
 function renderExpRows(expiries,containerId){
   const c=document.getElementById(containerId); c.innerHTML='';
@@ -2444,7 +2523,7 @@ function addExpRow(){
   document.getElementById('expListEdit').appendChild(row);
 }
 function saveExpiries(){
-  if(!requireWriteAuth('تعديل دواء')) return;
+  requireWriteAuth('تعديل دواء', ()=>{
   const inputs=document.querySelectorAll('#expListEdit input[type=date]');
   const types=[];
   if(document.getElementById('typeHazard').checked)    types.push('hazard');
@@ -2458,6 +2537,7 @@ function saveExpiries(){
   data[editingKey].name    =document.getElementById('modalDrugName').value.trim()||data[editingKey].name;
   data[editingKey].dupType =document.getElementById('dupTypeSelect').value||undefined;
   saveData(); closeModal('expModal'); refreshAll(); showToast('✅ تم الحفظ');
+  });
 }
 
 // ══ ALERTS ══
@@ -2591,15 +2671,17 @@ function renderOOS(){
 }
 function openAddOOSModal(){document.getElementById('oosManualName').value='';document.getElementById('oosManualNote').value='';document.getElementById('addOOSModal').classList.add('open');}
 function saveManualOOS(){
-  if(!requireWriteAuth('إضافة OOS')) return;
+  requireWriteAuth('إضافة OOS', ()=>{
   const name=document.getElementById('oosManualName').value.trim();
   if(!name)return showToast('⚠️ أدخل اسم الدواء');
   oosManual.push({id:uid(),name,note:document.getElementById('oosManualNote').value.trim()});
   saveData();closeModal('addOOSModal');renderOOS();updateStats();showToast('✅ تمت الإضافة');
+  });
 }
 function removeManualOOS(id){
-  if(!requireWriteAuth('حذف OOS')) return;
+  requireWriteAuth('حذف OOS', ()=>{
   oosManual=oosManual.filter(m=>m.id!==id);saveData();renderOOS();updateStats();
+  });
 }
 
 // ══ SHELF ══
@@ -2690,11 +2772,11 @@ function renderShelves(){
             bestExp=sorted[0]; bestSt=expStatus(bestExp);
             if(bestSt==='critical') bestSt='danger';
           }
+          const db=dupBadgeHtml(item,key);
           div.innerHTML=`<span class="cell-label">${dispLabel}</span>
-            <div class="cell-drug">${item.name.replace(/\n/g,' ')}</div>
+            <div class="cell-drug">${item.name.replace(/\n/g,' ')} ${db}</div>
             ${bestExp?`<div class="cell-exp ${bestSt}">${formatDate(bestExp)}</div>`:'<div class="cell-exp noexp">— بدون تاريخ</div>'}
-            ${item.oos?'<span class="oos-badge" style="position:absolute;top:2px;right:3px;font-size:7px">OOS</span>':''}
-            ${dupBadgeHtml(item,key)?'<span style="position:absolute;bottom:2px;left:2px;font-size:7px;background:#7c3aed22;color:#7c3aed;border-radius:6px;padding:0 3px;font-weight:700">🔁</span>':''}`;
+            ${item.oos?'<span class="oos-badge" style="position:absolute;top:2px;right:3px;font-size:7px">OOS</span>':''}`;
           div.onclick=()=>openExpModal(key);
         } else {
           div.innerHTML=`<span class="cell-label" style="position:static;color:var(--text3);font-size:9px">${dispLabel}</span><div class="cell-add">+</div>`;
@@ -2755,13 +2837,14 @@ function renderPickExtraResults(){
   });
 }
 function selectExtraForShelf(extraKey){
-  if(!requireWriteAuth('ربط دواء بخانة')) return;
+  requireWriteAuth('ربط دواء بخانة', ()=>{
   if(!pickExtraTargetKey) return;
   if(data[pickExtraTargetKey]) return showToast('❌ هذه الخانة مشغولة بالفعل');
   data[pickExtraTargetKey]={...data[extraKey], shelf:true};
   delete data[extraKey];
   saveData(); closeModal('pickExtraModal'); refreshAll();
   showToast('✅ تم ربط الدواء بالخانة');
+  });
 }
 
 function openAddShelfModal(){
@@ -2784,7 +2867,7 @@ function getNextShelfStartNum(){
   return maxEnd+1;
 }
 function saveNewShelf(){
-  if(!requireWriteAuth('إضافة درج علب')) return;
+  requireWriteAuth('إضافة درج علب', ()=>{
   const name=document.getElementById('newShelfName').value.trim();
   if(!name)return showToast('⚠️ أدخل اسم الرف');
   const cols=parseInt(document.getElementById('newShelfCols').value)||5;
@@ -2801,6 +2884,7 @@ function saveNewShelf(){
     reader.onload=()=>finish(reader.result);
     reader.readAsDataURL(file);
   } else finish(null);
+  });
 }
 
 function openEditShelfModal(id){
@@ -2817,13 +2901,14 @@ function openEditShelfModal(id){
   document.getElementById('editShelfModal').classList.add('open');
 }
 function removeShelfPhoto(){
-  if(!requireWriteAuth('حذف صورة الرف')) return;
+  requireWriteAuth('حذف صورة الرف', ()=>{
   const sh=shelves.find(s=>s.id===editingShelfId);
   if(sh) sh.photo=null;
   document.getElementById('editShelfPhotoCurrent').innerHTML='<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
+  });
 }
 function saveEditShelf(){
-  if(!requireWriteAuth('تعديل الرف')) return;
+  requireWriteAuth('تعديل الرف', ()=>{
   const sh=shelves.find(s=>s.id===editingShelfId);
   if(!sh)return;
   sh.name=document.getElementById('editShelfName').value.trim()||sh.name;
@@ -2838,6 +2923,7 @@ function saveEditShelf(){
     reader.onload=()=>{ sh.photo=reader.result; finish(); };
     reader.readAsDataURL(file);
   } else finish();
+  });
 }
 function openShelfPhotoPreview(id){
   const sh=shelves.find(s=>s.id===id); if(!sh||!sh.photo)return;
@@ -2845,10 +2931,11 @@ function openShelfPhotoPreview(id){
   document.getElementById('shelfPhotoModal').classList.add('open');
 }
 function deleteShelf(){
-  if(!requireWriteAuth('حذف الرف')) return;
+  requireWriteAuth('حذف الرف', ()=>{
   if(!confirm('حذف هذا الرف وكل محتوياته؟'))return;
   shelves=shelves.filter(s=>s.id!==editingShelfId);
   saveData();closeModal('editShelfModal');renderShelves();showToast('🗑️ تم الحذف');
+  });
 }
 
 // ══ CELL MODAL ══
@@ -2875,7 +2962,7 @@ function addCellExpRow(){
   document.getElementById('cellExpList').appendChild(row);
 }
 function saveCell(){
-  if(!requireWriteAuth('تعديل خلية')) return;
+  requireWriteAuth('تعديل خلية', ()=>{
   const sh=shelves.find(s=>s.id===editingShelfId); if(!sh)return;
   if(!sh.cells) sh.cells={};
   const name=document.getElementById('cellDrugName').value.trim();
@@ -2892,11 +2979,13 @@ function saveCell(){
     };
   }
   saveData();closeModal('cellModal');renderShelves();showToast('✅ تم الحفظ');
+  });
 }
 function clearCell(){
-  if(!requireWriteAuth('مسح خلية')) return;
+  requireWriteAuth('مسح خلية', ()=>{
   const sh=shelves.find(s=>s.id===editingShelfId); if(sh&&sh.cells) delete sh.cells[editingCellKey];
   saveData();closeModal('cellModal');renderShelves();showToast('🗑️ تم مسح الخلية');
+  });
 }
 
 // ══ MODALS ══
@@ -2915,18 +3004,20 @@ function exportData(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pharmacy_v3.json';a.click();
 }
 function handleImport(input){
-  if(!requireWriteAuth('استيراد بيانات')){ input.value=''; return; }
-  const file=input.files[0];if(!file)return;
-  const r=new FileReader();r.onload=e=>{try{
-    const p=JSON.parse(e.target.result);
-    data=p.data||data;shelves=p.shelves||shelves;oosManual=p.oosManual||oosManual;
-    settings=Object.assign(settings,p.settings||{});theme=p.theme||theme;
-    applyDeletedKeys();
-    document.getElementById('warnDays').value=settings.warnDays;
-    document.getElementById('critDays').value=settings.critDays;
-    applyTheme();saveData();refreshAll();showToast('✅ تم الاستيراد');
-  }catch{showToast('❌ خطأ في الملف');}};
-  r.readAsText(file);input.value='';
+  const file=input.files[0]; if(!file){ input.value=''; return; }
+  requireWriteAuth('استيراد بيانات', ()=>{
+    const r=new FileReader();r.onload=e=>{try{
+      const p=JSON.parse(e.target.result);
+      data=p.data||data;shelves=p.shelves||shelves;oosManual=p.oosManual||oosManual;
+      settings=Object.assign(settings,p.settings||{});theme=p.theme||theme;
+      applyDeletedKeys();
+      document.getElementById('warnDays').value=settings.warnDays;
+      document.getElementById('critDays').value=settings.critDays;
+      applyTheme();saveData();refreshAll();showToast('✅ تم الاستيراد');
+    }catch{showToast('❌ خطأ في الملف');}};
+    r.readAsText(file);
+  });
+  input.value='';
 }
 
 // ══ REFRESH ══
