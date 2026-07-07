@@ -580,6 +580,7 @@ code{font-family:var(--mono)}
       <option value="oos">OOS</option>
       <option value="shelf">درج العلب</option>
       <option value="dup-name">🔁 أسماء مكررة</option>
+      <option value="dose-variants">💊 جرعات مختلفة</option>
       <option value="unassigned-drawer">⚠️ غير مضافة للأدراج</option>
       <option value="unassigned-shelf">⚠️ غير مضافة لأدراج العلب</option>
       <option value="unassigned-all">⚠️ غير مضافة في أي مكان</option>
@@ -587,12 +588,14 @@ code{font-family:var(--mono)}
     <span id="dbCountLabel" style="font-size:11px;color:var(--text3);background:var(--surface2);padding:3px 8px;border-radius:5px"></span>
     <div style="margin-right:auto;display:flex;gap:6px">
       <button class="btn btn-secondary btn-sm" onclick="showDuplicateReview()">🔁 مراجعة التكرار</button>
+      <button class="btn btn-secondary btn-sm" onclick="showDoseVariants()">💊 جرعات مختلفة</button>
       <button class="btn btn-secondary btn-sm" onclick="openSecurityModal()">🔐 الحماية</button>
       <button class="btn btn-primary btn-sm" onclick="openAddDrugModal()">＋ إضافة دواء</button>
       <button class="btn btn-secondary btn-sm" onclick="openBulkAddModal()">📋 إضافة من جدول</button>
     </div>
   </div>
   <div id="duplicateReview" style="display:none"></div>
+  <div id="doseVariantsPage" style="display:none"></div>
   <div id="dbBulkBar" class="toolbar" style="display:none;margin-bottom:8px">
     <span id="dbSelectedCount" style="font-size:12px;color:var(--text2)">0 محدد</span>
     <button class="btn btn-secondary btn-sm" onclick="selectVisibleDbRows()">تحديد الظاهر</button>
@@ -1647,6 +1650,7 @@ function getDuplicateGroups(){
   const groups=new Map();
   Object.entries(data).forEach(([key,item])=>{
     if(!item||!item.name) return;
+    if(item.dupType==='dose') return; // already classified — lives on the dose-variants page
     const exact=cleanName(item.name).toLowerCase();
     const similar=baseDrugName(item.name);
     const groupKey=similar||exact;
@@ -1675,37 +1679,45 @@ function showDuplicateReview(){
 }
 function hideDuplicateReview(){
   document.getElementById('duplicateReview').style.display='none';
+  document.getElementById('doseVariantsPage').style.display='none';
   document.getElementById('dbTable').style.display='';
 }
 function renderDuplicateReview(){
   const q=(document.getElementById('dbSearch').value||'').trim().toLowerCase();
   const box=document.getElementById('duplicateReview');
-  const groups=getDuplicateGroups().filter(g=>!q||g.items.some(x=>cleanName(x.item.name).toLowerCase().includes(q)||x.key.toLowerCase().includes(q)));
+  // Only show groups where NOT every item is already tagged as a dose variant
+  const groups=getDuplicateGroups()
+    .filter(g=>!g.items.every(x=>x.item.dupType==='dose'))
+    .filter(g=>!q||g.items.some(x=>cleanName(x.item.name).toLowerCase().includes(q)||x.key.toLowerCase().includes(q)));
   dbVisibleKeys=groups.flatMap(g=>g.items.map(x=>x.key));
+  const doseCount=Object.values(data).filter(d=>d.dupType==='dose').length;
   document.getElementById('dbCountLabel').textContent=`${groups.length} مجموعة`;
   updateDbBulkBar();
   if(!groups.length){
-    box.innerHTML='<div class="empty"><div class="icon">✅</div>لا توجد أدوية مكررة أو شبيهة حسب البحث الحالي</div>';
+    box.innerHTML=`<div class="empty"><div class="icon">✅</div>لا توجد تكرارات متبقية
+      ${doseCount?`<br><button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="showDoseVariants()">💊 عرض ${doseCount} دواء بجرعات مختلفة</button>`:''}
+    </div>`;
     return;
   }
-  box.innerHTML=`<div class="toolbar" style="margin-bottom:10px;align-items:center">
-    <span style="font-size:12px;color:var(--text2)">كل مجموعة تجمع الأسماء المتطابقة أو المتشابهة. حدد الأدوية من الجدول ثم احذفها من شريط "المحدد" أعلاه.</span>
+  box.innerHTML=`<div class="toolbar" style="margin-bottom:10px;align-items:center;flex-wrap:wrap;gap:6px">
+    <span style="font-size:12px;color:var(--text2)">كل مجموعة تجمع الأسماء المتطابقة أو المتشابهة.</span>
     <button class="btn btn-secondary btn-sm" onclick="selectVisibleDbRows()">☑️ تحديد الكل</button>
     <button class="btn btn-secondary btn-sm" onclick="clearDbSelection()">✖ إلغاء التحديد</button>
-    <button class="btn btn-secondary btn-sm" style="margin-right:auto" onclick="hideDuplicateReview();renderDB()">← رجوع للجدول</button>
+    ${doseCount?`<button class="btn btn-secondary btn-sm" onclick="showDoseVariants()">💊 ${doseCount} بجرعات مختلفة</button>`:''}
+    <button class="btn btn-secondary btn-sm" style="margin-right:auto" onclick="hideDuplicateReview();renderDB()">← رجوع</button>
   </div>`;
-  groups.forEach(g=>{
+  groups.forEach((g,gi)=>{
     const card=document.createElement('div');
     card.className='dup-group-card';
     const title=cleanName(g.items[0].item.name).replace(/\b\d+(\.\d+)?\s*(MG|MCG|G|IU|I\.U\.|ML|%)\b/gi,'').trim()||g.groupKey;
+    const groupKeys=g.items.map(x=>x.key);
     const rows=g.items.map(({key,item})=>{
       const exp=item.expiries&&item.expiries.length?item.expiries.map(formatDate).join('، '):'بدون تاريخ';
       const badges=[
         item.types&&item.types.includes('hazard')?'Hazard':'',
         item.types&&item.types.includes('lasa')?'LASA':'',
         item.types&&item.types.includes('high-alert')?'High Alert':'',
-        item.oos?'OOS':'',
-        item.shelf?'درج علب':''
+        item.oos?'OOS':'',item.shelf?'درج علب':''
       ].filter(Boolean).join(' / ')||'—';
       return `<tr>
         <td style="width:34px;text-align:center"><input type="checkbox" ${dbSelectedKeys.has(key)?'checked':''} onclick="event.stopPropagation()" onchange="toggleDbKey('${key}',this.checked)"></td>
@@ -1713,17 +1725,96 @@ function renderDuplicateReview(){
         <td style="font-weight:600;line-height:1.45">${cleanName(item.name)}</td>
         <td style="width:150px;color:var(--text2)">${badges}<br><span style="font-size:10px;color:var(--text3)">${exp}</span></td>
         <td style="width:130px;text-align:left">
-          <button class="btn btn-secondary btn-sm" onclick="openExpModal('${key}')">✏️ تعديل</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteDrugFromDuplicateReview('${key}')">🗑️ حذف</button>
+          <button class="btn btn-secondary btn-sm" onclick="openExpModal('${key}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteDrugFromDuplicateReview('${key}')">🗑️</button>
         </td>
       </tr>`;
     }).join('');
+    const markBtn=document.createElement('button');
+    markBtn.className='btn btn-secondary btn-sm';
+    markBtn.style.cssText='font-size:11px;background:rgba(14,165,233,.1);border-color:rgba(14,165,233,.4);color:#0ea5e9';
+    markBtn.textContent='💊 تحديد كجرعات مختلفة';
+    markBtn.addEventListener('click',()=>markGroupAsDoseVariant(groupKeys));
     card.innerHTML=`<div class="dup-group-head">
       <div class="dup-group-title">🔁 ${title}</div>
-      <div class="dup-group-meta">${g.items.length} أدوية</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="dup-group-meta">${g.items.length} أدوية</div>
+      </div>
     </div><table class="dup-group-table"><tbody>${rows}</tbody></table>`;
+    // inject button into the head after it's in the DOM
+    card.querySelector('.dup-group-head div:last-child').appendChild(markBtn);
     box.appendChild(card);
   });
+}
+function markGroupAsDoseVariant(keys){
+  keys.forEach(k=>{ if(data[k]) data[k].dupType='dose'; });
+  saveData();
+  renderDuplicateReview();
+  showToast(`💊 تم تصنيف ${keys.length} أدوية كجرعات مختلفة`);
+}
+function showDoseVariants(){
+  // hide everything else, show dose-variants page
+  document.getElementById('duplicateReview').style.display='none';
+  document.getElementById('dbTable').style.display='none';
+  document.getElementById('dbLoadMoreWrap').style.display='none';
+  document.getElementById('doseVariantsPage').style.display='';
+  renderDoseVariants();
+}
+function hideDoseVariants(){
+  document.getElementById('doseVariantsPage').style.display='none';
+  document.getElementById('dbTable').style.display='';
+}
+function renderDoseVariants(){
+  const page=document.getElementById('doseVariantsPage');
+  // group all dupType==='dose' items by base name
+  const groups=new Map();
+  Object.entries(data).forEach(([key,item])=>{
+    if(item.dupType!=='dose') return;
+    const base=baseDrugName(item.name)||cleanName(item.name).toLowerCase();
+    if(!groups.has(base)) groups.set(base,[]);
+    groups.get(base).push({key,item});
+  });
+  if(!groups.size){
+    page.innerHTML=`<div class="empty" style="margin-top:20px"><div class="icon">💊</div>لا توجد أدوية مصنفة كجرعات مختلفة بعد<br>
+      <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="hideDoseVariants()">← رجوع</button></div>`;
+    return;
+  }
+  let html=`<div class="toolbar" style="margin-bottom:10px;align-items:center">
+    <strong style="font-size:13px">💊 أدوية بجرعات مختلفة</strong>
+    <span style="font-size:11px;color:var(--text3)">${[...groups.values()].reduce((s,a)=>s+a.length,0)} دواء في ${groups.size} مجموعة</span>
+    <button class="btn btn-secondary btn-sm" style="margin-right:auto" onclick="hideDoseVariants()">← رجوع</button>
+  </div>`;
+  groups.forEach((items,base)=>{
+    const title=items[0].item.name.replace(/\n/g,' ').replace(/\b\d+(\.\d+)?\s*(MG|MCG|G|IU|I\.U\.|ML|%)\b/gi,'').trim()||base;
+    const rows=items.map(({key,item})=>{
+      const exp=item.expiries&&item.expiries.length?item.expiries.map(formatDate).join('، '):'بدون تاريخ';
+      const loc=getLocationLabel(key);
+      const stIcon=!item.expiries.length?`<span style="color:var(--noexp)">●</span>`:slotExpSt(key)==='danger'?'🔴':slotExpSt(key)==='warn'?'🟡':'🟢';
+      return `<tr>
+        <td style="width:115px;color:var(--accent2);font-family:var(--mono)">${loc}</td>
+        <td style="font-weight:600;line-height:1.45">${cleanName(item.name)}</td>
+        <td style="text-align:center">${stIcon}</td>
+        <td style="color:var(--text3);font-size:11px">${exp}</td>
+        <td style="text-align:left;white-space:nowrap">
+          <button class="btn btn-secondary btn-sm" onclick="openExpModal('${key}')">✏️</button>
+          <button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="unmarkDoseVariant('${key}')">↩ إلغاء</button>
+        </td>
+      </tr>`;
+    }).join('');
+    html+=`<div class="dup-group-card" style="margin-bottom:10px">
+      <div class="dup-group-head" style="background:rgba(14,165,233,.08);border-bottom-color:rgba(14,165,233,.2)">
+        <div class="dup-group-title" style="color:#0ea5e9">💊 ${title}</div>
+        <div class="dup-group-meta">${items.length} جرعات</div>
+      </div>
+      <table class="dup-group-table"><tbody>${rows}</tbody></table>
+    </div>`;
+  });
+  page.innerHTML=html;
+}
+function unmarkDoseVariant(key){
+  if(data[key]) delete data[key].dupType;
+  saveData(); renderDoseVariants();
+  showToast('↩ تم إزالة التصنيف — سيظهر في التكرارات مجدداً');
 }
 function deleteDrugFromDuplicateReview(key){
   const item=data[key];
@@ -1746,9 +1837,14 @@ function renderDB(){
   const f=document.getElementById('dbFilter').value;
   if(f==='dup-name'){
     document.getElementById('duplicateReview').style.display='';
+    document.getElementById('doseVariantsPage').style.display='none';
     document.getElementById('dbTable').style.display='none';
     document.getElementById('dbLoadMoreWrap').style.display='none';
     renderDuplicateReview();
+    return;
+  }
+  if(f==='dose-variants'){
+    showDoseVariants();
     return;
   }
   const tbody=document.getElementById('dbTableBody');
