@@ -2518,16 +2518,70 @@ function exportData(){
   const blob=new Blob([JSON.stringify({data,shelves,oosManual,settings,theme},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pharmacy_v3.json';a.click();
 }
+async function sbSavePayloadDirect(payload) {
+  try {
+    const check = await sbFetch(`${SB_TABLE}?id=eq.1&select=id`);
+    const exists = check && check.length > 0;
+    let res;
+    if (exists) {
+      res = await sbFetch(`${SB_TABLE}?id=eq.1`, {
+        method: 'PATCH',
+        body: JSON.stringify({ payload })
+      });
+    } else {
+      res = await sbFetch(`${SB_TABLE}`, {
+        method: 'POST',
+        body: JSON.stringify({ id: 1, payload })
+      });
+    }
+    if (res) {
+      sbConnected = true;
+      setSbStatus('saved');
+      return true;
+    }
+    return false;
+  } catch(e) {
+    return false;
+  }
+}
 function handleImport(input){
   const file=input.files[0];if(!file)return;
-  const r=new FileReader();r.onload=e=>{try{
+  const r=new FileReader();r.onload=async e=>{try{
     const p=JSON.parse(e.target.result);
-    data=p.data||data;shelves=p.shelves||shelves;oosManual=p.oosManual||oosManual;
-    settings=Object.assign(settings,p.settings||{});theme=p.theme||theme;
-    document.getElementById('warnDays').value=settings.warnDays;
-    document.getElementById('critDays').value=settings.critDays;
-    applyTheme();saveData();refreshAll();showToast('✅ تم الاستيراد');
-  }catch{showToast('❌ خطأ في الملف');}};
+    if(!p.data && !p.shelves) {
+      showToast('❌ تنسيق الملف غير صحيح');
+      return;
+    }
+    const newPayload = {
+      data: p.data || {},
+      shelves: p.shelves || [],
+      oosManual: p.oosManual || [],
+      settings: Object.assign({warnDays:30,critDays:7,writePassword:'asmd',authMinutes:15}, p.settings || {}),
+      theme: p.theme || 'dark'
+    };
+    showToast('⏳ جاري رفع البيانات إلى Supabase...');
+    const success = await sbSavePayloadDirect(newPayload);
+    if(success) {
+      data = newPayload.data;
+      shelves = newPayload.shelves;
+      oosManual = newPayload.oosManual;
+      settings = newPayload.settings;
+      theme = newPayload.theme;
+      document.getElementById('warnDays').value=settings.warnDays;
+      document.getElementById('critDays').value=settings.critDays;
+      applyTheme();
+      normalizeShelves();
+      migrateLegacyShelfCells();
+      refreshAll();
+      showToast('✅ تم استيراد البيانات ورفعها إلى Supabase');
+    } else {
+      setSbStatus('offline');
+      showToast('❌ فشل حفظ البيانات في Supabase');
+    }
+  }catch(err){
+    console.error(err);
+    showToast('❌ خطأ في الملف');
+  }};
   r.readAsText(file);input.value='';
 }
 
@@ -2577,45 +2631,54 @@ async function sbTestConnect(){
   }catch(e){ setSbStatus('offline'); showToast('❌ فشل الاتصال'); }
 }
 
+// Version stamp embedded in SEED_DATA — change this when you export a new JSON.
+// sbLoad compares this against what's in Supabase; if different, it pushes the
+// new seed. If same, it trusts Supabase (which holds any user edits since last export).
+const SEED_VERSION = '2025-07-07';
+
 async function sbLoad(){
   try{
     const rows = await sbFetch(`${SB_TABLE}?id=eq.1&select=payload`);
-    if(rows&&rows.length&&rows[0].payload){
-      // ── Supabase has data: it is the ONLY source of truth ──
-      const p=rows[0].payload;
+    const remotePayload = rows&&rows.length&&rows[0].payload ? rows[0].payload : null;
+    const remoteVersion = remotePayload&&remotePayload.settings&&remotePayload.settings.seedVersion;
+
+    if(remotePayload && remoteVersion === SEED_VERSION){
+      // ── Supabase already has this seed version: use it (may have user edits on top) ──
+      const p = remotePayload;
       data      = p.data      || {};
       shelves   = p.shelves   || [];
       oosManual = p.oosManual || [];
       settings  = Object.assign({warnDays:30,critDays:7,writePassword:'asmd',authMinutes:15}, p.settings||{});
       theme     = p.theme     || 'dark';
-      applyTheme();
-      document.getElementById('warnDays').value = settings.warnDays;
-      document.getElementById('critDays').value  = settings.critDays;
-      // Migrate legacy shelf.cells if any remain
-      normalizeShelves();
-      migrateLegacyShelfCells();
-      sbConnected=true;
-      setSbStatus('connected');
     } else {
-      // ── No Supabase row yet: seed from the exported JSON (first-ever launch) ──
+      // ── New export OR first launch: push SEED_DATA to Supabase ──
       if(SEED_DATA){
         data      = SEED_DATA.data      || {};
         shelves   = SEED_DATA.shelves   || [];
         oosManual = SEED_DATA.oosManual || [];
         settings  = Object.assign({warnDays:30,critDays:7,writePassword:'asmd',authMinutes:15}, SEED_DATA.settings||{});
         theme     = SEED_DATA.theme     || 'dark';
-        applyTheme();
-        document.getElementById('warnDays').value = settings.warnDays;
-        document.getElementById('critDays').value  = settings.critDays;
+        settings.seedVersion = SEED_VERSION; // stamp it
         normalizeShelves();
         migrateLegacyShelfCells();
       }
-      // Push seeded data up to Supabase so next load reads from there
-      await sbFetch(`${SB_TABLE}`, {method:'POST',
-        body:JSON.stringify({id:1,payload:{data,shelves,oosManual,settings,theme}})});
-      sbConnected=true;
-      setSbStatus('connected');
+      // Push seed to Supabase (insert or overwrite)
+      if(remotePayload){
+        await sbFetch(`${SB_TABLE}?id=eq.1`, {method:'PATCH',
+          body:JSON.stringify({payload:{data,shelves,oosManual,settings,theme}})});
+      } else {
+        await sbFetch(`${SB_TABLE}`, {method:'POST',
+          body:JSON.stringify({id:1,payload:{data,shelves,oosManual,settings,theme}})});
+      }
+      showToast('📥 تم تحميل آخر ملف مُصدَّر وحفظه في Supabase');
     }
+    applyTheme();
+    document.getElementById('warnDays').value = settings.warnDays;
+    document.getElementById('critDays').value  = settings.critDays;
+    normalizeShelves();
+    migrateLegacyShelfCells();
+    sbConnected=true;
+    setSbStatus('connected');
   } catch(e){ setSbStatus('offline'); showToast('⚠️ تعذّر الاتصال بـ Supabase'); }
 }
 
