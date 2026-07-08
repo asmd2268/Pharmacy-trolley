@@ -492,10 +492,10 @@ code{font-family:var(--mono)}
   <div style="font-size:20px">💊</div>
   <h1>إدارة أدوية الأدراج</h1>
   <div class="stats">
-    <div class="stat-badge">💊 <span id="drugCount">0</span> دواء</div>
-    <div class="stat-badge" id="alertStatBadge">⚠️ <span id="alertCount">0</span> تنبيه</div>
-    <div class="stat-badge" id="oosStatBadge">🚫 <span id="oosCount">0</span> OOS</div>
-    <div class="stat-badge">📦 <span id="shelfCount">0</span> رف</div>
+    <div class="stat-badge">أدوية: <span id="totalDrugCount">...</span></div>
+    <div class="stat-badge" id="alertStatBadge">⚠️ <span id="alertCount">0</span></div>
+    <div class="stat-badge" id="oosStatBadge">🚫 <span id="oosCount">0</span></div>
+    <div class="stat-badge">📦 <span id="shelfCount">0</span> درج علب</div>
     <div class="stat-badge" id="sbStatus" style="cursor:pointer" onclick="openSbSettings()" title="إعدادات Supabase (محمية)">⚪ Supabase</div>
   </div>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
@@ -514,6 +514,7 @@ code{font-family:var(--mono)}
 
 <main>
 
+<!-- ══ DRAWERS ══ -->
 <div id="tab-drawers" class="tab-content active">
   <div class="toolbar">
     <label>⏰ تنبيه قبل</label>
@@ -533,7 +534,6 @@ code{font-family:var(--mono)}
         <span id="zoomLabel" style="font-size:11px;color:var(--text2);min-width:30px;text-align:center">100%</span>
         <button class="zoom-btn" onclick="zoomDrawers(1)" title="تكبير">＋</button>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="switchTab('db',document.querySelector('.tab:nth-child(2)'));setTimeout(()=>document.getElementById('dbImportSection').scrollIntoView({behavior:'smooth'}),100)" title="الاستيراد والتصدير في صفحة قاعدة البيانات">📦 تصدير / استيراد</button>
     </div>
   </div>
   <div class="legend">
@@ -548,7 +548,9 @@ code{font-family:var(--mono)}
   <div id="drawersGrid" class="drawers-grid"></div>
 </div>
 
+<!-- ══ DATABASE ══ -->
 <div id="tab-db" class="tab-content">
+  <!-- ══ شريط الإجراءات المجمعة (يظهر عند التحديد) ══ -->
   <div id="dbBulkBar" style="display:none;position:sticky;top:0;z-index:50;background:var(--surface);border:1.5px solid var(--danger);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 12px rgba(0,0,0,.18)">
     <span id="dbBulkCount" style="font-weight:700;color:var(--danger);font-size:13px">0 محدد</span>
     <span style="color:var(--text3);font-size:12px">|</span>
@@ -578,29 +580,30 @@ code{font-family:var(--mono)}
       <option value="unassigned-shelf">⚠️ غير مضافة لأدراج العلب</option>
       <option value="unassigned-all">⚠️ غير مضافة في أي مكان</option>
     </select>
+    <select id="dbSort" onchange="renderDB()" title="ترتيب">
+      <option value="drawer">ترتيب الأدراج</option>
+      <option value="az">A → Z</option>
+      <option value="za">Z → A</option>
+      <option value="exp-asc">تاريخ انتهاء ↑ (الأقرب)</option>
+      <option value="exp-desc">تاريخ انتهاء ↓ (الأبعد)</option>
+      <option value="oos-first">OOS أولاً</option>
+    </select>
     <span id="dbCountLabel" style="font-size:11px;color:var(--text3);background:var(--surface2);padding:3px 8px;border-radius:5px"></span>
-    <div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border-radius:8px;padding:3px 6px;border:1px solid var(--border)">
-      <span style="font-size:10px;color:var(--text3);white-space:nowrap">ترتيب:</span>
-      <select id="dbSort" onchange="renderDB()" style="border:none;background:transparent;color:var(--text1);font-size:11px;cursor:pointer;outline:none">
-        <option value="drawer">رقم الدرج</option>
-        <option value="alpha">أبجدي</option>
-        <option value="exp">تاريخ الانتهاء</option>
-      </select>
-      <button id="dbSortDir" onclick="toggleDbSortDir()" title="عكس الترتيب" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;color:var(--text2)">↑</button>
-    </div>
     <div style="margin-right:auto;display:flex;gap:6px">
       <button class="btn btn-primary btn-sm" onclick="openAddDrugModal()">＋ إضافة دواء</button>
       <button class="btn btn-secondary btn-sm" onclick="openBulkAddModal()">📋 إضافة من جدول</button>
+      <button class="btn btn-secondary btn-sm" onclick="openImportExportModal()">📤 تصدير / استيراد</button>
+      <button class="btn btn-secondary btn-sm" onclick="openSecuritySettingsModal()" title="إعدادات الحماية وكلمة المرور">🔐 الحماية</button>
     </div>
   </div>
   <div style="overflow-x:auto">
     <table class="drawers-table" id="dbTable">
       <thead><tr>
         <th style="width:36px;text-align:center"><input type="checkbox" id="dbSelectAllChk" title="تحديد الكل" onchange="dbToggleAll(this.checked)" style="width:15px;height:15px;cursor:pointer"></th>
-        <th style="width:80px;cursor:pointer;user-select:none" onclick="setDbSort('drawer')" title="ترتيب حسب رقم الدرج"><span id="sortHdr_drawer">الموقع</span></th>
-        <th style="cursor:pointer;user-select:none" onclick="setDbSort('alpha')" title="ترتيب أبجدي"><span id="sortHdr_alpha">اسم الدواء</span></th>
+        <th style="width:80px">الموقع</th>
+        <th>اسم الدواء</th>
         <th style="width:100px">النوع</th>
-        <th style="width:180px;cursor:pointer;user-select:none" onclick="setDbSort('exp')" title="ترتيب حسب تاريخ الانتهاء"><span id="sortHdr_exp">تواريخ الانتهاء</span></th>
+        <th style="width:180px">تواريخ الانتهاء</th>
         <th style="width:70px">الحالة</th>
         <th style="width:70px">نقل</th>
         <th style="width:50px">تعديل</th>
@@ -608,63 +611,9 @@ code{font-family:var(--mono)}
       <tbody id="dbTableBody"></tbody>
     </table>
   </div>
-
-  <div id="dbImportSection" style="margin-top:28px;padding:18px;background:var(--surface2);border-radius:14px;border:1px solid var(--border)">
-    <div style="font-size:14px;font-weight:700;color:var(--text1);margin-bottom:14px;display:flex;align-items:center;gap:8px">
-      📂 تصدير واستيراد البيانات
-      <span style="font-size:10px;font-weight:400;color:var(--text3);background:var(--surface);padding:2px 8px;border-radius:10px">كل البيانات بما فيها الأدراج والأرفف</span>
-    </div>
-
-    <div style="margin-bottom:16px">
-      <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📤 تصدير — نسخة احتياطية</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-secondary" onclick="exportData()" style="gap:6px">
-          📄 تنزيل JSON <span style="font-size:10px;color:var(--text3)">(نسخة كاملة)</span>
-        </button>
-        <button class="btn btn-secondary" onclick="exportCSV()" style="gap:6px">
-          📊 تنزيل CSV <span style="font-size:10px;color:var(--text3)">(Google Sheets / Excel)</span>
-        </button>
-        <button class="btn btn-primary" onclick="uploadCurrentToSupabase()" style="gap:6px">
-          ☁️ رفع إلى Supabase <span style="font-size:10px;opacity:.8">(تحديث فوري)</span>
-        </button>
-      </div>
-    </div>
-
-    <div style="border-top:1px solid var(--border);padding-top:14px">
-      <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📥 استيراد — رفع بيانات</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">اختر طريقة الاستيراد قبل رفع الملف:</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface)">
-          <input type="radio" name="importMode" value="merge" checked> 
-          <span>🔀 دمج</span>
-          <span style="font-size:10px;color:var(--text3)">(إضافة الجديد + الحفاظ على الموجود)</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface)">
-          <input type="radio" name="importMode" value="update">
-          <span>🔄 تحديث</span>
-          <span style="font-size:10px;color:var(--text3)">(تحديث الموجود + إضافة الجديد)</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface)">
-          <input type="radio" name="importMode" value="replace">
-          <span>⚠️ استبدال كامل</span>
-          <span style="font-size:10px;color:var(--text3)">(حذف الكل واستبدال بالملف)</span>
-        </label>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-secondary" onclick="document.getElementById('importFileDB').click()">
-          📄 استيراد JSON
-        </button>
-        <button class="btn btn-secondary" onclick="document.getElementById('importCSVDB').click()">
-          📊 استيراد CSV
-        </button>
-        <input type="file" id="importFileDB" accept=".json" style="display:none" onchange="handleImportDB(this,'json')">
-        <input type="file" id="importCSVDB" accept=".csv" style="display:none" onchange="handleImportDB(this,'csv')">
-      </div>
-    </div>
-  </div>
-
 </div>
 
+<!-- ══ SEARCH ══ -->
 <div id="tab-search" class="tab-content">
   <div class="toolbar">
     <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن أي دواء..." oninput="doSearch()">
@@ -682,6 +631,7 @@ code{font-family:var(--mono)}
   <div id="searchResults"></div>
 </div>
 
+<!-- ══ ALERTS ══ -->
 <div id="tab-alerts" class="tab-content">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
     <h3 style="font-size:13px;color:var(--text2)">🚨 الأدوية المنتهية أو قاربت على الانتهاء</h3>
@@ -690,6 +640,7 @@ code{font-family:var(--mono)}
   <div id="alertList" class="alert-list"></div>
 </div>
 
+<!-- ══ SHELF ══ -->
 <div id="tab-shelf" class="tab-content">
   <div class="toolbar">
     <label>أعمدة الرف:</label>
@@ -705,6 +656,7 @@ code{font-family:var(--mono)}
   <div id="shelfWrap" class="shelf-wrap"></div>
 </div>
 
+<!-- ══ OOS ══ -->
 <div id="tab-oos" class="tab-content">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
     <div style="display:flex;align-items:center;gap:8px">
@@ -716,6 +668,7 @@ code{font-family:var(--mono)}
   <div id="oosList" class="oos-list"></div>
 </div>
 
+<!-- ══ TABLE ══ -->
 <div id="tab-table" class="tab-content">
   <div class="toolbar">
     <input type="text" class="search-input" id="tableSearch" placeholder="تصفية..." oninput="renderTable()">
@@ -738,8 +691,10 @@ code{font-family:var(--mono)}
   </div>
 </div>
 
+<!-- ══ VOICE ══ -->
 <div id="tab-voice" class="tab-content">
 
+  <!-- PASSWORD GATE -->
   <div id="voiceGate" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:16px">
     <div style="font-size:32px">🔒</div>
     <div style="font-size:14px;color:var(--text2)">هذه الصفحة محمية. أدخل كلمة المرور للمتابعة.</div>
@@ -750,9 +705,11 @@ code{font-family:var(--mono)}
     <div id="voicePassErr" style="color:var(--danger);font-size:12px;display:none">❌ كلمة المرور غير صحيحة</div>
   </div>
 
+  <!-- ACTUAL PANEL (hidden until unlocked) -->
   <div id="voicePanel" style="display:none">
     <div id="voiceNotSupported" style="display:none" class="empty"><div class="icon">🚫</div>متصفحك لا يدعم التعرف على الصوت. استخدم Chrome أو Edge.</div>
 
+    <!-- Voice Input -->
     <div class="toolbar" style="gap:12px;flex-direction:column;align-items:flex-start">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
         <div style="font-weight:600;color:var(--accent);font-size:14px">🎙️ الإدخال الصوتي لتواريخ الانتهاء</div>
@@ -777,11 +734,14 @@ code{font-family:var(--mono)}
         <span id="voiceSessionCount" style="font-size:11px;color:var(--text3)"></span>
       </div>
 
+      <!-- Live transcript box -->
       <div id="voiceInterim" style="min-height:36px;font-size:14px;color:var(--text2);font-style:italic;padding:8px 12px;background:var(--surface2);border-radius:6px;width:100%;border:1px solid var(--border)"></div>
 
+      <!-- Confirm box for current recording -->
       <div id="voiceConfirmBox" style="display:none;width:100%"></div>
     </div>
 
+    <!-- Accumulated sessions list -->
     <div class="toolbar" style="flex-direction:column;align-items:flex-start;gap:10px;margin-top:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
         <div style="font-weight:600;color:var(--text);font-size:13px">📋 قائمة التسجيلات في هذه الجلسة</div>
@@ -796,6 +756,7 @@ code{font-family:var(--mono)}
 
 </main>
 
+<!-- ══ MODAL: Drug Edit ══ -->
 <div id="expModal" class="modal-overlay">
 <div class="modal">
   <h2>⚙️ إعدادات الدواء</h2>
@@ -819,6 +780,7 @@ code{font-family:var(--mono)}
       <label class="type-check"><input type="checkbox" id="flagShelf"> <span style="color:var(--accent)">📦 محوّل لـ درج العلب</span></label>
     </div>
   </div>
+  <!-- dup type -->
   <div class="form-group" id="dupTypeGroup" style="display:none">
     <label>🔁 تكرار الاسم — نوع التكرار</label>
     <select id="dupTypeSelect" style="width:100%;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text1);font-size:13px">
@@ -846,6 +808,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Add Shelf ══ -->
 <div id="addShelfModal" class="modal-overlay">
 <div class="modal">
   <h2>📦 إضافة درج علب جديد</h2>
@@ -872,6 +835,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Pick drug from database for a shelf cell ══ -->
 <div id="pickExtraModal" class="modal-overlay">
 <div class="modal">
   <h2>🔍 اختر دواء من قاعدة البيانات</h2>
@@ -888,6 +852,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Shelf Photo Preview ══ -->
 <div id="shelfPhotoModal" class="modal-overlay">
 <div class="modal" style="max-width:520px;text-align:center">
   <h2>📷 صورة الرف</h2>
@@ -898,6 +863,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Edit Shelf Cell ══ -->
 <div id="cellModal" class="modal-overlay">
 <div class="modal">
   <h2>📦 محتوى الخلية</h2>
@@ -931,6 +897,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Edit Shelf Info ══ -->
 <div id="editShelfModal" class="modal-overlay">
 <div class="modal">
   <h2>✏️ تعديل الرف</h2>
@@ -963,6 +930,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Add OOS ══ -->
 <div id="addOOSModal" class="modal-overlay">
 <div class="modal">
   <h2>🚫 إضافة دواء OOS</h2>
@@ -981,6 +949,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Add New Drug to DB ══ -->
 <div id="addDrugModal" class="modal-overlay">
 <div class="modal" style="max-width:500px">
   <h2>➕ إضافة دواء لقاعدة البيانات</h2>
@@ -991,7 +960,7 @@ code{font-family:var(--mono)}
   </div>
   <div class="form-group">
     <label>رقم الدرج <span style="color:var(--danger)">*</span></label>
-    <input type="number" id="newDrugDrawer" min="1" max="200" placeholder="1-200" oninput="updateSlotOptions('newDrugSlot',this.value);checkNewDrugSlot()">
+    <input type="number" id="newDrugDrawer" min="1" max="200" placeholder="1-200" oninput="checkNewDrugSlot()">
   </div>
   <div class="form-group">
     <label>الخانة <span style="color:var(--danger)">*</span></label>
@@ -1020,13 +989,14 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Move Drawer ══ -->
 <div id="moveDrawerModal" class="modal-overlay">
 <div class="modal" style="max-width:440px">
   <h2>🔀 نقل الدواء لدرج آخر</h2>
   <div class="drug-info" id="moveDrawerInfo"></div>
   <div class="form-group">
     <label>رقم الدرج الجديد <span style="color:var(--danger)">*</span></label>
-    <input type="number" id="moveTargetDrawer" min="1" max="200" placeholder="1-200" oninput="updateSlotOptions('moveTargetSlot',this.value);checkMoveTarget()">
+    <input type="number" id="moveTargetDrawer" min="1" max="200" placeholder="1-200" oninput="checkMoveTarget()">
   </div>
   <div class="form-group">
     <label>الخانة الجديدة <span style="color:var(--danger)">*</span></label>
@@ -1035,8 +1005,6 @@ code{font-family:var(--mono)}
       <option value="B">B</option>
       <option value="C">C</option>
       <option value="D">D</option>
-      <option value="E">E</option>
-      <option value="F">F</option>
     </select>
     <div id="moveTargetWarn" style="display:none;margin-top:5px;font-size:11px;color:var(--danger);background:var(--high-bg);padding:6px 10px;border-radius:5px;border:1px solid rgba(255,71,87,.3)"></div>
   </div>
@@ -1047,13 +1015,14 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Assign Drawer to Extra Drug ══ -->
 <div id="assignDrawerModal" class="modal-overlay">
 <div class="modal" style="max-width:440px">
   <h2>📍 تعيين موقع الدواء</h2>
   <div class="drug-info" id="assignDrugInfo"></div>
   <div class="form-group">
     <label>رقم الدرج <span style="color:var(--danger)">*</span></label>
-    <input type="number" id="assignTargetDrawer" min="1" max="200" placeholder="1-200" oninput="updateSlotOptions('assignTargetSlot',this.value);checkAssignTarget()">
+    <input type="number" id="assignTargetDrawer" min="1" max="200" placeholder="1-200" oninput="checkAssignTarget()">
   </div>
   <div class="form-group">
     <label>الخانة <span style="color:var(--danger)">*</span></label>
@@ -1062,8 +1031,6 @@ code{font-family:var(--mono)}
       <option value="B">B</option>
       <option value="C">C</option>
       <option value="D">D</option>
-      <option value="E">E</option>
-      <option value="F">F</option>
     </select>
     <div id="assignTargetWarn" style="display:none;margin-top:5px;font-size:11px;color:var(--danger);background:var(--high-bg);padding:6px 10px;border-radius:5px;border:1px solid rgba(255,71,87,.3)"></div>
   </div>
@@ -1074,6 +1041,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- ══ MODAL: Bulk Add Drugs (paste table) ══ -->
 <div id="bulkAddModal" class="modal-overlay">
 <div class="modal" style="max-width:640px">
   <h2>📋 إضافة أدوية من جدول (لصق نص)</h2>
@@ -1099,6 +1067,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<!-- SUPABASE SETTINGS MODAL -->
 <div id="sbSettingsModal" class="modal-overlay">
 <div class="modal" style="max-width:460px">
   <h2>🔐 إعدادات Supabase</h2>
@@ -1124,6 +1093,90 @@ code{font-family:var(--mono)}
 </div>
 
 <div id="toast"></div>
+
+<!-- ══ MODAL: Write-Auth Password ══ -->
+<div id="writeAuthModal" class="modal-overlay">
+<div class="modal" style="max-width:360px">
+  <h2>🔐 تأكيد الصلاحية</h2>
+  <div class="drug-info" id="writeAuthLabel"></div>
+  <div class="form-group">
+    <input type="password" id="writeAuthInput" placeholder="كلمة المرور" style="font-size:16px;letter-spacing:3px"
+      onkeydown="if(event.key==='Enter')_writeAuthSubmit()">
+  </div>
+  <div id="writeAuthError" style="display:none;color:var(--danger);font-size:12px;margin-top:-8px;margin-bottom:6px">❌ كلمة المرور غير صحيحة</div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="_writeAuthCancel()">إلغاء</button>
+    <button class="btn btn-primary" onclick="_writeAuthSubmit()">تأكيد ✓</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL: Security Settings ══ -->
+<div id="securitySettingsModal" class="modal-overlay">
+<div class="modal" style="max-width:420px">
+  <h2>🔐 إعدادات الحماية</h2>
+  <div class="form-group">
+    <label>وضع الحماية</label>
+    <select id="authModeSelect" onchange="_updateAuthModeUI()" style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text1)">
+      <option value="off">بدون حماية (لا يُطلب رمز)</option>
+      <option value="timer">كلمة مرور بعد فترة محددة</option>
+      <option value="always">كلمة مرور دائمًا عند كل تعديل</option>
+    </select>
+  </div>
+  <div class="form-group" id="authMinsRow">
+    <label>المدة المسموحة بعد الإدخال (دقيقة)</label>
+    <input type="number" id="authMinsInput" min="1" max="480" value="15">
+  </div>
+  <div class="form-group">
+    <label>كلمة مرور جديدة (اتركها فارغة للإبقاء على الحالية)</label>
+    <input type="password" id="authPassInput" placeholder="••••••">
+  </div>
+  <div class="drug-info" style="font-size:11px;color:var(--text3)">كلمة المرور الحالية مطلوبة للحفظ</div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="closeModal('securitySettingsModal')">إلغاء</button>
+    <button class="btn btn-primary" onclick="saveSecuritySettings()">حفظ الإعدادات</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL: Import / Export ══ -->
+<div id="importExportModal" class="modal-overlay">
+<div class="modal" style="max-width:500px">
+  <h2>📤 تصدير واستيراد البيانات</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <button class="btn btn-secondary" style="padding:12px;font-size:13px;flex-direction:column;height:auto;gap:4px" onclick="exportData()">
+      <div style="font-size:22px">📄</div>
+      <div style="font-weight:700">JSON</div>
+      <div style="font-size:10px;color:var(--text3)">استيراد كامل وأرشفة</div>
+    </button>
+    <button class="btn btn-secondary" style="padding:12px;font-size:13px;flex-direction:column;height:auto;gap:4px" onclick="exportCSV()">
+      <div style="font-size:22px">📊</div>
+      <div style="font-weight:700">CSV / Google Sheets</div>
+      <div style="font-size:10px;color:var(--text3)">افتح مباشرة في Sheets/Excel</div>
+    </button>
+  </div>
+  <hr style="border-color:var(--border);margin:12px 0">
+  <div style="font-size:13px;font-weight:600;margin-bottom:8px">📥 استيراد</div>
+  <div style="display:grid;gap:8px">
+    <button class="btn btn-secondary" style="justify-content:flex-start;gap:8px" onclick="triggerImport('add')">
+      <span style="font-size:18px">➕</span>
+      <div style="text-align:right"><div style="font-weight:600">إضافة فقط</div><div style="font-size:10px;color:var(--text3)">يضيف الأدوية الجديدة بدون حذف الموجود</div></div>
+    </button>
+    <button class="btn btn-secondary" style="justify-content:flex-start;gap:8px" onclick="triggerImport('update')">
+      <span style="font-size:18px">🔄</span>
+      <div style="text-align:right"><div style="font-weight:600">تحديث الموجود + إضافة جديد</div><div style="font-size:10px;color:var(--text3)">يحدّث الأدوية المطابقة ويضيف الجديد</div></div>
+    </button>
+    <button class="btn btn-danger" style="justify-content:flex-start;gap:8px" onclick="triggerImport('replace')">
+      <span style="font-size:18px">🗑️</span>
+      <div style="text-align:right"><div style="font-weight:600">استبدال كامل</div><div style="font-size:10px;color:var(--text3)">يحذف كل شيء ويستورد من الملف (JSON فقط)</div></div>
+    </button>
+  </div>
+  <input type="file" id="importFileHidden" accept=".json,.csv" style="display:none" onchange="doImportFile(this)">
+  <div class="modal-actions" style="margin-top:14px">
+    <button class="btn btn-secondary" onclick="closeModal('importExportModal')">إغلاق</button>
+  </div>
+</div>
+</div>
 
 <script>
 // ══════════════════════════════════════
@@ -1193,3 +1246,2309 @@ const ROW_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 // ══ STATE ══
 let data      = {};
 
+
+let shelves   = [];   // { id, name, cols, rows, cells: { "A1": {drug,types[],expiries[],notes} } }
+let oosManual = [];
+let settings  = { warnDays:30, critDays:7 };
+let theme     = 'dark';
+let editingKey=null, editingShelfId=null, editingCellKey=null;
+
+// ══ INIT ══
+// ══ EXPORTED SEED DATA (your last manual export) ══
+// Used ONLY when Supabase has no row yet (first-ever launch on a new browser).
+// After that, Supabase is the single source of truth — localStorage is never used.
+const SEED_DATA = {"data":{"1A":{"oos":false,"name":"ACETYL SALISYLIC ACID TABLET\n75-100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"1B":{"oos":false,"name":"ACYCLOVIR TABLET\n200 MG","notes":"","shelf":false,"types":[],"expiries":["2026-12-31"]},"1C":{"oos":false,"name":"ALBENDAZOLE TABLET\n200 MG","notes":"","shelf":false,"types":[],"expiries":["2026-10-31"],"expiryReplaced":true},"1D":{"oos":false,"name":"ACYCLOVIR TABLET\n800 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"2A":{"oos":false,"name":"ALLOPURINOL TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-03-31"]},"2B":{"oos":false,"name":"ALENDRONATE SOD TABLET\n70 MG","notes":"","shelf":false,"types":[],"expiries":["2028-01-01"]},"2C":{"oos":false,"name":"ALLOPURINOL TABLET\n300 MG","notes":"","shelf":false,"types":[],"expiries":["2027-03-31"]},"2D":{"oos":true,"name":"ALUMINIUM HYDROXIDE CAPSULE\n400-500 MG","notes":"","shelf":false,"types":[],"expiries":[]},"3A":{"oos":false,"name":"AMLODIPINE TABLET OR CAPSULE\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"3B":{"oos":false,"name":"AMIODARONE HCL TABLET\n200 MG","notes":"","shelf":false,"types":[],"expiries":["2028-09-30"]},"3C":{"oos":false,"name":"AMLODIPINE TABLET OR CAPSULE\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2027-09-30"]},"3D":{"oos":false,"name":"ATENOLOL TABLETS\n50 MG","notes":"","shelf":false,"types":[],"expiries":["2027-04-30"]},"4A":{"oos":false,"name":"AMOXICILLIN CAPSULE\n250 MG","notes":"","shelf":false,"types":[],"expiries":["2027-05-31"]},"4B":{"oos":false,"name":"AMOXICILLIN 500 MG + POT. CLAVULANATE 125 MG","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"4C":{"oos":false,"name":"AMOXICILLIN CAPSULE\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2028-08-31"]},"4D":{"oos":false,"name":"AMOXICILLIN 875 MG + CLAVULANIC ACID 125 MG","notes":"","shelf":false,"types":[],"expiries":["2027-12-31"]},"5A":{"oos":false,"name":"APIXABAN TABLET\n2.5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-05-31","2026-11-30"]},"5B":{"oos":false,"name":"ATORVASTATIN TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"5C":{"oos":false,"name":"APIXABAN TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-09-30","2028-03-31"]},"5D":{"oos":false,"name":"ATORVASTATIN TABLET\n20 MG","notes":"","shelf":false,"types":[],"expiries":["2027-09-30"]},"6A":{"oos":false,"name":"ATORVASTATIN TABLET\n40 MG","notes":"","shelf":false,"types":[],"expiries":["2028-05-31"]},"6B":{"oos":false,"name":"AZITHROMYCIN TABLET\n250 MG","notes":"","shelf":false,"types":[],"expiries":["2028-09-30"],"expiryReplaced":true},"6C":{"oos":true,"name":"BACLOFEN SCORED TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2027-11-30"]},"6D":{"oos":false,"name":"BETAHISTINE TABLETS\n8 MG","notes":"","shelf":false,"types":[],"expiries":["2027-06-30"]},"7A":{"oos":true,"name":"BISACODYL TABLETS\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2026-08-31"]},"7B":{"oos":false,"name":"BETAHISTINE TABLETS\n16 MG","notes":"","shelf":false,"types":[],"expiries":["2028-06-30"]},"7C":{"oos":false,"name":"BISOPROLOL TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-05-31"]},"7D":{"oos":false,"name":"BROMHEXINE HCL TABLET\n8 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31"]},"8A":{"oos":false,"name":"CABERGOLINE TABLET\n0.5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-04-30"]},"8B":{"oos":false,"name":"CALCUM LACTATE TABLETS\n300 MG","notes":"","shelf":false,"types":[],"expiries":["2026-07-31"]},"8C":{"oos":false,"name":"CAPTOPRIL TABLET\n25 MG","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"8D":{"oos":false,"name":"CALCUM CARBONATE TABLET\n500-600 MG","notes":"","shelf":false,"types":[],"expiries":["2028-02-29"]},"9A":{"oos":false,"name":"CARVEDILOL TABLET\n6.25 MG","notes":"","shelf":false,"types":[],"expiries":["2027-09-30"]},"9B":{"oos":false,"name":"CARBIMAZOLE TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31"]},"9C":{"oos":false,"name":"CARVEDILOL TABLET\n25 MG","notes":"","shelf":false,"types":[],"expiries":["2027-06-30"]},"9D":{"oos":false,"name":"CARBAMAZEPINE TABLET\n200 MG","notes":"","shelf":false,"types":[],"expiries":["2029-02-28"]},"10A":{"oos":false,"name":"CARBAMZEPINE SCORED TAB\n200 MG","notes":"","shelf":false,"types":[],"expiries":["2027-02-28"]},"10B":{"oos":true,"name":"CEFUROXIME TABLET\n250 MG","notes":"","shelf":false,"types":[],"expiries":[]},"10C":{"oos":false,"name":"CARBAMAZEPINE CR TABLET\n400 MG","notes":"","shelf":false,"types":[],"expiries":["2027-11-30"]},"10D":{"oos":false,"name":"CELECOXIB CAPSULE\n200 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"11A":{"oos":false,"name":"CETIRIZINE HCL TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2028-05-31"]},"11B":{"oos":false,"name":"CHLORPHENIRAMINE TABLET\n4 MG","notes":"","shelf":false,"types":[],"expiries":["2029-05-31"]},"11C":{"oos":false,"name":"CHLORZOXAZONE 250 MG + PARACETAMOL 500 MG CAPSULE","notes":"","shelf":false,"types":[],"expiries":["2027-12-31"]},"11D":{"oos":false,"name":"CHOLECALCIFEROL TABLET\n50000 IU","notes":"","shelf":false,"types":[],"expiries":["2027-12-31"]},"12A":{"oos":false,"name":"CINACALCET TABLET\n30 MG","notes":"","shelf":false,"types":[],"expiries":["2026-07-31"]},"12B":{"oos":true,"name":"CINNARIZINE CAPSULES\n75 MG","notes":"","shelf":false,"types":[],"expiries":[]},"12C":{"oos":false,"name":"CINACALCET TABLET\n60 MG","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"12D":{"oos":false,"name":"CIPROFLOXACIN TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"13A":{"oos":false,"name":"CLARITHROMYCIN TABLET\n250 MG","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"13B":{"oos":false,"name":"CLOMIPHENE CITRATE TABLET\n50 MG","notes":"","shelf":false,"types":[],"expiries":["2026-09-30"]},"13C":{"oos":false,"name":"CLOPIDOGREL TABLET\n75 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31"]},"13D":{"oos":false,"name":"DEXAMETHASONE TABLET\n0.5 MG","notes":"","shelf":false,"types":[],"expiries":["2029-02-28"]},"14A":{"oos":false,"name":"DEXAMETHASONE TABLET\n2 MG","notes":"","shelf":false,"types":[],"expiries":["2027-02-28"]},"14B":{"oos":false,"name":"DICLOFENAC SODIUM TABLET\n50 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"14C":{"oos":true,"name":"DILTIAZEM HCL TABLET\n60 MG","notes":"","shelf":false,"types":[],"expiries":[]},"14D":{"oos":false,"name":"DIGOXIN SCORED TABLET\n0.125 MG","notes":"","shelf":false,"types":[],"expiries":["2027-05-31"]},"15A":{"oos":true,"name":"DIGOXIN SCORED TABLET\n0.250 MG","notes":"","shelf":false,"types":[],"expiries":[]},"15B":{"oos":false,"name":"DILTIAZEM SR TABLET\n90 MG","notes":"","shelf":false,"types":[],"expiries":["2027-02-28"]},"15C":{"oos":false,"name":"DOMPERIDONE TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2027-11-30"]},"15D":{"oos":false,"name":"DOXYCYCLINE CAPSULE OR TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-12-31"]},"16A":{"oos":false,"name":"EMPAGLIFLOZIN TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"16B":{"oos":false,"name":"DYDROGESTERONE TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2029-04-30"]},"16C":{"oos":false,"name":"EMPAGLIFLOZIN TABLET\n25 MG","notes":"","shelf":false,"types":[],"expiries":["2027-04-30"]},"16D":{"oos":false,"name":"ENALAPRIL TABLET\n10MG","notes":"","shelf":false,"types":[],"expiries":["2026-07-31"]},"17A":{"oos":true,"name":"ERYTHROMYCIN TABLET\n250 MG","notes":"","shelf":false,"types":[],"expiries":[]},"17B":{"oos":false,"name":"ESOMEPRAZOLE TABLET\n20 MG","notes":"","shelf":false,"types":[],"expiries":["2027-02-28"]},"17C":{"oos":false,"name":"ETHAMBUTOL HCL TABLET\n400 MG","notes":"","shelf":false,"types":[],"expiries":["2028-09-30"]},"17D":{"oos":false,"name":"EZETIMIBE TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2026-07-31"]},"18A":{"oos":false,"name":"FENOFIBRATE TABLET\n145 MG","notes":"","shelf":false,"types":[],"expiries":["2027-04-30"]},"18B":{"oos":false,"name":"FERROUS SULFATE TABLET\n190 MG","notes":"","shelf":false,"types":[],"expiries":["2026-07-31"]},"18C":{"oos":false,"name":"FINASTERIDE TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-06-30"]},"18D":{"oos":false,"name":"FLUCONAZOLE TABLETS OR CAPSULE\n50 MG","notes":"","shelf":false,"types":[],"expiries":["2028-07-31"]},"19A":{"oos":false,"name":"FLUDROCORTISONE ACETATE TABLET\n0.1 MG","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"19B":{"oos":false,"name":"FUROSEMIDE TABLET\n40 MG","notes":"","shelf":false,"types":[],"expiries":["2027-01-30"]},"19C":{"oos":false,"name":"GLICLAZIDE MR TABLET\n30 MG","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"19D":{"oos":false,"name":"GLIBENCLAMIDE TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2026-07-31"]},"20A":{"oos":false,"name":"GLICLAZIDE MR TABLET\n60 MG","notes":"","shelf":false,"types":[],"expiries":["2027-06-30"]},"20B":{"oos":false,"name":"GLIMEPRIDE TABLET\n2 MG","notes":"","shelf":false,"types":[],"expiries":["2028-05-31"]},"20C":{"oos":false,"name":"HYDRALAZINE TABLET\n25 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31"]},"20D":{"oos":false,"name":"HYDROCHLORTHIAZIDE TABLET\n25 MG","notes":"","shelf":false,"types":[],"expiries":["2027-05-31"]},"21A":{"oos":false,"name":"HYDROCORTISONE TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2026-08-31"]},"21B":{"oos":false,"name":"HYDROXY UREA CAPSULE\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31"]},"21C":{"oos":false,"name":"HYDROXYCHLOROQUINE SULPHATE TABLET\n200 MG","notes":"","shelf":false,"types":[],"expiries":["2026-12-31"]},"21D":{"oos":false,"name":"HYOSCINE-N-BUTYL BROMIDE TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2027-12-31"]},"22A":{"oos":false,"name":"IBUPROFEN TABLET\n400 MG","notes":"","shelf":false,"types":[],"expiries":["2029-09-30"]},"22B":{"oos":false,"name":"INDAPAMIDE S.R. TABLET\n1.5 MG","notes":"","shelf":false,"types":[],"expiries":["2026-09-30"]},"22C":{"oos":true,"name":"INDOMETHACIN CAPSULE\n25 MG","notes":"","shelf":false,"types":[],"expiries":[]},"22D":{"oos":false,"name":"IRON (ELEMENTAL 45-105 MG) + FOLIC ACID","notes":"","shelf":false,"types":[],"expiries":["2028-08-31"]},"23A":{"oos":false,"name":"ISONIAZID TABLETS\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2028-05-31"]},"23B":{"oos":false,"name":"ISOSORBIDE DINITRATE SL TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2029-09-30"]},"23C":{"oos":false,"name":"ISOSORBIDE DINITRATE TABLET\n20 MG","notes":"","shelf":false,"types":[],"expiries":["2026-12-31"]},"23D":{"oos":true,"name":"ITRACONAZOLE TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":[]},"24A":{"oos":false,"name":"LABETALOL TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-09-30"]},"24B":{"oos":false,"name":"LAMOTRIGINE TABLET\n50 MG","notes":"","shelf":false,"types":[],"expiries":["2028-01-31"]},"24C":{"oos":true,"name":"LACOSAMIDE TABLET\n50 MG","notes":"","shelf":false,"types":[],"expiries":[]},"24D":{"oos":false,"name":"LAMOTRIGINE TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-04-30"]},"25A":{"oos":false,"name":"LEVETIRACETAM TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2028-06-30"]},"25B":{"oos":false,"name":"LACOSAMIDE TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-12-31"]},"25C":{"oos":false,"name":"LEVODOPA 100 MG + CARBIDOPA 10 MG TABLET","notes":"","shelf":false,"types":[],"expiries":["2029-09-30"]},"25D":{"oos":false,"name":"LACOSAMIDE TABLET\n150 MG","notes":"","shelf":false,"types":[],"expiries":["2026-07-31"]},"26A":{"oos":false,"name":"LEVODOPA 100 MG + CARBIDOPA 25 MG TABLET","notes":"","shelf":false,"types":[],"expiries":["2029-09-30"]},"26B":{"oos":false,"name":"LEVOFLOXACIN TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31"]},"26C":{"oos":true,"name":"LEVODOPA 250 MG + CARBIDOPA 25 MG","notes":"","shelf":false,"types":[],"expiries":[]},"26D":{"oos":false,"name":"LEVOFLOXACIN TABLET\n750 MG","notes":"","shelf":false,"types":[],"expiries":["2027-04-30"]},"27A":{"oos":false,"name":"LINAGLIPTIN TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2026-08-31"]},"27B":{"oos":false,"name":"LINEZOLID TABLET\n600 MG","notes":"","shelf":false,"types":[],"expiries":["2028-02-29"]},"27C":{"oos":false,"name":"LOPERAMIDE HCL CAPSULES\n2 MG","notes":"","shelf":false,"types":[],"expiries":["2029-06-30"]},"27D":{"oos":false,"name":"LORNOXICAM TABLET\n8 MG","notes":"","shelf":false,"types":[],"expiries":["2028-01-31"]},"28A":{"oos":false,"name":"LOSARTAN TABLET\n50 MG","notes":"","shelf":false,"types":[],"expiries":["2028-11-30"]},"28B":{"oos":false,"name":"MEBENDAZOLE CAPSULE OR TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2029-04-30"]},"28C":{"oos":false,"name":"MEBEVERINE HCL TABLETS\n100-135 MG","notes":"","shelf":false,"types":[],"expiries":["2027-06-30"]},"28D":{"oos":false,"name":"MECLOZINE HCL 25 MG + VIT. B6 50 MG TABLET","notes":"","shelf":false,"types":[],"expiries":["2028-12-31","2030-03-31"]},"29A":{"oos":false,"name":"MEBEVERINE SR TABLET\n200 MG","notes":"","shelf":false,"types":[],"expiries":["2027-11-30"]},"29B":{"oos":false,"name":"MEFLOQUINE TABLET\n250 MG","notes":"","shelf":false,"types":[],"expiries":["2027-09-30"]},"29C":{"oos":false,"name":"MELOXICAM TABLET\n7.5 MG","notes":"","shelf":false,"types":[],"expiries":["2028-03-31"]},"29D":{"oos":false,"name":"METFORMIN HCL TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2028-05-31"]},"30A":{"oos":false,"name":"MELOXICAM TABLET\n15 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"30B":{"oos":false,"name":"METFORMIN XR TABLET\n750 MG","notes":"","shelf":false,"types":[],"expiries":["2027-12-31"]},"30C":{"oos":false,"name":"METHOTREXATE TABLET\n2.5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-11-30"]},"30D":{"oos":false,"name":"METHYL DOPA TABLET\n250 MG","notes":"","shelf":false,"types":[],"expiries":["2027-04-30"]},"31A":{"oos":false,"name":"METOCLOPRAMIDE TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2026-08-31"]},"31B":{"oos":false,"name":"METOPROLOL TABLET\n50 MG","notes":"","shelf":false,"types":[],"expiries":["2027-03-31"]},"31C":{"oos":false,"name":"MONTELUKAST TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"31D":{"oos":false,"name":"METRONIDAZOLE TABLET\n500MG","notes":"","shelf":false,"types":[],"expiries":["2028-07-31"]},"32A":{"oos":false,"name":"MONTELUKAST TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"32B":{"oos":false,"name":"MOXIFLOXACIN TABLET\n400 MG","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"32C":{"oos":false,"name":"MYCOFENOLATE TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31","2027-04-30"]},"32D":{"oos":false,"name":"NIFEDIPINE TABLE LONG ACTING\n30 MG","notes":"","shelf":false,"types":[],"expiries":["2028-10-31"]},"33A":{"oos":false,"name":"NAPROXEN TABLET\n250 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"33B":{"oos":false,"name":"NIFEDIPINE SR TABLET\n60 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"33C":{"oos":false,"name":"NITROFURNATOIN CAPSULE OR TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2028-03-31"]},"33D":{"oos":false,"name":"NORETHISTERONE TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2028-06-30"]},"34C":{"oos":true,"name":"PARACETAMOL 500 MG + CODEINE 8 MG + CAFFEINE 30 MG","notes":"","shelf":false,"types":[],"expiries":["2027-03-31"]},"34D":{"oos":false,"name":"PANTOPRAZOLE TABLET\n40 MG","notes":"","shelf":false,"types":[],"expiries":["2028-04-30"]},"35A":{"oos":false,"name":"PARACETAMOL TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2028-05-31"]},"35B":{"oos":false,"name":"PENTOXYFILLINE HCL TABLET\n400 MG","notes":"","shelf":false,"types":[],"expiries":["2027-05-31"]},"35C":{"oos":false,"name":"PRAMIPEXOLE HCL 250 MCG (SIFROL 0.18MG)","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"35D":{"oos":false,"name":"PRAZOSIN HCL CAPSULE OR TABLET\n1 MG","notes":"","shelf":false,"types":[],"expiries":["2026-10-31","2027-05-31"]},"36A":{"oos":false,"name":"PERINDOPRIL TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2026-10-31"]},"36B":{"oos":false,"name":"PREDNISOLONE TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-11-30"]},"36C":{"oos":false,"name":"PERINDOPRIL TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2026-11-30"]},"36D":{"oos":false,"name":"PIOGLITAZONE TABLET\n15 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"37A":{"oos":false,"name":"PROMETHAZINE HCL TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2028-09-30"]},"37B":{"oos":false,"name":"PROPRANOLOL HCL TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2029-05-31"]},"37C":{"oos":false,"name":"PROMETHAZINE HCL TABLET\n25 MG","notes":"","shelf":false,"types":[],"expiries":["2027-05-30"]},"37D":{"oos":false,"name":"PROPRANOLOL HCL TABLET\n40 MG","notes":"","shelf":false,"types":[],"expiries":["2028-01-31"]},"38A":{"oos":false,"name":"PROPYLTHIOURACIL TABLET\n50 MG","notes":"","shelf":false,"types":[],"expiries":["2028-10-31"]},"38B":{"oos":true,"name":"PYRAZINAMIDE TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":[]},"38C":{"oos":false,"name":"PYRIDOXINE HCL (VITAMIN B6) TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":["2027-02-28"]},"38D":{"oos":false,"name":"QUININE SULPHATE TABLET\n300 MG","notes":"","shelf":false,"types":[],"expiries":["2027-10-31"]},"39A":{"oos":false,"name":"RAMIPRIL TABLET\n2.5 MG","notes":"","shelf":false,"types":[],"expiries":["2026-10-31"]},"39B":{"oos":false,"name":"RIFAMPICIN CAPSULES\n150 MG","notes":"","shelf":false,"types":[],"expiries":["2028-01-31"]},"39C":{"oos":false,"name":"RAMIPRIL TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-02-28"]},"39D":{"oos":false,"name":"RIFAMPICIN CAPSULES\n300 MG","notes":"","shelf":false,"types":[],"expiries":["2028-07-31"]},"40A":{"oos":false,"name":"ROSUVASTATIN TABLET\n10 MG","notes":"","shelf":false,"types":[],"dupType":"dose","expiries":["2027-12-31"]},"40B":{"oos":false,"name":"SACUBITRIL 24 MG + VALSARTAN 26 MG","notes":"","shelf":false,"types":[],"dupType":"dose","expiries":["2028-03-31"]},"40C":{"oos":false,"name":"ROSUVASTATIN TABLET\n20 MG","notes":"","shelf":false,"types":[],"dupType":"dose","expiries":["2028-06-30"]},"40D":{"oos":false,"name":"SACUBITRIL 49 MG + VALSARTAN 51 MG","notes":"","shelf":false,"types":[],"dupType":"dose","expiries":["2028-01-31"]},"41A":{"oos":false,"name":"SILDENAFIL TABLET\n20 MG","notes":"","shelf":false,"types":[],"expiries":["2028-10-31"]},"41B":{"oos":false,"name":"SULFAMETHOXAZOLE 800 + TRIMETHOPRIM 160","notes":"","shelf":false,"types":[],"expiries":["2027-09-30"]},"41C":{"oos":false,"name":"SIMETHICONE TABLET\n42 MG","notes":"","shelf":false,"types":[],"expiries":["2029-02-28"]},"41D":{"oos":false,"name":"SITAGLIPTIN TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-01-31"]},"42A":{"oos":false,"name":"SOLIFENACIN TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2027-06-30"]},"42B":{"oos":false,"name":"SOTALOL HCL TABLET\n80 MG","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"42C":{"oos":false,"name":"SPIRONOLACTONE TABLET\n25 MG","notes":"","shelf":false,"types":[],"expiries":["2029-03-31"]},"43A":{"oos":false,"name":"SUMATRIPTAN SUCCINATE TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"43B":{"oos":true,"name":"TADALAFIL TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":[]},"43C":{"oos":true,"name":"TAMOXIFEN TABLET\n10 MG","notes":"","shelf":false,"types":[],"expiries":[]},"43D":{"oos":false,"name":"TAMSULOSIN MR TABLET\n0.4 MG","notes":"","shelf":false,"types":[],"expiries":["2028-12-31"]},"44A":{"oos":false,"name":"TELMISARTAN TABLET\n40 MG","notes":"","shelf":false,"types":[],"dupType":"dose","expiries":["2027-07-31"]},"44B":{"oos":false,"name":"TERBINAFINE TABLET\n250 MG","notes":"","shelf":false,"types":[],"expiries":["2026-08-31"]},"44C":{"oos":false,"name":"TELMISARTAN TABLET\n80 MG","notes":"","shelf":false,"types":[],"dupType":"dose","expiries":["2027-07-31"]},"44D":{"oos":false,"name":"THIAMINE (VITAMIN B1) TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-06-30"]},"45A":{"oos":false,"name":"THYROXINE SODIUM TABLET\n25 MCG","notes":"","shelf":false,"types":[],"expiries":["2027-06-30"]},"45B":{"oos":true,"name":"THEOPHYLLINE S.R. TABLET OR CAP\n200-300 MG","notes":"","shelf":false,"types":[],"expiries":[]},"45C":{"oos":false,"name":"THYROXINE SODIUM TABLET\n50 MCG","notes":"","shelf":false,"types":[],"expiries":["2026-09-30"]},"45D":{"oos":false,"name":"TICAGRELOR TABLET\n90 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31"]},"46A":{"oos":false,"name":"THYROXINE SODIUM TABLET\n100 MCG","notes":"","shelf":false,"types":[],"expiries":["2026-08-31"]},"46B":{"oos":true,"name":"TOPIRAMATE TABLET\n15 MG","notes":"","shelf":false,"types":[],"expiries":[]},"46C":{"oos":false,"name":"TRANEXAMIC ACID TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2026-10-31"]},"46D":{"oos":false,"name":"TOPIRAMATE TABLET\n25 MG","notes":"","shelf":false,"types":[],"expiries":["2027-03-31"]},"47A":{"oos":false,"name":"TOPIRAMATE TABLET\n100 MG","notes":"","shelf":false,"types":[],"expiries":["2027-01-31"]},"47B":{"oos":false,"name":"TRIMETAZIDINE MR TABLET\n35 MG","notes":"","shelf":false,"types":[],"expiries":["2027-08-31"]},"47C":{"oos":false,"name":"URSODEOXYCHOLIC ACID CAPSULE\n250 MG","notes":"","shelf":false,"types":[],"expiries":["2028-10-31"]},"47D":{"oos":false,"name":"VALPROIC ACID TABLET\n200 MG","notes":"","shelf":false,"types":[],"dupType":"dose","expiries":["2027-04-30"]},"48A":{"oos":false,"name":"VALPROIC ACID TABLET\n500 MG","notes":"","shelf":false,"types":[],"dupType":"dose","expiries":["2028-05-31"]},"48B":{"oos":false,"name":"VALSARTAN TABLET\n80 MG","notes":"","shelf":false,"types":[],"expiries":["2029-05-31"]},"48D":{"oos":true,"name":"VARENICLINE TABLET\n0.5 MG","notes":"","shelf":false,"types":[],"expiries":[]},"49A":{"oos":false,"name":"VERAPAMIL HCL TABLET\n80 MG","notes":"","shelf":false,"types":[],"expiries":["2027-02-28"]},"49B":{"oos":false,"name":"VITAMIN ALFACALCIDOL\n0.25 MICROGRAMS","notes":"","shelf":false,"types":[],"expiries":["2027-12-31"]},"49C":{"oos":false,"name":"VITAMIN B1+B6+B12 TABLET","notes":"","shelf":false,"types":[],"expiries":["2027-03-31"]},"49D":{"oos":false,"name":"VITAMIN ALFACALCIDOL\n1 MICROGRAMS","notes":"","shelf":false,"types":[],"expiries":["2027-07-31"]},"51A":{"oos":false,"name":"ACETAZOLAMIDE 500 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[]},"x_i3hs8vof0d":{"oos":false,"name":"ATOMOXETINE TABLET\n18 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_ipm87wlydm":{"oos":false,"name":"AMISULPRIDE TABLET\n100 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_nt9sdpn65n":{"oos":false,"name":"OLANZAPINE TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_o1qoknjtiy":{"oos":false,"name":"RIVASTIGMINE PATCH\n9.5 MG/24 HOURS","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_pl33fgbji5":{"oos":false,"name":"MAPROTILINE HCL TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_qe374vmpjl":{"oos":false,"name":"BUPROPION TABLET\n150 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_y38dz9nkvn":{"oos":false,"name":"AMITRIPTYLINE HCL TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_zjger24gbw":{"oos":false,"name":"TRIFLUOPERAZINE TABLET\n1 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_1928z62sjr7":{"oos":false,"name":"IMIPRAMINE HCL TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_1dh8iwz4spw":{"oos":false,"name":"CLOZAPINE TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_24tvya0w8w3":{"oos":false,"name":"CITALOPRAM HCL TABLET\n20 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_3n8tbs0waeo":{"oos":false,"name":"BUPROPION TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_4aleqzv8zyp":{"oos":false,"name":"VENLAFAXINE XR TABLET\n75 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_4r3254o9ufh":{"oos":false,"name":"LITHIUM CARBONATE TABLET\n300-450 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_5g57fvmelma":{"oos":false,"name":"CLOMIPRAMINE HCL TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_5jllzl0gcyo":{"oos":false,"name":"PALPERIDONE TABLET\n3 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_62uv4k0vq1w":{"oos":false,"name":"MIRTAZAPINE TABLET\n30 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_8bcaibrp2gu":{"oos":false,"name":"CLOMIPRAMINE HCL TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_9k20oeal6jk":{"oos":false,"name":"FLUVOXAMINE MALEATE TABLET\n50 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_a894pn6s54h":{"oos":false,"name":"ARIPIPRAZOLE TABLET\n15 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_ajezbtwqqfh":{"oos":false,"name":"RIVASTIGMINE PATCH\n4.6 MG/24 HOURS","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_bhe69f118ki":{"oos":false,"name":"RISPERIDONE TABLET\n2 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_bjc7vwglj0c":{"oos":false,"name":"OLANZAPINE TABLET\n5 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_bt7eddgy5m6":{"oos":false,"name":"PAROXETINE CR CAPSULE OR TABLET\n12.5 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_bxe4nj4w60u":{"oos":false,"name":"TRIFLUOPERAZINE TABLET\n5 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_c3fk2edit4i":{"oos":false,"name":"CHLORPROMAZINE HCL TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_cj4iyeyma69":{"oos":false,"name":"CHLORPROMAZINE HCL TABLET\n100 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_e8h3xih50os":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET\n100 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_ekcb84n3zi7":{"oos":false,"name":"DONEPEZIL TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_gnnwyctrpif":{"oos":false,"name":"HALOPERIDOL TABLET\n1.5 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_hys5ornb5cc":{"oos":false,"name":"RISPERIDONE TABLET\n4 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_ikirye9syv9":{"oos":false,"name":"ARIPIPRAZOLE TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_jlse9sedxtq":{"oos":false,"name":"PALPERIDONE TABLET\n6 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_jsuo1rumw37":{"oos":false,"name":"FLUPHENAZINE TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_lc0z51w9rac":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET\n300 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_ndsg6b04b8g":{"oos":false,"name":"DULOXETINE HCL CAPSULE\n60 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_p8xdwm19rjh":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET\n200 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_qau26y1qi9c":{"oos":false,"name":"BENZTROPINE MESYLATE TABLET\n2 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_qv5dkt7e34i":{"oos":false,"name":"ATOMOXETINE TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_r959g7uxm1h":{"oos":false,"name":"ESCITALOPRAM TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_sdnw48l9aos":{"oos":false,"name":"VENLAFAXINE XR TABLET\n150 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_tou78x7t48f":{"oos":false,"name":"IMIPRAMINE HCL TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_u5glgbeg60b":{"oos":false,"name":"MEMANTINE TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_uy27p9nclnp":{"oos":false,"name":"AMITRIPTYLINE HCL TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_v7mkxyhjk0g":{"oos":false,"name":"PAROXETINE CR CAPSULE OR TABLET\n25 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_wbyg56u5kdn":{"oos":false,"name":"ATOMOXETINE TABLET\n40 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_wp1r7tvof4i":{"oos":false,"name":"AGOMELATINE TABLET25 MG","extra":true,"notes":"","shelf":false,"types":[],"dupType":"dup","expiries":[],"drawerNum":null,"drawerSlot":null},"x_xq3ftghf6u9":{"oos":false,"name":"ATOMOXETINE TABLET\n10 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_xyhnjh6ta0q":{"oos":false,"name":"HALOPERIDOL TABLET\n5 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_yrxvp1sph1a":{"oos":false,"name":"SULPIRIDE TABLET\n200 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_yzb8ldr1qtf":{"oos":false,"name":"FLUVOXAMINE MALEATE TABLET\n100 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_zmb7ko5252j":{"oos":false,"name":"TRIFLUOPERAZINE TABLET\n2 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_01nlw9cx259m":{"oos":false,"name":"SULPIRIDE TABLET\n50 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"51B":{"oos":false,"name":"AZATHIOPRINE TABLET\n50 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"51C":{"oos":false,"name":"LEVODOPA 200MG + BEZARAZIDE 50 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"51D":{"oos":false,"name":"MESALAZINE TABLET\n400-500 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"52A":{"oos":false,"name":"MULTIENZYME TABLET","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"52B":{"oos":false,"name":"OMEGA 31000 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"52C":{"oos":false,"name":"PHENYTOIN TABLET\n100 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"52D":{"oos":false,"name":"POTASSIUM CHLORIDE TABLET\n600 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"53A":{"oos":false,"name":"SEVELAMER TABLET\n800 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"53B":{"oos":false,"name":"SODIUM BICARBONATE TABLET\n325 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"53D":{"oos":false,"name":"SODIUM BICARBONATE TABLET\n650 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"54A":{"oos":false,"name":"TACROLIMUS TABLET\n0.5 MG","extra":true,"notes":"","shelf":false,"types":[],"dupType":"dose","expiries":[],"drawerNum":null,"drawerSlot":null},"54C":{"oos":false,"name":"TACROLIMUS TABLET\n1 MG","extra":true,"notes":"","shelf":false,"types":[],"dupType":"dose","expiries":[],"drawerNum":null,"drawerSlot":null},"54B":{"oos":false,"name":"WARFARIN TABLET\n1 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"54D":{"oos":false,"name":"WARFARIN TABLET\n2 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"55A":{"oos":false,"name":"WARFARIN TABLET\n5 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"55B":{"oos":false,"name":"VITAMIN D3\n1000 I.U.","notes":"","shelf":false,"types":[],"expiries":[]},"55D":{"oos":false,"name":"VITAMIN D3\n5000 I.U.","notes":"","shelf":false,"types":[],"expiries":[]},"53C":{"oos":false,"name":"SULFASALAZINE TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":[]},"42D":{"oos":false,"name":"SULFASALAZINE TABLET\n500 MG","notes":"","shelf":false,"types":[],"expiries":["2027-05-31"]},"200B":{"oos":false,"name":"PANTOPRAZOLE TABLET\n20 MG","notes":"","shelf":false,"types":[],"expiries":[]},"34B":{"oos":false,"name":"OMEPRAZOLE TABLET20 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":["2028-09-30"]},"34A":{"name":"OSETLOMIVIR CAPSULE 75 MG","expiries":["2027-06-30"],"types":[],"oos":false,"shelf":false,"notes":"","extra":true},"56A":{"oos":false,"name":"AGOMELATINE TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"57A":{"oos":false,"name":"ARIPIPRAZOLE TABLET 15 MG","notes":"","shelf":true,"types":[],"expiries":[]},"58A":{"oos":false,"name":"ATOMOXETINE TABLET 40 MG","notes":"","shelf":true,"types":[],"expiries":[]},"59A":{"oos":false,"name":"CLOMIPRAMINE HCL TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"60A":{"oos":false,"name":"FLUOXETINE CAPSULE 20 MG","notes":"","shelf":true,"types":[],"expiries":[]},"56B":{"oos":false,"name":"AMANTADINE TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"57B":{"oos":false,"name":"ATOMOXETINE TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"58B":{"oos":false,"name":"BUPROPION TABLET 150 MG","notes":"","shelf":true,"types":[],"expiries":[]},"59B":{"oos":false,"name":"CLOZAPINE TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"60B":{"oos":false,"name":"FLUPHENAZINE TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"56C":{"oos":false,"name":"AMISULPRIDE TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"57C":{"oos":false,"name":"BENZTROPINE MESYLATE TABLET 2 MG","notes":"","shelf":true,"types":[],"expiries":[]},"58C":{"oos":false,"name":"CHLORPROMAZINE HCL TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"59C":{"oos":false,"name":"DONEPEZIL TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"56D":{"oos":false,"name":"AMITRIPTYLINE HCL TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"57D":{"oos":false,"name":"ATOMOXETINE TABLET 18 MG","notes":"","shelf":true,"types":[],"expiries":[]},"58D":{"oos":false,"name":"CITALOPRAM HCL TABLET 20 MG","notes":"","shelf":true,"types":[],"expiries":[]},"59D":{"oos":false,"name":"CLOZAPINE TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"60D":{"oos":false,"name":"HALOPERIDOL TABLET 1.5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"61A":{"oos":false,"name":"IMIPRAMINE HCL TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"62A":{"oos":false,"name":"OLANZAPINE TABLET 5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"63A":{"oos":false,"name":"PAROXETINE CR CAPSULE OR TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"64A":{"oos":false,"name":"RIVASTIGMINE PATCH 9.5 MG/24 HOURS","notes":"","shelf":true,"types":[],"expiries":[]},"65A":{"oos":false,"name":"TRIFLUOPERAZINE TABLET 5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"61B":{"oos":false,"name":"LITHIUM CARBONATE TABLET 300-450 MG","notes":"","shelf":true,"types":[],"expiries":[]},"62B":{"oos":false,"name":"PALPERIDONE TABLET 3 MG","notes":"","shelf":true,"types":[],"expiries":[]},"63B":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET 200 MG","notes":"","shelf":true,"types":[],"expiries":[]},"64B":{"oos":false,"name":"SULPIRIDE TABLET 50 MG","notes":"","shelf":true,"types":[],"expiries":[]},"65B":{"oos":false,"name":"VENLAFAXINE XR TABLET 150 MG","notes":"","shelf":true,"types":[],"expiries":[]},"61C":{"oos":false,"name":"IMIPRAMINE HCL TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"62C":{"oos":false,"name":"OLANZAPINE TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"63C":{"oos":false,"name":"RISPERIDONE TABLET 2 MG","notes":"","shelf":true,"types":[],"expiries":[]},"64C":{"oos":false,"name":"TRIFLUOPERAZINE TABLET 1 MG","notes":"","shelf":true,"types":[],"expiries":[]},"65C":{"oos":false,"name":"FLUVOXAMINE MALEATE TABLET 50 MG","notes":"","shelf":true,"types":[],"expiries":[]},"61D":{"oos":false,"name":"MAPROTILINE HCL TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"62D":{"oos":false,"name":"PALPERIDONE TABLET 6 MG","notes":"","shelf":true,"types":[],"expiries":[]},"63D":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET 300 MG","notes":"","shelf":true,"types":[],"expiries":[]},"64D":{"oos":false,"name":"SULPIRIDE TABLET 200 MG","notes":"","shelf":true,"types":[],"expiries":[]},"65D":{"oos":false,"name":"HALOPERIDOL TABLET 1.5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"61E":{"oos":false,"name":"MEMANTINE TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"62E":{"oos":false,"name":"PAROXETINE CR CAPSULE OR TABLET 12.5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"63E":{"oos":false,"name":"RISPERIDONE TABLET 4 MG","notes":"","shelf":true,"types":[],"expiries":[]},"64E":{"oos":false,"name":"TRIFLUOPERAZINE TABLET 2 MG","notes":"","shelf":true,"types":[],"expiries":[]},"65E":{"oos":false,"name":"VENLAFAXINE XR TABLET 75 MG","notes":"","shelf":true,"types":[],"expiries":[]},"61F":{"oos":false,"name":"MIRTAZAPINE TABLET 30 MG","notes":"","shelf":true,"types":[],"expiries":[]},"62F":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"63F":{"oos":false,"name":"RIVASTIGMINE PATCH 4.6 MG/24 HOURS","notes":"","shelf":true,"types":[],"expiries":[]},"64F":{"oos":false,"name":"CHLORPROMAZINE HCL TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"65F":{"oos":false,"name":"HALOPERIDOL TABLET 5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"66A":{"oos":false,"name":"IMIPRAMINE HCL TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"67A":{"oos":false,"name":"OLANZAPINE TABLET 5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"68A":{"oos":false,"name":"PAROXETINE CR CAPSULE OR TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"69A":{"oos":false,"name":"RIVASTIGMINE PATCH 9.5 MG/24 HOURS","notes":"","shelf":true,"types":[],"expiries":[]},"70A":{"oos":false,"name":"TRIFLUOPERAZINE TABLET 5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"66B":{"oos":false,"name":"LITHIUM CARBONATE TABLET 300-450 MG","notes":"","shelf":true,"types":[],"expiries":[]},"67B":{"oos":false,"name":"PALPERIDONE TABLET 3 MG","notes":"","shelf":true,"types":[],"expiries":[]},"68B":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET 200 MG","notes":"","shelf":true,"types":[],"expiries":[]},"69B":{"oos":false,"name":"SULPIRIDE TABLET 50 MG","notes":"","shelf":true,"types":[],"expiries":[]},"70B":{"oos":false,"name":"VENLAFAXINE XR TABLET 150 MG","notes":"","shelf":true,"types":[],"expiries":[]},"66C":{"oos":false,"name":"IMIPRAMINE HCL TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"67C":{"oos":false,"name":"OLANZAPINE TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"68C":{"oos":false,"name":"RISPERIDONE TABLET 2 MG","notes":"","shelf":true,"types":[],"expiries":[]},"69C":{"oos":false,"name":"TRIFLUOPERAZINE TABLET 1 MG","notes":"","shelf":true,"types":[],"expiries":[]},"66D":{"oos":false,"name":"MAPROTILINE HCL TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"67D":{"oos":false,"name":"PALPERIDONE TABLET 6 MG","notes":"","shelf":true,"types":[],"expiries":[]},"68D":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET 300 MG","notes":"","shelf":true,"types":[],"expiries":[]},"69D":{"oos":false,"name":"SULPIRIDE TABLET 200 MG","notes":"","shelf":true,"types":[],"expiries":[]},"66E":{"oos":false,"name":"MEMANTINE TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"67E":{"oos":false,"name":"PAROXETINE CR CAPSULE OR TABLET 12.5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"68E":{"oos":false,"name":"RISPERIDONE TABLET 4 MG","notes":"","shelf":true,"types":[],"expiries":[]},"69E":{"oos":false,"name":"TRIFLUOPERAZINE TABLET 2 MG","notes":"","shelf":true,"types":[],"expiries":[]},"70E":{"oos":false,"name":"VENLAFAXINE XR TABLET 75 MG","notes":"","shelf":true,"types":[],"expiries":[]},"66F":{"oos":false,"name":"MIRTAZAPINE TABLET 30 MG","notes":"","shelf":true,"types":[],"expiries":[]},"67F":{"oos":false,"name":"QUETIAPINE CAPSULE OR TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"68F":{"oos":false,"name":"RIVASTIGMINE PATCH 4.6 MG/24 HOURS","notes":"","shelf":true,"types":[],"expiries":[]},"56E":{"oos":false,"name":"ARIPIPRAZOLE TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"56F":{"oos":false,"name":"AMITRIPTYLINE HCL TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"57E":{"oos":false,"name":"BUPROPION TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"57F":{"oos":false,"name":"ATOMOXETINE TABLET 25 MG","notes":"","shelf":true,"types":[],"expiries":[]},"58E":{"oos":false,"name":"CHLORPROMAZINE HCL TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"58F":{"oos":false,"name":"CLOMIPRAMINE HCL TABLET 10 MG","notes":"","shelf":true,"types":[],"expiries":[]},"59E":{"oos":false,"name":"DULOXETINE HCL CAPSULE 60 MG","notes":"","shelf":true,"types":[],"expiries":[]},"59F":{"oos":false,"name":"CHLORPROMAZINE HCL TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"60C":{"oos":false,"name":"FLUVOXAMINE MALEATE TABLET 50 MG","notes":"","shelf":true,"types":[],"expiries":[]},"60E":{"oos":false,"name":"FLUVOXAMINE MALEATE TABLET 100 MG","notes":"","shelf":true,"types":[],"expiries":[]},"60F":{"oos":false,"name":"HALOPERIDOL TABLET 5 MG","notes":"","shelf":true,"types":[],"expiries":[]},"x_g487mxph5f":{"oos":false,"name":"ACETAZOLAMIDE TABLET\n500 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_t6vccc3jnq":{"oos":false,"name":"WARFARIN TABLET\n2 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_xkvzo3hfb3":{"oos":false,"name":"LEVODOPA 200MG + BEZARAZIDE 50 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_xn9vjf6pvm":{"oos":false,"name":"AZATHIOPRINE TABLET\n50 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_5thtbfwuge9":{"oos":false,"name":"TACROLIMUS TABLET\n0.5 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_6cc1b7ck2xs":{"oos":false,"name":"POTASSIUM CHLORIDE TABLET\n600 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_6mw16zp3wjd":{"oos":false,"name":"WARFARIN TABLET\n5 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_93aumkzkhwn":{"oos":false,"name":"SODIUM BICARBONATE TABLET\n650 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_e00on6t5g88":{"oos":false,"name":"MESALAZINE TABLET\n400-500 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_fb6vrxzxr17":{"oos":false,"name":"WARFARIN TABLET\n1 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_g6u0q3ddpt7":{"oos":false,"name":"MULTIENZYME TABLET","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_imwo6vtv6vc":{"oos":false,"name":"SEVELAMER TABLET\n800 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_pahat60gv3h":{"oos":false,"name":"OMEGA 3\n1000 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_pluxd7w70pc":{"oos":false,"name":"PHENYTOIN TABLET\n100 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_stpnz1bi1bm":{"oos":false,"name":"TACROLIMUS TABLET\n1 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"x_tmx915nldqj":{"oos":false,"name":"SODIUM BICARBONATE TABLET\n325 MG","extra":true,"notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null},"50A":{"oos":false,"name":"VITAMIN FOLIC ACID TABLET1 MG","notes":"","shelf":false,"types":[],"expiries":["2029-05-31"]},"199D":{"oos":false,"name":"VITAMIN D3\n5000 I.U.","notes":"","shelf":false,"types":[],"expiries":[]},"199B":{"oos":false,"name":"VITAMIN D3\n1000 I.U.","notes":"","shelf":false,"types":[],"expiries":[]},"50C":{"oos":false,"name":"VITAMIN FOLIC ACID TABLET\n5 MG","notes":"","shelf":false,"types":[],"expiries":["2028-05-20"]},"100B":{"oos":false,"name":"VITAMIN D3\n1000 I.U.","extra":true,"notes":"","shelf":false,"types":[],"expiries":[]},"50D":{"name":"VITAMIN K PHYTOMENADIONE 10 MG TABLET","expiries":["2027-05-31"],"types":[],"oos":false,"shelf":false,"notes":"","extra":true},"50B":{"name":"VITAMIN MULTIVITAMIN TABLET","expiries":["2027-12-31"],"types":[],"oos":false,"shelf":false,"notes":"","extra":true},"48C":{"oos":false,"name":"VERAPAMIL HCL TABLET\n40 MG","notes":"","shelf":false,"types":[],"expiries":[]},"x_w2486gwqdsp":{"oos":false,"name":"VITAMIN D3\n5000 I.U.","notes":"","shelf":false,"types":[],"expiries":[],"drawerNum":null,"drawerSlot":null,"extra":true},"x_ymfmawrp39q":{"oos":false,"name":"PANTOPRAZOLE TABLET\n20 MG","notes":"","shelf":false,"types":[],"expiries":["2028-09-30"],"drawerNum":null,"drawerSlot":null,"extra":true}},"shelves":[{"id":"lk8bbyvgne","cols":5,"name":"العلب الكبيره (الدرج الكبير)","rows":4,"startNum":51,"drawerNum":51},{"id":"tbhol3lk61m","cols":5,"name":"درج العلب 1","rows":6,"startNum":56,"seedPhotoId":"51"},{"id":"sog2ezqxjtf","cols":5,"name":"درج العلب 2 (Drawer 3)","rows":6,"startNum":61,"seedPhotoId":"56"}],"oosManual":[],"settings":{"warnDays":30,"critDays":7,"authMinutes":15,"writePassword":"asmd","deletedKeys":["2000A","3000A","48C"]},"theme":"dark"};
+
+function initData() {
+  // Apply default settings only — data comes from Supabase, not localStorage
+  settings = Object.assign({warnDays:30, critDays:7,
+    writePassword:'asmd', authMinutes:15, authIntervalMinutes:15}, settings);
+  document.getElementById('warnDays').value = settings.warnDays;
+  document.getElementById('critDays').value  = settings.critDays;
+  applyTheme();
+  updateShelfCapLabel();
+}
+
+// Seed a shelf's drug grid straight into the main `data` object, using the
+// exact same key format as drawers (number+slot, e.g. "51A"). This is what
+// makes the shelf page a real, live view of the database instead of a
+// separate copy -- anything here shows up in search, alerts, and the DB tab too.
+function seedShelfIntoData(startNum,grid){
+  const rows='ABCDEF';
+  grid.forEach((row,ri)=>{
+    row.forEach((name,ci)=>{
+      if(!name) return;
+      const key=`${startNum+ci}${rows[ri]}`;
+      if(!data[key]) data[key]={name,expiries:[],types:[],oos:false,shelf:true,notes:''};
+    });
+  });
+}
+const SHELF_GRID_51 = [
+  ['ACETAZOLAMIDE TABLET 500 MG','MULTIENZYME TABLET','SEVELAMER TABLET 800 MG','TACROLIMUS TABLET 0.5 MG','WARFARIN TABLET 5 MG'],
+  ['AZATHIOPRINE TABLET 50 MG','OMEGA 3 1000 MG','SODIUM BICARBONATE TABLET 325 MG','WARFARIN TABLET 1 MG','VITAMIN D3 CHOLCALCIFEROL 1000 I.U.'],
+  ['LEVODOPA 200MG + BEZARAZIDE 50 MG','PHENYTOIN TABLET 100 MG','SULFASALAZINE TABLET 500 MG','TACROLIMUS TABLET 1 MG',''],
+  ['MESALAZINE TABLET 400-500 MG','POTASSIUM CHLORIDE TABLET 600 MG','SODIUM BICARBONATE TABLET 650 MG','WARFARIN TABLET 2 MG','VITAMIN D3 CHOLCALCIFEROL 5000 I.U.']
+];
+const SHELF_GRID_56 = [
+  ['AGOMELATINE TABLET 25 MG','ARIPIPRAZOLE TABLET 15 MG','ATOMOXETINE TABLET 40 MG','CLOMIPRAMINE HCL TABLET 25 MG','FLUOXETINE CAPSULE 20 MG'],
+  ['AMANTADINE TABLET 100 MG','ATOMOXETINE TABLET 10 MG','BUPROPION TABLET 150 MG','CLOZAPINE TABLET 25 MG','FLUPHENAZINE TABLET 25 MG'],
+  ['AMISULPRIDE TABLET 100 MG','BENZTROPINE MESYLATE TABLET 2 MG','CHLORPROMAZINE HCL TABLET 25 MG','DONEPEZIL TABLET 10 MG','FLUVOXAMINE MALEATE TABLET 50 MG'],
+  ['AMITRIPTYLINE HCL TABLET 10 MG','ATOMOXETINE TABLET 18 MG','CITALOPRAM HCL TABLET 20 MG','CLOZAPINE TABLET 100 MG','HALOPERIDOL TABLET 1.5 MG'],
+  ['ARIPIPRAZOLE TABLET 10 MG','BUPROPION TABLET 25 MG','CHLORPROMAZINE HCL TABLET 100 MG','DULOXETINE HCL CAPSULE 60 MG','FLUVOXAMINE MALEATE TABLET 100 MG'],
+  ['AMITRIPTYLINE HCL TABLET 25 MG','ATOMOXETINE TABLET 25 MG','CLOMIPRAMINE HCL TABLET 10 MG','CHLORPROMAZINE HCL TABLET 100 MG','HALOPERIDOL TABLET 5 MG']
+];
+const SHELF_GRID_61 = [
+  ['IMIPRAMINE HCL TABLET 10 MG','OLANZAPINE TABLET 5 MG','PAROXETINE CR CAPSULE OR TABLET 25 MG','RIVASTIGMINE PATCH 9.5 MG/24 HOURS','TRIFLUOPERAZINE TABLET 5 MG'],
+  ['LITHIUM CARBONATE TABLET 300-450 MG','PALPERIDONE TABLET 3 MG','QUETIAPINE CAPSULE OR TABLET 200 MG','SULPIRIDE TABLET 50 MG','VENLAFAXINE XR TABLET 150 MG'],
+  ['IMIPRAMINE HCL TABLET 25 MG','OLANZAPINE TABLET 10 MG','RISPERIDONE TABLET 2 MG','TRIFLUOPERAZINE TABLET 1 MG',''],
+  ['MAPROTILINE HCL TABLET 25 MG','PALPERIDONE TABLET 6 MG','QUETIAPINE CAPSULE OR TABLET 300 MG','SULPIRIDE TABLET 200 MG',''],
+  ['MEMANTINE TABLET 10 MG','PAROXETINE CR CAPSULE OR TABLET 12.5 MG','RISPERIDONE TABLET 4 MG','TRIFLUOPERAZINE TABLET 2 MG','VENLAFAXINE XR TABLET 75 MG'],
+  ['MIRTAZAPINE TABLET 30 MG','QUETIAPINE CAPSULE OR TABLET 100 MG','RIVASTIGMINE PATCH 4.6 MG/24 HOURS','','']
+];
+// One-time migration: pull drug names out of any legacy shelf.cells (from an
+// older version of this app) into the main `data` object so they become real,
+// searchable, database-linked entries instead of a disconnected copy.
+function migrateLegacyShelfCells(){
+  let changed=false;
+  shelves.forEach(sh=>{
+    if(!sh.cells) return;
+    const startNum=sh.startNum||1;
+    for(const ck in sh.cells){
+      const c=sh.cells[ck];
+      if(!c||!c.drug) continue;
+      const m=ck.match(/^([A-F])(\d+)$/); if(!m) continue;
+      const rowLetter=m[1], colIdx=parseInt(m[2],10)-1;
+      const key=`${startNum+colIdx}${rowLetter}`;
+      if(!data[key]){
+        data[key]={name:c.drug, expiries:c.expiries||[], types:c.types||[], oos:false, shelf:true, notes:c.notes||''};
+        changed=true;
+      }
+    }
+    delete sh.cells;
+  });
+  if(changed){ saveData(); if(typeof sbSaveNow==='function') sbSaveNow(); }
+}
+// Assign startNum (continuing right after drawers 1-50) to any shelf that
+// doesn't have one yet — fixes shelves saved before the numbering system
+// existed (they used to show columns starting at 1).
+function normalizeShelves(){
+  let changed=false;
+  let maxEnd=50;
+  shelves.forEach(s=>{
+    if(s.startNum==null){
+      s.startNum = maxEnd+1;
+      changed=true;
+    }
+    maxEnd = Math.max(maxEnd, s.startNum + (s.cols||5) - 1);
+  });
+  if(changed){ saveData(); if(typeof sbSaveNow==='function') sbSaveNow(); }
+}
+
+function saveData() {
+  // Stub — overridden below in the Supabase section to save only to Supabase
+  invalidateDoseCountMap();
+}
+function saveSettings() {
+  settings.warnDays=parseInt(document.getElementById('warnDays').value)||30;
+  settings.critDays=parseInt(document.getElementById('critDays').value)||7;
+  saveData();
+}
+function saveShelfSettings() { updateShelfCapLabel(); saveData(); }
+function updateShelfCapLabel() {
+  const c=parseInt(document.getElementById('shelfCols').value)||5;
+  const r=parseInt(document.getElementById('shelfRows').value)||4;
+  document.getElementById('shelfCapLabel').textContent=`${c} عامود × ${r} صف = ${c*r} خلية/رف`;
+}
+
+// ══ THEME ══
+function toggleTheme() {
+  theme = theme==='dark'?'light':'dark';
+  applyTheme(); saveData();
+}
+function applyTheme() {
+  document.body.classList.toggle('light', theme==='light');
+  document.getElementById('themeBtn').textContent = theme==='light'?'🌙':'☀️';
+}
+
+// ══ HELPERS ══
+function daysUntil(d){ if(!d)return Infinity; const e=new Date(d),n=new Date(); n.setHours(0,0,0,0); e.setHours(0,0,0,0); return Math.round((e-n)/86400000); }
+function expStatus(d){ const n=daysUntil(d); if(n<0)return'expired'; if(n<=settings.critDays)return'critical'; if(n<=settings.warnDays)return'warn'; return'ok'; }
+function slotExpSt(key){ const d=data[key]; if(!d||!d.expiries||!d.expiries.length)return'none'; let w='ok'; for(const e of d.expiries){const s=expStatus(e); if(s==='expired'||s==='critical')return'danger'; if(s==='warn')w='warn';} return w; }
+function cellExpSt(cell){ if(!cell||!cell.expiries||!cell.expiries.length)return'none'; let w='ok'; for(const e of cell.expiries){const s=expStatus(e); if(s==='expired'||s==='critical')return'danger'; if(s==='warn')w='warn';} return w; }
+function formatDate(s){ if(!s)return''; const[y,m,d]=s.split('-'); return`${d}/${m}/${y}`; }
+function daysLabel(n){ if(n<0)return`منتهي منذ ${Math.abs(n)}د`; if(n===0)return'اليوم!'; return`${n}يوم`; }
+function uid(){ return Math.random().toString(36).slice(2); }
+
+// ══ WRITE PROTECTION ══
+// Modes:  'off'    — no password ever needed
+//         'always' — password required every time
+//         'timer'  — password required once, then valid for N minutes
+let _writeAuthCallback = null;
+function invalidateDoseCountMap(){ /* no-op — dose-count cache not used in this build */ }
+function isWriteAuthFresh(){
+  const mode = settings.authMode || 'timer';
+  if(mode === 'off') return true;
+  if(mode === 'always') return false;
+  const at = parseInt(sessionStorage.getItem('pharma_write_auth_at')||'0',10);
+  const mins = settings.authMinutes || 15;
+  return (Date.now() - at) < mins * 60000;
+}
+function requireWriteAuth(label, callback){
+  if(isWriteAuthFresh()){ if(callback) callback(); return true; }
+  // open non-blocking modal
+  document.getElementById('writeAuthLabel').textContent = `أدخل كلمة المرور للمتابعة: ${label}`;
+  document.getElementById('writeAuthInput').value = '';
+  document.getElementById('writeAuthError').style.display = 'none';
+  _writeAuthCallback = callback || null;
+  document.getElementById('writeAuthModal').classList.add('open');
+  setTimeout(()=>{ try{document.getElementById('writeAuthInput').focus();}catch(e){} }, 80);
+  return false;
+}
+function _writeAuthSubmit(){
+  const val = document.getElementById('writeAuthInput').value;
+  if(val === (settings.writePassword || 'asmd')){
+    sessionStorage.setItem('pharma_write_auth_at', String(Date.now()));
+    closeModal('writeAuthModal');
+    showToast(`🔓 تم الدخول — صلاحية لمدة ${settings.authMinutes||15} دقيقة`);
+    if(_writeAuthCallback){ const cb=_writeAuthCallback; _writeAuthCallback=null; cb(); }
+  } else {
+    document.getElementById('writeAuthError').style.display = '';
+    document.getElementById('writeAuthInput').value = '';
+    document.getElementById('writeAuthInput').focus();
+  }
+}
+function _writeAuthCancel(){
+  _writeAuthCallback = null;
+  closeModal('writeAuthModal');
+}
+function openSecuritySettingsModal(){
+  const m = settings.authMode || 'timer';
+  document.getElementById('authModeSelect').value = m;
+  document.getElementById('authMinsInput').value = settings.authMinutes || 15;
+  document.getElementById('authPassInput').value = '';
+  _updateAuthModeUI();
+  document.getElementById('securitySettingsModal').classList.add('open');
+}
+function _updateAuthModeUI(){
+  const m = document.getElementById('authModeSelect').value;
+  document.getElementById('authMinsRow').style.display = m === 'timer' ? '' : 'none';
+}
+function saveSecuritySettings(){
+  const pass = document.getElementById('authPassInput').value.trim();
+  const mode = document.getElementById('authModeSelect').value;
+  const mins = parseInt(document.getElementById('authMinsInput').value)||15;
+  // changing security settings itself requires current auth
+  requireWriteAuth('تغيير إعدادات الحماية', ()=>{
+    settings.authMode = mode;
+    settings.authMinutes = mins;
+    if(pass) settings.writePassword = pass;
+    saveData();
+    closeModal('securitySettingsModal');
+    showToast('✅ تم حفظ إعدادات الحماية');
+  });
+}
+// ── duplicate-name badge helper ──
+function dupBadgeHtml(item, key){
+  const norm=item.name.replace(/\n/g,' ').trim().toLowerCase();
+  const hasDup=Object.keys(data).some(k=>k!==key &&
+    data[k].name.replace(/\n/g,' ').trim().toLowerCase()===norm);
+  if(!hasDup) return '';
+  const dt=item.dupType||'';
+  if(dt==='dose')  return `<span class="dup-badge dup-dose" title="نفس الدواء — جرعة مختلفة">💊 جرعة مختلفة</span>`;
+  if(dt==='dup')   return `<span class="dup-badge" title="مكرر — يحتاج مراجعة">🔁 مكرر</span>`;
+  return `<span class="dup-badge" title="يوجد دواء آخر بنفس الاسم — انقر لتحديد النوع">🔁 تكرار</span>`;
+}
+function rowLabel(r){ return ROW_LABELS[r]||String(r+1); } // A,B,C...
+
+// ══ TABS ══
+function switchTab(name,el){
+  document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+  document.querySelector('main').classList.toggle('main-wide', name==='shelf');
+  if(name==='alerts') renderAlerts();
+  if(name==='db')     renderDB();
+  if(name==='voice')  initVoice();
+  if(name==='search'){document.getElementById('searchInput').focus();doSearch();}
+  if(name==='shelf')  renderShelves();
+  if(name==='oos')    renderOOS();
+  if(name==='table')  renderTable();
+}
+
+// ══ ZOOM ══
+let zoomLevel=0;
+const ZOOM_STEPS=[280,320,360,420,500,600];
+// ══ SHELF POSITION LOOKUP ══
+function getShelfPos(drugKey){
+  for(const sh of shelves){
+    for(const ck in sh.cells||{}){
+      const cell=sh.cells[ck];
+      if(cell&&cell.drug&&cell.drug.trim()===(data[drugKey]&&data[drugKey].name||'').replace(/\n/g,' ').trim()){
+        return `${sh.name} — عمود/صف ${ck}`;
+      }
+    }
+  }
+  return null;
+}
+
+function zoomDrawers(dir){
+  zoomLevel=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoomLevel+dir));
+  const minW=ZOOM_STEPS[zoomLevel];
+  const g=zoomLevel<=1?4:zoomLevel<=3?6:8;
+  const el=document.getElementById('drawersGrid');
+  el.style.gridTemplateColumns=`repeat(auto-fill,minmax(${minW}px,1fr))`;
+  el.style.gap=g+'px';
+  const pct=Math.round((minW/360)*100);
+  document.getElementById('zoomLabel').textContent=pct+'%';
+}
+
+// ══ EXTRA DRUGS (from photos - no fixed drawer, stored with key "extra_uid") ══
+// These are drugs added manually without a fixed 1A-50D slot
+// They use keys like "x_<uid>" in data{} with drawerNum=null
+// initExtraDrugs seeds them from EXTRA_DRUGS_SEED if not already in data
+
+const EXTRA_DRUGS_SEED = [
+  // ── Drawer 3 (from photo) ── stored as extra until user assigns slot
+  "AGOMELATINE TABLET\n25 MG","ARIPIPRAZOLE TABLET\n15 MG","ATOMOXETINE TABLET\n40 MG",
+  "CLOMIPRAMINE HCL TABLET\n25 MG","FLUOXETINE CAPSULE\n20 MG",
+  "AMANTADINE TABLET\n100 MG","ATOMOXETINE TABLET\n10 MG","BUPROPION TABLET\n150 MG",
+  "CLOZAPINE TABLET\n25 MG","FLUPHENAZINE TABLET\n25 MG",
+  "AMISULPRIDE TABLET\n100 MG","BENZTROPINE MESYLATE TABLET\n2 MG","CHLORPROMAZINE HCL TABLET\n25 MG",
+  "DONEPEZIL TABLET\n10 MG","FLUVOXAMINE MALEATE TABLET\n50 MG",
+  "AMITRIPTYLINE HCL TABLET\n10 MG","ATOMOXETINE TABLET\n18 MG","CITALOPRAM HCL TABLET\n20 MG",
+  "CLOZAPINE TABLET\n100 MG","HALOPERIDOL TABLET\n1.5 MG",
+  "ARIPIPRAZOLE TABLET\n10 MG","BUPROPION TABLET\n25 MG","CHLORPROMAZINE HCL TABLET\n100 MG",
+  "DULOXETINE HCL CAPSULE\n60 MG","FLUVOXAMINE MALEATE TABLET\n100 MG",
+  "AMITRIPTYLINE HCL TABLET\n25 MG","ATOMOXETINE TABLET\n25 MG","CLOMIPRAMINE HCL TABLET\n10 MG",
+  "ESCITALOPRAM TABLET\n10 MG","HALOPERIDOL TABLET\n5 MG",
+  // ── Drawer 4 (from photo) ──
+  "IMIPRAMINE HCL TABLET\n10 MG","OLANZAPINE TABLET\n5 MG","PAROXETINE CR CAPSULE OR TABLET\n25 MG",
+  "RIVASTIGMINE PATCH\n9.5 MG/24 HOURS","TRIFLUOPERAZINE TABLET\n5 MG",
+  "LITHIUM CARBONATE TABLET\n300-450 MG","PALPERIDONE TABLET\n3 MG","QUETIAPINE CAPSULE OR TABLET\n200 MG",
+  "SULPIRIDE TABLET\n50 MG","VENLAFAXINE XR TABLET\n150 MG",
+  "IMIPRAMINE HCL TABLET\n25 MG","OLANZAPINE TABLET\n10 MG","RISPERIDONE TABLET\n2 MG",
+  "TRIFLUOPERAZINE TABLET\n1 MG",
+  "MAPROTILINE HCL TABLET\n25 MG","PALPERIDONE TABLET\n6 MG","QUETIAPINE CAPSULE OR TABLET\n300 MG",
+  "SULPIRIDE TABLET\n200 MG",
+  "MEMANTINE TABLET\n10 MG","PAROXETINE CR CAPSULE OR TABLET\n12.5 MG","RISPERIDONE TABLET\n4 MG",
+  "TRIFLUOPERAZINE TABLET\n2 MG",
+  "MIRTAZAPINE TABLET\n30 MG","QUETIAPINE CAPSULE OR TABLET\n100 MG","RIVASTIGMINE PATCH\n4.6 MG/24 HOURS",
+  "VENLAFAXINE XR TABLET\n75 MG",
+  // ── Misc sheet (from photo) ──
+  "ACETAZOLAMIDE TABLET\n500 MG","MULTIENZYME TABLET","SEVELAMER TABLET\n800 MG",
+  "TACROLIMUS TABLET\n0.5 MG","WARFARIN TABLET\n5 MG",
+  "AZATHIOPRINE TABLET\n50 MG","OMEGA 3\n1000 MG","SODIUM BICARBONATE TABLET\n325 MG",
+  "WARFARIN TABLET\n1 MG","VITAMIN D3 CHOLCALCIFEROL\n1000 I.U.",
+  "LEVODOPA 200MG + BEZARAZIDE 50 MG","PHENYTOIN TABLET\n100 MG","SULFASALAZINE TABLET\n500 MG",
+  "TACROLIMUS TABLET\n1 MG",
+  "MESALAZINE TABLET\n400-500 MG","POTASSIUM CHLORIDE TABLET\n600 MG","SODIUM BICARBONATE TABLET\n650 MG",
+  "WARFARIN TABLET\n2 MG","VITAMIN D3 CHOLCALCIFEROL\n5000 I.U."
+];
+
+function initExtraDrugs(){
+  // seed extra drugs only once (check by looking for any x_ key)
+  const hasExtra = Object.keys(data).some(k=>k.startsWith('x_'));
+  if(hasExtra) return;
+  // get all existing names (normalized) to avoid duplication with RAW_DRUGS
+  const existingNames = new Set(Object.values(data).map(d=>d.name.replace(/\n/g,' ').trim().toLowerCase()));
+  EXTRA_DRUGS_SEED.forEach(name=>{
+    const norm = name.replace(/\n/g,' ').trim().toLowerCase();
+    if(!existingNames.has(norm)){
+      const key='x_'+uid();
+      data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
+      existingNames.add(norm);
+    }
+  });
+  saveData();
+}
+
+// helper: is a drug assigned to any fixed drawer slot?
+function isAssignedToDrawer(key){
+  // fixed slots are like "1A","12B" etc (no x_ prefix)
+  return !key.startsWith('x_');
+}
+
+// helper: is a drug assigned to any shelf cell?
+function isAssignedToShelf(name){
+  const n=name.replace(/\n/g,' ').trim().toLowerCase();
+  for(const sh of shelves){
+    for(const ck in sh.cells||{}){
+      const c=sh.cells[ck];
+      if(c&&c.drug&&c.drug.trim().toLowerCase()===n) return true;
+    }
+  }
+  return false;
+}
+
+// ══ DATABASE ══
+function renderDB(){
+  const q=(document.getElementById('dbSearch').value||'').trim().toLowerCase();
+  const f=document.getElementById('dbFilter').value;
+  const sortEl=document.getElementById('dbSort');
+  const sort=sortEl?sortEl.value:'drawer';
+  const tbody=document.getElementById('dbTableBody');
+  tbody.innerHTML='';
+  let entries=[];
+  for(const key in data){
+    const item=data[key];
+    const nm=!q||item.name.replace(/\n/g,' ').toLowerCase().includes(q)||key.toLowerCase().includes(q);
+    if(!nm) continue;
+    const exSt=slotExpSt(key);
+    const assignedDrawer=isAssignedToDrawer(key);
+    const numMatch=key.match(/\d+/);
+    const assignedShelf=item.shelf||(!!numMatch&&parseInt(numMatch[0],10)>50);
+    let pass=true;
+    if(f==='has-exp')    pass=(item.expiries||[]).length>0;
+    else if(f==='no-exp')  pass=(item.expiries||[]).length===0;
+    else if(f==='expired') pass=exSt==='danger'&&(item.expiries||[]).some(e=>daysUntil(e)<0);
+    else if(f==='warn')    pass=exSt==='warn';
+    else if(f==='hazard')  pass=(item.types||[]).includes('hazard');
+    else if(f==='lasa')    pass=(item.types||[]).includes('lasa');
+    else if(f==='high-alert') pass=(item.types||[]).includes('high-alert');
+    else if(f==='oos')     pass=item.oos;
+    else if(f==='dup-name'){
+      const norm2=item.name.replace(/\n/g,' ').trim().toLowerCase();
+      pass=Object.keys(data).some(k2=>k2!==key&&data[k2].name.replace(/\n/g,' ').trim().toLowerCase()===norm2);
+    }
+    else if(f==='shelf')   pass=item.shelf||assignedShelf;
+    else if(f==='unassigned-drawer') pass=!assignedDrawer;
+    else if(f==='unassigned-shelf')  pass=!assignedShelf;
+    else if(f==='unassigned-all')    pass=!assignedDrawer&&!assignedShelf;
+    if(!pass) continue;
+    entries.push({key,item,exSt,assignedDrawer,assignedShelf});
+  }
+  // ── Sort ──
+  const bestExp=e=>e.item.expiries&&e.item.expiries.length?e.item.expiries.slice().sort()[0]:'9999';
+  if(sort==='az') entries.sort((a,b)=>a.item.name.localeCompare(b.item.name,'en'));
+  else if(sort==='za') entries.sort((a,b)=>b.item.name.localeCompare(a.item.name,'en'));
+  else if(sort==='exp-asc') entries.sort((a,b)=>bestExp(a).localeCompare(bestExp(b)));
+  else if(sort==='exp-desc') entries.sort((a,b)=>bestExp(b).localeCompare(bestExp(a)));
+  else if(sort==='oos-first') entries.sort((a,b)=>(b.item.oos?1:0)-(a.item.oos?1:0));
+  else entries.sort((a,b)=>{
+    const na=parseInt(a.key.match(/\d+/)||[999]),nb=parseInt(b.key.match(/\d+/)||[999]);
+    return na!==nb?na-nb:a.key.localeCompare(b.key);
+  });
+
+  // Build rows
+  let html='';
+  entries.forEach(({key,item,exSt,assignedDrawer,assignedShelf})=>{
+    const nameClean=item.name.replace(/\n/g,' ');
+    const exHtml=(item.expiries||[]).length
+      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)} <small>(${daysLabel(d)})</small></span>`;}).join(' ')
+      :`<span style="color:var(--noexp);font-size:11px;font-weight:600">— بدون تاريخ</span>`;
+    let tHtml='';
+    if((item.types||[]).includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️H</span> `;
+    if((item.types||[]).includes('lasa'))       tHtml+=`<span class="type-badge lasa">🔵L</span> `;
+    if((item.types||[]).includes('high-alert')) tHtml+=`<span class="type-badge high-alert">🔴!</span> `;
+    if(item.shelf||assignedShelf) tHtml+=`<span class="shelf-badge">📦</span> `;
+    if(item.oos) tHtml+=`<span class="oos-badge">OOS</span> `;
+    tHtml+=dupBadgeHtml(item,key);
+    const stIcon=item.oos?'⬛':!(item.expiries||[]).length?`<span style="color:var(--noexp)">●</span>`:exSt==='danger'?'🔴':exSt==='warn'?'🟡':'🟢';
+    let locHtml='';
+    if(!assignedDrawer){
+      locHtml=`<span style="color:var(--warn);font-size:10px;font-style:italic">بدون درج</span>
+        <button class="btn btn-secondary btn-sm" style="margin-top:3px;display:block;font-size:10px" onclick="event.stopPropagation();openAssignDrawerModal('${key}')">📍 تعيين</button>`;
+    } else {
+      const dr=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
+      locHtml=`<span style="font-family:var(--mono);font-size:11px;color:var(--accent2)">درج ${dr}—${sl}</span>
+        <button class="btn btn-secondary btn-sm" style="margin-top:2px;display:block;font-size:10px" onclick="event.stopPropagation();openMoveDrawerModal('${key}')">🔀 نقل</button>`;
+    }
+    const oosClass=item.oos?' class="cell-oos"':'';
+    html+=`<tr${oosClass} style="cursor:pointer" onclick="openExpModal('${key}')">
+      <td style="text-align:center;vertical-align:middle"><input type="checkbox" class="db-row-chk" data-key="${key}" style="width:15px;height:15px;cursor:pointer" onclick="event.stopPropagation()" onchange="dbUpdateBulkBar()"></td>
+      <td class="loc-cell" style="vertical-align:top;padding-top:8px">${locHtml}</td>
+      <td class="name-cell" style="max-width:260px;word-break:break-word;white-space:normal;line-height:1.4;font-weight:600">${nameClean}</td>
+      <td>${tHtml||'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${exHtml}</td>
+      <td style="text-align:center;font-size:14px">${stIcon}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openMoveDrawerModal('${key}')">🔀</button></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openExpModal('${key}')">✏️</button></td>
+    </tr>`;
+  });
+  tbody.innerHTML=html;
+  document.getElementById('dbCountLabel').textContent=`${entries.length} دواء`;
+  dbUpdateBulkBar();
+  updateStats();
+}
+// ── Bulk selection helpers ──
+function dbUpdateBulkBar(){
+  const chks=[...document.querySelectorAll('.db-row-chk')];
+  const sel=chks.filter(c=>c.checked);
+  const bar=document.getElementById('dbBulkBar');
+  const allChk=document.getElementById('dbSelectAllChk');
+  document.getElementById('dbBulkCount').textContent=`${sel.length} محدد`;
+  bar.style.display=sel.length>0?'flex':'none';
+  if(allChk) allChk.checked=chks.length>0&&sel.length===chks.length;
+}
+function dbToggleAll(checked){
+  document.querySelectorAll('.db-row-chk').forEach(c=>c.checked=checked);
+  dbUpdateBulkBar();
+}
+function dbSelectAll(){ dbToggleAll(true); }
+function dbDeselectAll(){
+  dbToggleAll(false);
+  const p=document.getElementById('dbBulkPass'); if(p) p.value='';
+}
+async function dbBulkDelete(){
+  const pass=document.getElementById('dbBulkPass').value;
+  if(pass!==(settings.writePassword||'asmd')){ showToast('❌ كلمة السر غلط'); return; }
+  const keys=[...document.querySelectorAll('.db-row-chk:checked')].map(c=>c.dataset.key);
+  if(!keys.length){ showToast('⚠️ لم تحدد أي دواء'); return; }
+  if(!confirm(`حذف ${keys.length} دواء نهائياً؟`)) return;
+  keys.forEach(k=>{ delete data[k]; });
+  saveData();
+  try{ await sbSaveNow(); } catch(e){}
+  document.getElementById('dbBulkPass').value='';
+  renderDB(); // immediate refresh — no need to reload page
+  showToast(`🗑️ تم حذف ${keys.length} دواء ✅`);
+}
+
+// ══ IMPORT/EXPORT MODAL ══
+let _importMode='add';
+function openImportExportModal(){ document.getElementById('importExportModal').classList.add('open'); }
+function triggerImport(mode){
+  _importMode=mode;
+  document.getElementById('importFileHidden').accept = mode==='replace'?'.json':'.json,.csv';
+  document.getElementById('importFileHidden').value='';
+  document.getElementById('importFileHidden').click();
+}
+function doImportFile(input){
+  const file=input.files[0]; if(!file){ return; }
+  requireWriteAuth('استيراد بيانات', ()=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const text=e.target.result;
+        if(file.name.endsWith('.csv') && _importMode!=='replace'){
+          // CSV: merge/add
+          const lines=text.replace(/^\ufeff/,'').split('\n').slice(1);
+          let count=0;
+          lines.forEach(line=>{
+            if(!line.trim()) return;
+            const cols=[];let cur='',inQ=false;
+            for(const ch of line){ if(ch==='"'){inQ=!inQ;} else if(ch===','&&!inQ){cols.push(cur);cur='';}else cur+=ch; }
+            cols.push(cur);
+            const key=cols[0]?.replace(/"/g,'').trim();
+            const name=cols[1]?.replace(/"/g,'').trim();
+            const expiries=(cols[8]||'').replace(/"/g,'').split('|').map(s=>s.trim()).filter(Boolean);
+            const notes=(cols[9]||'').replace(/"/g,'').trim();
+            if(!key||!name) return;
+            if(_importMode==='add' && data[key]) return; // skip existing
+            if(!data[key]) data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:''};
+            data[key].name=name;
+            if(expiries.length) data[key].expiries=expiries;
+            if(notes) data[key].notes=notes;
+            count++;
+          });
+          saveData();closeModal('importExportModal');renderDB();
+          showToast(`✅ تم استيراد ${count} دواء من CSV`);
+        } else {
+          // JSON
+          const p=JSON.parse(text);
+          if(_importMode==='replace'){
+            data=p.data||{};shelves=p.shelves||shelves;oosManual=p.oosManual||oosManual;
+            settings=Object.assign({warnDays:30,critDays:7,writePassword:'asmd',authMinutes:15},p.settings||{});
+            theme=p.theme||theme; settings.seedVersion=SEED_VERSION;
+            document.getElementById('warnDays').value=settings.warnDays;
+            document.getElementById('critDays').value=settings.critDays;
+            applyTheme();
+          } else {
+            const src=p.data||{};
+            Object.keys(src).forEach(k=>{
+              if(_importMode==='add' && data[k]) return;
+              data[k]=src[k];
+            });
+          }
+          saveData();closeModal('importExportModal');refreshAll();
+          showToast('✅ تم الاستيراد وحفظه في Supabase');
+        }
+      }catch(err){showToast('❌ خطأ في الملف: '+err.message);}
+    };
+    r.readAsText(file,'utf-8');
+  });
+  input.value='';
+}
+
+// ══ ADD NEW DRUG ══
+function openAddDrugModal(){
+  document.getElementById('newDrugName').value='';
+  document.getElementById('newDrugDrawer').value='';
+  document.getElementById('newDrugSlot').value='A';
+  document.getElementById('newDrugDupWarn').style.display='none';
+  document.getElementById('newDrugSlotWarn').style.display='none';
+  document.getElementById('newDrugHazard').checked=false;
+  document.getElementById('newDrugLasa').checked=false;
+  document.getElementById('newDrugHighAlert').checked=false;
+  document.getElementById('addDrugModal').classList.add('open');
+}
+function checkNewDrugSlot(){
+  const dr=document.getElementById('newDrugDrawer').value.trim();
+  const sl=document.getElementById('newDrugSlot').value;
+  const slotWarn=document.getElementById('newDrugSlotWarn');
+  if(dr&&sl){
+    const key=`${dr}${sl}`;
+    const existing=data[key];
+    if(existing){
+      slotWarn.style.display='block';
+      slotWarn.textContent=`⚠️ هذه الخانة (درج ${dr}—${sl}) مشغولة بـ: ${existing.name.replace(/\n/g,' ')}`;
+    } else { slotWarn.style.display='none'; }
+  } else { slotWarn.style.display='none'; }
+  // check drug name dup
+  const nameVal=document.getElementById('newDrugName').value.trim().toLowerCase();
+  checkNewDrugNameDup(nameVal);
+}
+function checkNewDrugNameDup(nameVal){
+  const dupWarn=document.getElementById('newDrugDupWarn');
+  if(!nameVal){dupWarn.style.display='none';return;}
+  const existing=Object.values(data).find(d=>d.name.replace(/\n/g,' ').trim().toLowerCase()===nameVal);
+  if(existing){
+    dupWarn.style.display='block';
+    dupWarn.textContent=`⚠️ هذا الدواء موجود بالفعل في القاعدة: ${existing.name.replace(/\n/g,' ')}`;
+  } else { dupWarn.style.display='none'; }
+}
+function saveNewDrug(){
+  const nameVal=document.getElementById('newDrugName').value.trim();
+  if(!nameVal) return showToast('⚠️ أدخل اسم الدواء');
+  // dup check
+  const norm=nameVal.replace(/\n/g,' ').trim().toLowerCase();
+  const dup=Object.values(data).find(d=>d.name.replace(/\n/g,' ').trim().toLowerCase()===norm);
+  if(dup) return showToast('❌ هذا الدواء موجود بالفعل في قاعدة البيانات');
+  const dr=document.getElementById('newDrugDrawer').value.trim();
+  const sl=document.getElementById('newDrugSlot').value;
+  const types=[];
+  if(document.getElementById('newDrugHazard').checked)    types.push('hazard');
+  if(document.getElementById('newDrugLasa').checked)      types.push('lasa');
+  if(document.getElementById('newDrugHighAlert').checked) types.push('high-alert');
+  if(dr&&sl){
+    // assign to fixed slot
+    const key=`${dr}${sl}`;
+    if(data[key]){
+      const occupantName=data[key].name.replace(/\n/g,' ');
+      const choice=confirm(
+        `الخانة درج ${dr}—${sl} مشغولة بـ:\n"${occupantName}"\n\n` +
+        `اضغط موافق ← تبديل (الدواء الجديد يأخذ المكان، القديم يبقى بدون تعيين)\n` +
+        `اضغط إلغاء ← حفظ الجديد بدون موقع الآن`
+      );
+      if(choice){
+        const oldKey='x_'+uid();
+        data[oldKey]={...data[key], drawerNum:null, drawerSlot:null, extra:true};
+        data[key]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true};
+        saveData(); refreshAll(); closeModal('addDrugModal');
+        showToast(`✅ تمت الإضافة في درج ${dr}—${sl} — "${occupantName}" أصبح بدون تعيين`);
+      } else {
+        const newKey='x_'+uid();
+        data[newKey]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
+        saveData(); refreshAll(); closeModal('addDrugModal');
+        showToast('✅ تمت إضافة الدواء بدون موقع');
+      }
+      return;
+    }
+    data[key]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true};
+  } else {
+    // no slot yet — store as extra
+    const key='x_'+uid();
+    data[key]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
+  }
+  saveData(); refreshAll(); closeModal('addDrugModal');
+  showToast('✅ تمت إضافة الدواء للقاعدة'+(dr?` (درج ${dr}—${sl})`:'، بدون موقع بعد'));
+}
+
+// ══ BULK ADD (paste table) ══
+function openBulkAddModal(){
+  document.getElementById('bulkPasteArea').value='';
+  document.getElementById('bulkPreviewArea').innerHTML='';
+  document.getElementById('bulkAddModal').classList.add('open');
+}
+function parseBulkDrugs(){
+  const raw=document.getElementById('bulkPasteArea').value.trim();
+  if(!raw) return showToast('⚠️ الصق النص أولاً');
+  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  const preview=document.getElementById('bulkPreviewArea');
+  preview.innerHTML='';
+  let parsed=[];
+  lines.forEach((line,i)=>{
+    // support: tab-separated (col1 = name, col2 optional = drawer num, col3 optional = slot)
+    const parts=line.split(/\t|,/).map(p=>p.trim());
+    const name=parts[0];
+    const dr=parts[1]||'';
+    const sl=(parts[2]||'').toUpperCase();
+    if(!name){return;}
+    const norm=name.toLowerCase();
+    const isDup=Object.values(data).some(d=>d.name.replace(/\n/g,' ').trim().toLowerCase()===norm);
+    const slotTaken=dr&&sl&&data[`${dr}${sl}`];
+    parsed.push({name,dr,sl,isDup,slotTaken});
+    const color=isDup?'var(--warn)':slotTaken?'var(--danger)':'var(--success)';
+    const icon=isDup?'⚠️ مكرر':slotTaken?'❌ خانة مشغولة':'✅';
+    preview.innerHTML+=`<div style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-bottom:1px solid var(--border);font-size:11px">
+      <span style="color:${color};width:80px;flex-shrink:0">${icon}</span>
+      <span style="flex:1;font-weight:600">${name}</span>
+      ${dr?`<span style="font-family:var(--mono);color:var(--accent2);font-size:10px">درج ${dr}${sl||''}</span>`:'<span style="color:var(--text3);font-size:10px">بدون موقع</span>'}
+    </div>`;
+  });
+  preview._parsed=parsed;
+}
+function saveBulkDrugs(){
+  const preview=document.getElementById('bulkPreviewArea');
+  const parsed=preview._parsed;
+  if(!parsed||!parsed.length) return showToast('⚠️ اضغط "معاينة" أولاً');
+  let added=0, skipped=0;
+  parsed.forEach(({name,dr,sl,isDup,slotTaken})=>{
+    if(isDup||slotTaken){skipped++;return;}
+    if(dr&&sl){
+      const key=`${dr}${sl}`;
+      if(!data[key]){data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true};added++;}
+      else skipped++;
+    } else {
+      const key='x_'+uid();
+      data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
+      added++;
+    }
+  });
+  saveData();refreshAll();closeModal('bulkAddModal');
+  showToast(`✅ تمت إضافة ${added} دواء، تخطي ${skipped} مكرر/خانة مشغولة`);
+}
+
+// ══ MOVE DRAWER ══
+let movingKey=null;
+function openMoveDrawerModal(key){
+  movingKey=key;
+  const item=data[key];
+  const dr=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
+  document.getElementById('moveDrawerInfo').innerHTML=`<strong>${item.name.replace(/\n/g,' ')}</strong><br>
+    الموقع الحالي: <span style="font-family:var(--mono);color:var(--accent)">درج ${dr} — ${sl}</span>`;
+  document.getElementById('moveTargetDrawer').value='';
+  document.getElementById('moveTargetSlot').value=sl;
+  document.getElementById('moveTargetWarn').style.display='none';
+  document.getElementById('moveDrawerModal').classList.add('open');
+}
+function checkMoveTarget(){
+  const dr=document.getElementById('moveTargetDrawer').value.trim();
+  const sl=document.getElementById('moveTargetSlot').value;
+  const warn=document.getElementById('moveTargetWarn');
+  if(dr&&sl){
+    const key=`${dr}${sl}`;
+    if(key===movingKey){warn.style.display='none';return;}
+    const existing=data[key];
+    if(existing){
+      warn.style.display='block';
+      warn.style.color='var(--warn)';
+      warn.innerHTML=`⚠️ الخانة درج ${dr}—${sl} مشغولة بـ: <strong>${existing.name.replace(/\n/g,' ')}</strong><br><span style="font-size:10px;color:var(--text3)">عند التأكيد: تبديل الموقعين أو إزاحة الموجود لـ"بدون تعيين"</span>`;
+    } else { warn.style.display='none'; }
+  } else { warn.style.display='none'; }
+}
+function confirmMoveDrawer(){
+  const dr=document.getElementById('moveTargetDrawer').value.trim();
+  const sl=document.getElementById('moveTargetSlot').value;
+  if(!dr) return showToast('⚠️ أدخل رقم الدرج');
+  const newKey=`${dr}${sl}`;
+  if(newKey===movingKey){closeModal('moveDrawerModal');return;}
+
+  if(data[newKey]){
+    // Slot is occupied → offer two choices
+    const occupantName=data[newKey].name.replace(/\n/g,' ');
+    const choice=confirm(
+      `الخانة درج ${dr}—${sl} مشغولة بـ:\n"${occupantName}"\n\n` +
+      `اضغط موافق ← تبديل (كل دواء يأخذ مكان الآخر)\n` +
+      `اضغط إلغاء ← أخذ الخانة وإبقاء الآخر بدون تعيين`
+    );
+    if(choice){
+      // swap
+      const tmp={...data[newKey]};
+      data[newKey]={...data[movingKey]};
+      data[movingKey]=tmp;
+      saveData();refreshAll();closeModal('moveDrawerModal');
+      showToast(`🔄 تم تبديل الدواءين`);
+    } else {
+      // take slot, old drug becomes unassigned (x_)
+      const oldKey='x_'+uid();
+      data[oldKey]={...data[newKey], drawerNum:null, drawerSlot:null, extra:true};
+      data[newKey]={...data[movingKey]};
+      delete data[movingKey];
+      saveData();refreshAll();closeModal('moveDrawerModal');
+      showToast(`✅ تم النقل — "${occupantName}" أصبح بدون تعيين`);
+    }
+    return;
+  }
+
+  // slot is free — simple move
+  data[newKey]={...data[movingKey]};
+  delete data[movingKey];
+  saveData();refreshAll();closeModal('moveDrawerModal');
+  showToast(`✅ تم نقل الدواء إلى درج ${dr}—${sl}`);
+}
+
+// ══ ASSIGN DRAWER (for x_ extras) ══
+let assigningKey=null;
+function openAssignDrawerModal(key){
+  assigningKey=key;
+  const item=data[key];
+  document.getElementById('assignDrugInfo').innerHTML=`<strong>${item.name.replace(/\n/g,' ')}</strong>`;
+  document.getElementById('assignTargetDrawer').value='';
+  document.getElementById('assignTargetSlot').value='A';
+  document.getElementById('assignTargetWarn').style.display='none';
+  document.getElementById('assignDrawerModal').classList.add('open');
+}
+function checkAssignTarget(){
+  const dr=document.getElementById('assignTargetDrawer').value.trim();
+  const sl=document.getElementById('assignTargetSlot').value;
+  const warn=document.getElementById('assignTargetWarn');
+  if(dr&&sl){
+    const key=`${dr}${sl}`;
+    const existing=data[key];
+    if(existing){
+      warn.style.display='block';
+      warn.style.color='var(--warn)';
+      warn.innerHTML=`⚠️ الخانة درج ${dr}—${sl} مشغولة بـ: <strong>${existing.name.replace(/\n/g,' ')}</strong><br><span style="font-size:10px;color:var(--text3)">عند التأكيد: تبديل الموقعين أو إزاحة الموجود لـ"بدون تعيين"</span>`;
+    } else { warn.style.display='none'; }
+  } else { warn.style.display='none'; }
+}
+function confirmAssignDrawer(){
+  const dr=document.getElementById('assignTargetDrawer').value.trim();
+  const sl=document.getElementById('assignTargetSlot').value;
+  if(!dr) return showToast('⚠️ أدخل رقم الدرج');
+  const newKey=`${dr}${sl}`;
+
+  if(data[newKey]){
+    const occupantName=data[newKey].name.replace(/\n/g,' ');
+    const choice=confirm(
+      `الخانة درج ${dr}—${sl} مشغولة بـ:\n"${occupantName}"\n\n` +
+      `اضغط موافق ← تبديل (كل دواء يأخذ مكان الآخر)\n` +
+      `اضغط إلغاء ← أخذ الخانة وإبقاء الآخر بدون تعيين`
+    );
+    if(choice){
+      // swap: old slot drug goes to x_ temporarily, then assigningKey's data goes to newKey, old goes to x_
+      const tmpOld={...data[newKey]};
+      data[newKey]={...data[assigningKey]};
+      delete data[assigningKey];
+      const oldKey='x_'+uid();
+      data[oldKey]={...tmpOld, drawerNum:null, drawerSlot:null, extra:true};
+      saveData();refreshAll();closeModal('assignDrawerModal');
+      showToast(`🔄 تم التبديل — "${occupantName}" أصبح بدون تعيين`);
+    } else {
+      const oldKey='x_'+uid();
+      data[oldKey]={...data[newKey], drawerNum:null, drawerSlot:null, extra:true};
+      data[newKey]={...data[assigningKey]};
+      delete data[assigningKey];
+      saveData();refreshAll();closeModal('assignDrawerModal');
+      showToast(`✅ تم التعيين — "${occupantName}" أصبح بدون تعيين`);
+    }
+    return;
+  }
+
+  data[newKey]={...data[assigningKey]};
+  delete data[assigningKey];
+  saveData();refreshAll();closeModal('assignDrawerModal');
+  showToast(`✅ تم تعيين الدواء في درج ${dr}—${sl}`);
+}
+
+// ══ DRAWERS ══
+let drawerView='card';
+function setDrawerView(v){
+  drawerView=v;
+  document.getElementById('viewBtnCard').classList.toggle('active',v==='card');
+  document.getElementById('viewBtnTable').classList.toggle('active',v==='table');
+  renderDrawers();
+}
+
+function renderDrawers(){
+  const q=(document.getElementById('drawerFilter').value||'').trim().toLowerCase();
+  const grid=document.getElementById('drawersGrid');
+  grid.innerHTML='';
+
+  if(drawerView==='table'){
+    grid.style.display='block';
+    const wrap=document.createElement('div');wrap.style.overflowX='auto';
+    const tbl=document.createElement('table');tbl.className='drawers-table';
+    tbl.innerHTML=`<thead><tr>
+      <th style="width:80px">الموقع</th>
+      <th>اسم الدواء</th>
+      <th style="width:120px">النوع</th>
+      <th style="width:160px">تواريخ الانتهاء</th>
+      <th style="width:60px"></th>
+    </tr></thead>`;
+    const tbody=document.createElement('tbody');
+    for(let r=1;r<=50;r++){
+      SLOTS.forEach(sl=>{
+        const key=`${r}${sl}`,item=data[key];
+        if(q&&!item.name.toLowerCase().includes(q))return;
+        const exSt=slotExpSt(key);
+        const expsHtml=item.expiries.length
+          ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)}</span>`;}).join(' ')
+          :'<span style="color:var(--text3)">—</span>';
+        let tHtml='';
+        if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️</span>`;
+        if(item.types.includes('lasa'))       tHtml+=`<span class="type-badge lasa">🔵</span>`;
+        if(item.types.includes('high-alert')) tHtml+=`<span class="type-badge high-alert">🔴</span>`;
+        if(item.shelf) tHtml+=`<span class="shelf-badge">📦</span>`;
+        if(item.oos)   tHtml+=`<span class="oos-badge">OOS</span>`;
+        tHtml+=dupBadgeHtml(item,key);
+        const nameClean=item.name.replace(/\n/g,' ');
+        const tr=document.createElement('tr');
+        if(item.oos) tr.classList.add('cell-oos');
+        tr.innerHTML=`<td class="loc-cell">درج ${r} — ${sl}</td>
+          <td class="name-cell">${nameClean}</td>
+          <td>${tHtml||'—'}</td>
+          <td>${expsHtml}</td>
+          <td><button class="btn btn-secondary btn-sm" onclick="openExpModal('${key}')">✏️</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    tbl.appendChild(tbody);wrap.appendChild(tbl);grid.appendChild(wrap);
+    updateStats();return;
+  }
+
+  // ── CARD VIEW ──
+  grid.style.display='';
+  for(let r=1;r<=50;r++){
+    const allKeys=SLOTS.map(sl=>`${r}${sl}`);
+    // guard: skip if any slot is completely missing from data
+    if(allKeys.some(k=>!data[k])) continue;
+    const anyMatch=!q||allKeys.some(k=>data[k].name.toLowerCase().includes(q));
+    if(!anyMatch)continue;
+
+    const card=document.createElement('div');card.className='drawer-card';
+
+    // status dots for header preview
+    const dots=SLOTS.map(sl=>{
+      const key=`${r}${sl}`,item=data[key];
+      const exSt=slotExpSt(key);
+      let dotColor='var(--text3)';
+      if(item.oos) dotColor='#6e7681';
+      else if(!item.expiries.length) dotColor='var(--noexp)';
+      else if(exSt==='danger') dotColor='var(--danger)';
+      else if(exSt==='warn')   dotColor='var(--warn)';
+      else dotColor='var(--success)';
+      return `<span class="status-dot-sm" style="background:${dotColor}" title="${sl}"></span>`;
+    }).join('');
+
+    card.innerHTML=`<div class="drawer-card-header" style="direction:ltr">
+      <span class="drawer-num">${r}</span>
+      <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">A→D</span>
+      <div class="drawer-status-dots">${dots}</div>
+    </div>`;
+
+    SLOTS.forEach(sl=>{
+      const key=`${r}${sl}`,item=data[key];
+      const dim=q&&!item.name.toLowerCase().includes(q);
+      const exSt=slotExpSt(key);
+
+      let rowCls='drawer-row';
+      if(dim){rowCls+=' dimmed';}
+      else{
+        if(!item.expiries.length) rowCls+=' no-expiry';
+        else if(exSt==='danger')  rowCls+=' has-alert';
+        else if(exSt==='warn')    rowCls+=' has-warn';
+        if(item.types.includes('high-alert')) rowCls+=' type-high-alert';
+        else if(item.types.includes('lasa'))  rowCls+=' type-lasa';
+        else if(item.types.includes('hazard'))rowCls+=' type-hazard';
+        if(item.oos) rowCls+=' cell-oos';
+      }
+
+      const row=document.createElement('div');row.className=rowCls;
+      if(dim)row.style.opacity='.18';
+
+      // badges (icon only to save space)
+      let badgeHtml='';
+      if(item.types.includes('hazard'))     badgeHtml+=`<span class="type-badge hazard" style="padding:0 3px">⚠️</span>`;
+      if(item.types.includes('lasa'))       badgeHtml+=`<span class="type-badge lasa" style="padding:0 3px">🔵</span>`;
+      if(item.types.includes('high-alert')) badgeHtml+=`<span class="type-badge high-alert" style="padding:0 3px">🔴</span>`;
+      if(item.shelf)                        badgeHtml+=`<span class="shelf-badge" style="padding:0 3px">📦</span>`;
+      if(item.oos)                          badgeHtml+=`<span class="oos-badge" style="padding:0 3px">OOS</span>`;
+      badgeHtml+=dupBadgeHtml(item,key);
+
+      // expiry tags inline (only earliest)
+      let expHtml='';
+      if(item.expiries.length){
+        const earliest=[...item.expiries].sort()[0];
+        const s=expStatus(earliest),d=daysUntil(earliest);
+        expHtml=`<span class="exp-tag ${s==='critical'?'danger':s}" style="font-size:8px;padding:0 4px">${formatDate(earliest)}</span>`;
+      }
+
+      const nameClean=item.name.replace(/\n/g,' ');
+      const drugCls='row-drug'+((!item.expiries.length&&!dim)?' no-expiry-text':'');
+
+      row.innerHTML=`
+        <div class="row-label">${sl}</div>
+        <div class="row-body">
+          ${badgeHtml?`<div class="row-badges">${badgeHtml}</div>`:''}
+          <div class="${drugCls}" title="${nameClean}">${nameClean}</div>
+        </div>
+        <div class="row-right">
+          ${expHtml}
+          <button class="add-exp-btn" style="margin-top:0;padding:1px 6px;font-size:10px" onclick="event.stopPropagation();openExpModal('${key}')">✏️</button>
+        </div>`;
+      row.addEventListener('click',()=>openExpModal(key));
+      card.appendChild(row);
+    });
+
+    grid.appendChild(card);
+  }
+  updateStats();
+}
+
+// ══ STATS ══
+function updateStats(){
+  const total = Object.keys(data).length;
+  // update the header drug count badge (hardcoded 200 before, now live)
+  const countBadge = document.querySelector('.stat-badge span:first-child') || document.querySelector('.stats .stat-badge:first-child span');
+  if(countBadge) countBadge.textContent = total;
+  // also update via id if present
+  const totalEl = document.getElementById('totalDrugCount');
+  if(totalEl) totalEl.textContent = total;
+
+  let alerts=0;
+  for(const key in data){ for(const e of (data[key].expiries||[])){ if(daysUntil(e)<=settings.warnDays) alerts++; } }
+  const oos=Object.values(data).filter(d=>d.oos).length+oosManual.length;
+  document.getElementById('alertCount').textContent=alerts;
+  document.getElementById('alertCountBadge').textContent=alerts;
+  document.getElementById('oosCount').textContent=oos;
+  document.getElementById('oosCountBadge').textContent=oos;
+  document.getElementById('shelfCount').textContent=shelves.length;
+  document.getElementById('alertStatBadge').style.color=alerts>0?'var(--danger)':'var(--text2)';
+  document.getElementById('oosStatBadge').style.color=oos>0?'var(--warn)':'var(--text2)';
+}
+
+// ══ DRUG MODAL ══
+function openExpModal(key){
+  editingKey=key; const item=data[key];
+  const isExtra=key.startsWith('x_');
+  const numMatch=key.match(/\d+/), slotMatch=key.match(/[A-F]/);
+  const num=numMatch?parseInt(numMatch[0],10):null;
+  const isShelfNum = num!=null && num>50;
+  const locText=isExtra
+    ? '<span style="color:var(--warn)">بدون موقع محدد</span>'
+    : `${isShelfNum?'رقم':'درج'} ${numMatch[0]} — خانة ${slotMatch[0]}`;
+
+  // ── detect name duplicates ──
+  const normThisName=item.name.replace(/\n/g,' ').trim().toLowerCase();
+  const dupKeys=Object.keys(data).filter(k=>k!==key &&
+    data[k].name.replace(/\n/g,' ').trim().toLowerCase()===normThisName);
+  const hasDup=dupKeys.length>0;
+
+  document.getElementById('modalDrugInfo').innerHTML=`<strong>${item.name.replace(/\n/g,' ')}</strong><br>الموقع: <span style="color:var(--accent);font-family:var(--mono)">${locText}</span>`
+    +(hasDup?`<div class="dup-row" style="margin-top:5px">⚠️ <span style="color:var(--warn);font-size:11px">يوجد <strong>${dupKeys.length}</strong> دواء آخر بنفس الاسم</span></div>`:'');
+  document.getElementById('modalDrugName').value = item.name;
+  document.getElementById('typeHazard').checked   =item.types.includes('hazard');
+  document.getElementById('typeLasa').checked     =item.types.includes('lasa');
+  document.getElementById('typeHighAlert').checked=item.types.includes('high-alert');
+  document.getElementById('flagOOS').checked      =item.oos;
+  document.getElementById('flagShelf').checked    =item.shelf;
+  document.getElementById('drugNotes').value      =item.notes||'';
+  renderExpRows(item.expiries,'expListEdit');
+
+  // dup type field
+  const dupGroup=document.getElementById('dupTypeGroup');
+  const dupSel=document.getElementById('dupTypeSelect');
+  dupGroup.style.display=hasDup?'':'none';
+  dupSel.value=item.dupType||'';
+
+  // delete btn: only shelf-page entries (number > 50)
+  document.getElementById('modalDeleteBtn').style.display = isShelfNum ? '' : 'none';
+  // unassign btn: any drawer slot (not x_ and not shelf-num)
+  document.getElementById('modalUnassignBtn').style.display = (!isExtra && !isShelfNum) ? '' : 'none';
+  document.getElementById('expModal').classList.add('open');
+}
+function deleteShelfDrugEntry(){
+  if(!editingKey) return;
+  if(!confirm('حذف هذا الدواء من الخانة؟')) return;
+  delete data[editingKey];
+  saveData(); closeModal('expModal'); refreshAll(); showToast('🗑️ تم الحذف');
+}
+// unassign: move drawer slot drug to x_ key so it stays in DB without a location
+function unassignDrugSlot(){
+  if(!editingKey) return;
+  if(!confirm('سيُبقى الدواء في قاعدة البيانات لكن بدون موقع محدد. تأكيد؟')) return;
+  const newKey='x_'+uid();
+  data[newKey]={...data[editingKey], drawerNum:null, drawerSlot:null, extra:true};
+  delete data[editingKey];
+  editingKey=newKey;
+  saveData(); closeModal('expModal'); refreshAll();
+  showToast('📤 تم إلغاء الموقع — الدواء لا يزال في قاعدة البيانات بدون تعيين');
+}
+function renderExpRows(expiries,containerId){
+  const c=document.getElementById(containerId); c.innerHTML='';
+  const list=expiries.length?expiries:[''];
+  list.forEach((e,i)=>{
+    const s=e?expStatus(e):'ok', dot=s==='ok'?'var(--success)':s==='warn'?'var(--warn)':'var(--danger)';
+    const row=document.createElement('div'); row.className='exp-row';
+    row.innerHTML=`<span class="exp-num">${i+1}</span>
+      <input type="date" value="${e||''}" oninput="updateDot(this,'${containerId}',${i})">
+      <div class="status-dot" style="background:${dot}" id="dot_${containerId}_${i}"></div>
+      <button class="btn btn-danger btn-sm" onclick="removeExpRowFrom('${containerId}',${i})">×</button>`;
+    c.appendChild(row);
+  });
+}
+function updateDot(input,cid,idx){
+  const s=input.value?expStatus(input.value):'ok';
+  document.getElementById(`dot_${cid}_${idx}`).style.background=s==='ok'?'var(--success)':s==='warn'?'var(--warn)':'var(--danger)';
+}
+function removeExpRowFrom(cid,idx){
+  const inputs=document.querySelectorAll(`#${cid} input[type=date]`);
+  renderExpRows(Array.from(inputs).map(i=>i.value).filter((_,ii)=>ii!==idx),cid);
+}
+function addExpRow(){
+  const rows=document.querySelectorAll('#expListEdit .exp-row');
+  if(rows.length>=10)return;
+  const i=rows.length; const row=document.createElement('div'); row.className='exp-row';
+  row.innerHTML=`<span class="exp-num">${i+1}</span>
+    <input type="date" value="" oninput="updateDot(this,'expListEdit',${i})">
+    <div class="status-dot" style="background:var(--success)" id="dot_expListEdit_${i}"></div>
+    <button class="btn btn-danger btn-sm" onclick="removeExpRowFrom('expListEdit',${i})">×</button>`;
+  document.getElementById('expListEdit').appendChild(row);
+}
+function saveExpiries(){
+  const inputs=document.querySelectorAll('#expListEdit input[type=date]');
+  const types=[];
+  if(document.getElementById('typeHazard').checked)    types.push('hazard');
+  if(document.getElementById('typeLasa').checked)      types.push('lasa');
+  if(document.getElementById('typeHighAlert').checked) types.push('high-alert');
+  data[editingKey].expiries=Array.from(inputs).map(i=>i.value).filter(Boolean);
+  data[editingKey].types   =types;
+  data[editingKey].oos     =document.getElementById('flagOOS').checked;
+  data[editingKey].shelf   =document.getElementById('flagShelf').checked;
+  data[editingKey].notes   =document.getElementById('drugNotes').value;
+  data[editingKey].name    =document.getElementById('modalDrugName').value.trim()||data[editingKey].name;
+  data[editingKey].dupType =document.getElementById('dupTypeSelect').value||undefined;
+  saveData(); closeModal('expModal'); refreshAll(); showToast('✅ تم الحفظ');
+}
+
+// ══ ALERTS ══
+function renderAlerts(){
+  const list=document.getElementById('alertList'); list.innerHTML='';
+  const items=[];
+  for(const key in data){ for(const e of data[key].expiries){ const d=daysUntil(e); if(d<=settings.warnDays) items.push({key,name:data[key].name,date:e,days:d}); } }
+  for(const sh of shelves){ for(const ck in sh.cells||{}){ const c=sh.cells[ck]; (c.expiries||[]).forEach(e=>{ const d=daysUntil(e); if(d<=settings.warnDays) items.push({key:`📦 ${sh.name} ${ck}`,name:c.drug||ck,date:e,days:d}); }); } }
+  items.sort((a,b)=>a.days-b.days);
+  document.getElementById('alertCountBadge').textContent=items.length;
+  if(!items.length){list.innerHTML='<div class="empty"><div class="icon">✅</div>لا توجد تنبيهات</div>';return;}
+  items.forEach(item=>{
+    const s=expStatus(item.date); const card=document.createElement('div');
+    card.className=`alert-card ${s==='warn'?'warn-card':''}`;
+    const cls=item.days<0?'expired':s==='critical'?'critical':'warn';
+    card.innerHTML=`<div class="drug-name">${item.name.replace(/\n/g,' ')}</div>
+      <div class="drug-loc">${item.key}</div>
+      <div style="font-size:10px;color:var(--text2)">📅 ${formatDate(item.date)}</div>
+      <div class="days-left ${cls}">${daysLabel(item.days)}</div>`;
+    list.appendChild(card);
+  });
+}
+
+// ══ SEARCH ══
+function doSearch(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const f=document.getElementById('searchFilter').value;
+  const container=document.getElementById('searchResults');
+  if(!q&&f==='all'){container.innerHTML='<div class="empty"><div class="icon">🔍</div>اكتب اسم الدواء للبحث</div>';return;}
+  const results=[];
+  for(const key in data){
+    const item=data[key];
+    const nm=!q||item.name.toLowerCase().includes(q);
+    let tm=true;
+    if(f==='hazard') tm=item.types.includes('hazard');
+    else if(f==='lasa') tm=item.types.includes('lasa');
+    else if(f==='high-alert') tm=item.types.includes('high-alert');
+    else if(f==='oos') tm=item.oos;
+    else if(f==='shelf') tm=item.shelf;
+    else if(f==='no-exp') tm=item.expiries.length===0;
+    if(nm&&tm) results.push({key,item});
+  }
+  if(!results.length){container.innerHTML='<div class="empty"><div class="icon">😕</div>لا توجد نتائج</div>';return;}
+  container.innerHTML='';
+  results.forEach(({key,item})=>{
+    const hl=item.name.replace(/\n/g,' ').replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),m=>`<mark>${m}</mark>`);
+    const isExtra=key.startsWith('x_');
+    const dr=isExtra?'':key.match(/\d+/)[0], sl=isExtra?'':key.match(/[A-F]/)[0];
+    let badges='';
+    if(item.types.includes('hazard'))     badges+=`<span class="type-badge hazard">⚠️ Hazard</span>`;
+    if(item.types.includes('lasa'))       badges+=`<span class="type-badge lasa">🔵 LASA</span>`;
+    if(item.types.includes('high-alert')) badges+=`<span class="type-badge high-alert">🔴 High Alert</span>`;
+    if(item.shelf) badges+=`<span class="shelf-badge">📦 درج العلب</span>`;
+    if(item.oos)   badges+=`<span class="oos-badge">🚫 OOS</span>`;
+    badges+=dupBadgeHtml(item,key);
+    const expsHtml=item.expiries.length
+      ?item.expiries.map(e=>{const s=expStatus(e),d=daysUntil(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)} (${daysLabel(d)})</span>`;}).join('')
+      :'<span style="color:var(--text3);font-size:10px">لا يوجد تاريخ</span>';
+    const div=document.createElement('div'); div.className='search-result';
+    div.innerHTML=`
+      <div class="loc-badge">درج ${dr}<br>${sl}</div>
+      <div class="info">
+        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">${badges}</div>
+        <div class="name">${hl}</div>
+        <div class="exps">${expsHtml}</div>
+        <div style="margin-top:6px"><button class="btn btn-secondary btn-sm" onclick="openExpModal('${key}')">✏️ تعديل</button></div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+// ══ TABLE ══
+function renderTable(){
+  const q=document.getElementById('tableSearch').value.trim().toLowerCase();
+  const tf=document.getElementById('tableTypeFilter').value;
+  const tbody=document.getElementById('tableBody'); tbody.innerHTML='';
+  for(const key in data){
+    const item=data[key];
+    if(key.startsWith('x_')) continue; // extras without a fixed drawer slot yet — skip in this table
+    if(q&&!item.name.toLowerCase().includes(q)&&!key.toLowerCase().includes(q)) continue;
+    let tm=true;
+    if(tf==='hazard') tm=item.types.includes('hazard');
+    else if(tf==='lasa') tm=item.types.includes('lasa');
+    else if(tf==='high-alert') tm=item.types.includes('high-alert');
+    else if(tf==='oos') tm=item.oos;
+    else if(tf==='shelf') tm=item.shelf;
+    if(!tm) continue;
+    const drMatch=key.match(/\d+/), slMatch=key.match(/[A-F]/);
+    if(!drMatch||!slMatch) continue; // safety: skip malformed keys instead of crashing
+    if(parseInt(drMatch[0],10)>50) continue; // this list is drawers 1-50 only; 51+ lives on the shelf page
+    const dr=drMatch[0], sl=slMatch[0];
+    const exHtml=item.expiries.length?item.expiries.map(e=>{const s=expStatus(e);return`<span class="exp-tag ${s==='critical'?'danger':s}">${formatDate(e)}</span>`;}).join(' '):'<span style="color:var(--text3)">—</span>';
+    let tHtml='';
+    if(item.types.includes('hazard'))     tHtml+=`<span class="type-badge hazard">⚠️</span>`;
+    if(item.types.includes('lasa'))       tHtml+=`<span class="type-badge lasa">🔵</span>`;
+    if(item.types.includes('high-alert')) tHtml+=`<span class="type-badge high-alert">🔴</span>`;
+    if(item.oos)   tHtml+=`<span class="oos-badge">OOS</span>`;
+    if(item.shelf) tHtml+=`<span class="shelf-badge">📦</span>`;
+    tHtml+=dupBadgeHtml(item,key);
+    const st=!item.expiries.length?'⬜':slotExpSt(key)==='danger'?'🔴':slotExpSt(key)==='warn'?'🟡':'🟢';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span style="font-family:var(--mono);color:var(--accent);font-size:11px">درج ${dr} — ${sl}</span></td>
+      <td style="max-width:220px;font-size:12px;font-weight:600;line-height:1.4">${item.name.replace(/\n/g,'<br>')}</td>
+      <td>${tHtml||'—'}</td>
+      <td>${exHtml} <button class="btn btn-secondary btn-sm" onclick="openExpModal('${key}')">✏️</button></td>
+      <td>${st}</td>
+      <td style="font-size:10px;color:var(--text2);max-width:140px">${item.notes||'—'}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+// ══ OOS ══
+function renderOOS(){
+  const list=document.getElementById('oosList'); list.innerHTML='';
+  const items=[];
+  for(const key in data){ if(data[key].oos) items.push({key,name:data[key].name,note:data[key].notes,fromData:true}); }
+  for(const m of oosManual) items.push({key:'—',name:m.name,note:m.note,id:m.id,fromData:false});
+  document.getElementById('oosCountBadge').textContent=items.length;
+  document.getElementById('oosCount').textContent=items.length;
+  if(!items.length){list.innerHTML='<div class="empty"><div class="icon">✅</div>لا يوجد أدوية OOS</div>';return;}
+  items.forEach(item=>{
+    const div=document.createElement('div'); div.className='oos-item';
+    const btn=item.fromData
+      ?`<button class="btn btn-secondary btn-sm" onclick="openExpModal('${item.key}')">✏️</button>`
+      :`<button class="btn btn-danger btn-sm" onclick="removeManualOOS('${item.id}')">🗑️</button>`;
+    div.innerHTML=`<div class="loc">${item.key}</div>
+      <div class="info"><div class="name">${item.name.replace(/\n/g,' ')}</div>${item.note?`<div class="note">${item.note}</div>`:''}</div>
+      ${btn}`;
+    list.appendChild(div);
+  });
+}
+function openAddOOSModal(){document.getElementById('oosManualName').value='';document.getElementById('oosManualNote').value='';document.getElementById('addOOSModal').classList.add('open');}
+function saveManualOOS(){
+  const name=document.getElementById('oosManualName').value.trim();
+  if(!name)return showToast('⚠️ أدخل اسم الدواء');
+  oosManual.push({id:uid(),name,note:document.getElementById('oosManualNote').value.trim()});
+  saveData();closeModal('addOOSModal');renderOOS();updateStats();showToast('✅ تمت الإضافة');
+}
+function removeManualOOS(id){oosManual=oosManual.filter(m=>m.id!==id);saveData();renderOOS();updateStats();}
+
+// ══ SHELF ══
+function getNewShelfSize(){
+  return {
+    cols:parseInt(document.getElementById('shelfCols').value)||5,
+    rows:parseInt(document.getElementById('shelfRows').value)||4
+  };
+}
+
+function renderShelves(){
+  const q=(document.getElementById('shelfSearch').value||'').trim().toLowerCase();
+  const wrap=document.getElementById('shelfWrap'); wrap.innerHTML='';
+  const filtered=shelves.filter(s=>!q||s.name.toLowerCase().includes(q));
+  if(!filtered.length){wrap.innerHTML='<div class="empty"><div class="icon">📦</div>لا توجد أرفف. اضغط "إضافة رف"</div>';updateStats();return;}
+
+  filtered.forEach(shelf=>{
+    const cols=shelf.cols||5, rows=shelf.rows||4;
+    const startNum=shelf.startNum||1;
+    const total=cols*rows;
+    let filled=0;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ if(data[`${startNum+c}${rowLabel(r)}`]) filled++; }
+
+    const section=document.createElement('div'); section.className='shelf-section'; section.dataset.shelfId=shelf.id;
+
+    // header
+    const hdr=document.createElement('div'); hdr.className='shelf-header';
+    const photoHtml=shelf.photo?`<img src="${shelf.photo}" onclick="event.stopPropagation();openShelfPhotoPreview('${shelf.id}')" style="width:34px;height:34px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border)">`:'';
+    hdr.innerHTML=`${photoHtml}<div class="shelf-title">📦 ${shelf.name} <span style="color:var(--accent2);font-family:var(--mono);font-size:11px">(${startNum}-${startNum+cols-1})</span></div>
+      <div class="shelf-meta">${cols} عامود × ${rows} صف | ${filled}/${total} مملوء</div>
+      <div style="display:flex;gap:5px" class="no-print">
+        <button class="btn btn-secondary btn-sm" onclick="printShelf('${shelf.id}')">🖨️ طباعة</button>
+        <button class="btn btn-secondary btn-sm" onclick="openEditShelfModal('${shelf.id}')">✏️ تعديل الرف</button>
+      </div>`;
+    section.appendChild(hdr);
+
+    // grid wrap
+    const gwrap=document.createElement('div'); gwrap.className='shelf-grid-wrap';
+
+    // Build grid: (rows+1) rows × (cols+1) cols  (first row = col headers, first col per row = row header)
+    const grid=document.createElement('div'); grid.className='shelf-grid';
+    // grid-template-columns: header + cols
+    grid.style.gridTemplateColumns=`28px repeat(${cols},1fr)`;
+    grid.style.gridTemplateRows=`auto repeat(${rows},1fr)`;
+
+    // top-left empty corner
+    const corner=document.createElement('div');
+    corner.style.cssText='display:flex;align-items:center;justify-content:center';
+    grid.appendChild(corner);
+
+    // column headers: continuing numbers (51, 52, 53 ...)
+    for(let c=0;c<cols;c++){
+      const h=document.createElement('div'); h.className='shelf-col-header';
+      h.textContent=startNum+c; grid.appendChild(h);
+    }
+
+    // rows
+    for(let r=0;r<rows;r++){
+      // row header: A, B, C ...
+      const rh=document.createElement('div'); rh.className='shelf-row-header';
+      rh.textContent=rowLabel(r); grid.appendChild(rh);
+
+      // cells — read straight from the main `data` object, keyed exactly like
+      // drawers (e.g. "51A"), so anything in the database with a matching
+      // number+slot shows up here automatically and stays in sync everywhere.
+      for(let c=0;c<cols;c++){
+        const num=startNum+c;
+        const key=`${num}${rowLabel(r)}`; // real database key, e.g. "51A"
+        const dispLabel=`${rowLabel(r)}${num}`; // e.g. A51 — shown to the user
+        const item=data[key];
+        const div=document.createElement('div');
+        let cellCls='shelf-cell';
+        if(item){
+          const cSt=slotExpSt(key);
+          const expCls=!item.expiries.length?'noexp':cSt==='danger'?'danger':cSt==='warn'?'warn':'ok';
+          cellCls+=` filled ${expCls}`;
+          if(item.types.includes('high-alert'))     cellCls+=' type-high-alert';
+          else if(item.types.includes('lasa'))      cellCls+=' type-lasa';
+          else if(item.types.includes('hazard'))    cellCls+=' type-hazard';
+          if(item.oos) cellCls+=' cell-oos';
+        }
+        div.className=cellCls;
+
+        if(item){
+          let bestExp='', bestSt='ok';
+          if(item.expiries.length){
+            const sorted=[...item.expiries].sort();
+            bestExp=sorted[0]; bestSt=expStatus(bestExp);
+            if(bestSt==='critical') bestSt='danger';
+          }
+          div.innerHTML=`<span class="cell-label">${dispLabel}</span>
+            <div class="cell-drug">${item.name.replace(/\n/g,' ')}</div>
+            ${bestExp?`<div class="cell-exp ${bestSt}">${formatDate(bestExp)}</div>`:'<div class="cell-exp noexp">— بدون تاريخ</div>'}
+            ${item.oos?'<span class="oos-badge" style="position:absolute;top:2px;right:3px;font-size:7px">OOS</span>':''}
+            ${dupBadgeHtml(item,key)?'<span style="position:absolute;bottom:2px;left:2px;font-size:7px;background:#7c3aed22;color:#7c3aed;border-radius:6px;padding:0 3px;font-weight:700">🔁</span>':''}`;
+          div.onclick=()=>openExpModal(key);
+        } else {
+          div.innerHTML=`<span class="cell-label" style="position:static;color:var(--text3);font-size:9px">${dispLabel}</span><div class="cell-add">+</div>`;
+          div.onclick=()=>createShelfDrug(key);
+        }
+        grid.appendChild(div);
+      }
+    }
+    gwrap.appendChild(grid);
+    section.appendChild(gwrap);
+    wrap.appendChild(section);
+  });
+  updateStats();
+}
+
+// Clicking an empty shelf cell searches the database for an existing,
+// not-yet-placed drug and links it here — manual/free-text creation of new
+// drugs only happens from the "قاعدة البيانات" tab (openAddDrugModal).
+let pickExtraTargetKey=null;
+// Print just one shelf, filling an A4 page with no empty margins.
+function printShelf(shelfId){
+  document.querySelectorAll('.shelf-section').forEach(s=>{
+    s.classList.toggle('print-target', s.dataset.shelfId===shelfId);
+  });
+  document.body.classList.add('printing-shelf');
+  window.print();
+}
+window.addEventListener('afterprint', ()=>{
+  document.body.classList.remove('printing-shelf');
+  document.querySelectorAll('.shelf-section').forEach(s=>s.classList.remove('print-target'));
+});
+function createShelfDrug(key){
+  pickExtraTargetKey=key;
+  const num=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
+  document.getElementById('pickExtraTargetInfo').innerHTML=`الخانة: <span style="color:var(--accent);font-family:var(--mono)">${sl}${num}</span>`;
+  document.getElementById('pickExtraSearch').value='';
+  renderPickExtraResults();
+  document.getElementById('pickExtraModal').classList.add('open');
+}
+function renderPickExtraResults(){
+  const q=(document.getElementById('pickExtraSearch').value||'').trim().toLowerCase();
+  const box=document.getElementById('pickExtraResults'); box.innerHTML='';
+  const matches=Object.entries(data)
+    .filter(([k])=>k.startsWith('x_')) // only drugs not yet placed anywhere
+    .filter(([k,v])=>!q||v.name.toLowerCase().includes(q))
+    .slice(0,40);
+  if(!matches.length){
+    box.innerHTML=`<div class="empty" style="padding:14px"><div class="icon">🔎</div>${q?'لا توجد نتائج':'اكتب اسم الدواء للبحث، أو اعرض كل الأدوية غير المعينة'}</div>`;
+    return;
+  }
+  matches.forEach(([k,v])=>{
+    const row=document.createElement('div');
+    row.className='btn btn-secondary';
+    row.style.cssText='justify-content:flex-start;text-align:right;width:100%';
+    row.textContent=v.name.replace(/\n/g,' ');
+    row.onclick=()=>selectExtraForShelf(k);
+    box.appendChild(row);
+  });
+}
+function selectExtraForShelf(extraKey){
+  if(!pickExtraTargetKey) return;
+  if(data[pickExtraTargetKey]) return showToast('❌ هذه الخانة مشغولة بالفعل');
+  data[pickExtraTargetKey]={...data[extraKey], shelf:true};
+  delete data[extraKey];
+  saveData(); closeModal('pickExtraModal'); refreshAll();
+  showToast('✅ تم ربط الدواء بالخانة');
+}
+
+function openAddShelfModal(){
+  document.getElementById('newShelfName').value='';
+  const {cols,rows}=getNewShelfSize();
+  document.getElementById('newShelfCols').value=cols;
+  document.getElementById('newShelfRows').value=rows;
+  const photoInput=document.getElementById('newShelfPhoto'); if(photoInput) photoInput.value='';
+  const next=getNextShelfStartNum();
+  document.getElementById('addShelfModal').querySelector('h2').textContent=`📦 إضافة درج علب جديد (سيبدأ من ${next})`;
+  document.getElementById('addShelfModal').classList.add('open');
+}
+function getNextShelfStartNum(){
+  let maxEnd=50;
+  shelves.forEach(s=>{
+    const start=s.startNum||1;
+    const cols=s.cols||5;
+    maxEnd=Math.max(maxEnd, start+cols-1);
+  });
+  return maxEnd+1;
+}
+function saveNewShelf(){
+  const name=document.getElementById('newShelfName').value.trim();
+  if(!name)return showToast('⚠️ أدخل اسم الرف');
+  const cols=parseInt(document.getElementById('newShelfCols').value)||5;
+  const rows=parseInt(document.getElementById('newShelfRows').value)||4;
+  const startNum=getNextShelfStartNum();
+  const photoInput=document.getElementById('newShelfPhoto');
+  const file=photoInput&&photoInput.files&&photoInput.files[0];
+  const finish=(photo)=>{
+    shelves.push({id:uid(),name,cols,rows,startNum,cells:{},photo:photo||null});
+    saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`);
+  };
+  if(file){
+    const reader=new FileReader();
+    reader.onload=()=>finish(reader.result);
+    reader.readAsDataURL(file);
+  } else finish(null);
+}
+
+function openEditShelfModal(id){
+  editingShelfId=id;
+  const sh=shelves.find(s=>s.id===id);
+  document.getElementById('editShelfName').value=sh.name;
+  document.getElementById('editShelfCols').value=sh.cols;
+  document.getElementById('editShelfRows').value=sh.rows;
+  document.getElementById('editShelfStartNum').value=sh.startNum||1;
+  document.getElementById('editShelfPhoto').value='';
+  document.getElementById('editShelfPhotoCurrent').innerHTML=sh.photo
+    ?`<img src="${sh.photo}" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border)"> <button class="btn btn-secondary btn-sm" onclick="removeShelfPhoto()">🗑️ إزالة الصورة</button>`
+    :'<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
+  document.getElementById('editShelfModal').classList.add('open');
+}
+function removeShelfPhoto(){
+  const sh=shelves.find(s=>s.id===editingShelfId);
+  if(sh) sh.photo=null;
+  document.getElementById('editShelfPhotoCurrent').innerHTML='<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
+}
+function saveEditShelf(){
+  const sh=shelves.find(s=>s.id===editingShelfId);
+  if(!sh)return;
+  sh.name=document.getElementById('editShelfName').value.trim()||sh.name;
+  sh.cols=parseInt(document.getElementById('editShelfCols').value)||sh.cols;
+  sh.rows=parseInt(document.getElementById('editShelfRows').value)||sh.rows;
+  sh.startNum=parseInt(document.getElementById('editShelfStartNum').value)||sh.startNum||1;
+  const photoInput=document.getElementById('editShelfPhoto');
+  const file=photoInput&&photoInput.files&&photoInput.files[0];
+  const finish=()=>{ saveData();closeModal('editShelfModal');renderShelves();showToast('✅ تم تعديل درج العلب'); };
+  if(file){
+    const reader=new FileReader();
+    reader.onload=()=>{ sh.photo=reader.result; finish(); };
+    reader.readAsDataURL(file);
+  } else finish();
+}
+function openShelfPhotoPreview(id){
+  const sh=shelves.find(s=>s.id===id); if(!sh||!sh.photo)return;
+  document.getElementById('shelfPhotoPreviewImg').src=sh.photo;
+  document.getElementById('shelfPhotoModal').classList.add('open');
+}
+function deleteShelf(){
+  if(!confirm('حذف هذا الرف وكل محتوياته؟'))return;
+  shelves=shelves.filter(s=>s.id!==editingShelfId);
+  saveData();closeModal('editShelfModal');renderShelves();showToast('🗑️ تم الحذف');
+}
+
+// ══ CELL MODAL ══
+function openCellModal(shelfId,cellKey,cell,dispLabel){
+  editingShelfId=shelfId; editingCellKey=cellKey;
+  const sh=shelves.find(s=>s.id===shelfId);
+  document.getElementById('cellModalInfo').innerHTML=`<strong>${sh.name}</strong> — خلية <span style="font-family:var(--mono);color:var(--accent)">${dispLabel||cellKey}</span>`;
+  document.getElementById('cellDrugName').value=(cell&&cell.drug)||'';
+  document.getElementById('cellHazard').checked   =(cell&&(cell.types||[]).includes('hazard'))||false;
+  document.getElementById('cellLasa').checked     =(cell&&(cell.types||[]).includes('lasa'))||false;
+  document.getElementById('cellHighAlert').checked=(cell&&(cell.types||[]).includes('high-alert'))||false;
+  document.getElementById('cellNotes').value      =(cell&&cell.notes)||'';
+  renderExpRows((cell&&cell.expiries)||[],'cellExpList');
+  document.getElementById('cellModal').classList.add('open');
+}
+function addCellExpRow(){
+  const rows=document.querySelectorAll('#cellExpList .exp-row');
+  if(rows.length>=10)return;
+  const i=rows.length; const row=document.createElement('div'); row.className='exp-row';
+  row.innerHTML=`<span class="exp-num">${i+1}</span>
+    <input type="date" value="" oninput="updateDot(this,'cellExpList',${i})">
+    <div class="status-dot" style="background:var(--success)" id="dot_cellExpList_${i}"></div>
+    <button class="btn btn-danger btn-sm" onclick="removeExpRowFrom('cellExpList',${i})">×</button>`;
+  document.getElementById('cellExpList').appendChild(row);
+}
+function saveCell(){
+  const sh=shelves.find(s=>s.id===editingShelfId); if(!sh)return;
+  if(!sh.cells) sh.cells={};
+  const name=document.getElementById('cellDrugName').value.trim();
+  const inputs=document.querySelectorAll('#cellExpList input[type=date]');
+  const types=[];
+  if(document.getElementById('cellHazard').checked)    types.push('hazard');
+  if(document.getElementById('cellLasa').checked)      types.push('lasa');
+  if(document.getElementById('cellHighAlert').checked) types.push('high-alert');
+  if(!name){ delete sh.cells[editingCellKey]; }
+  else {
+    sh.cells[editingCellKey]={
+      drug:name, types, notes:document.getElementById('cellNotes').value,
+      expiries:Array.from(inputs).map(i=>i.value).filter(Boolean)
+    };
+  }
+  saveData();closeModal('cellModal');renderShelves();showToast('✅ تم الحفظ');
+}
+function clearCell(){
+  const sh=shelves.find(s=>s.id===editingShelfId); if(sh&&sh.cells) delete sh.cells[editingCellKey];
+  saveData();closeModal('cellModal');renderShelves();showToast('🗑️ تم مسح الخلية');
+}
+
+// ══ MODALS ══
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+// ══ TOAST ══
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ══ EXPORT/IMPORT ══
+function exportData(){
+  const blob=new Blob([JSON.stringify({data,shelves,oosManual,settings,theme},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pharmacy_v3.json';a.click();
+}
+
+function exportCSV(){
+  // Columns: Location, Name, Type, OOS, Hazard, LASA, High Alert, Shelf, Expiry Dates, Notes
+  const rows=[['الموقع','الاسم','نوع','OOS','Hazard','LASA','High Alert','درج علب','تواريخ الانتهاء','ملاحظات']];
+  // Sort keys: drawers 1-50 first, then shelf 51+, then extras
+  const sorted=Object.keys(data).sort((a,b)=>{
+    const na=parseInt(a.match(/\d+/)||[999]),nb=parseInt(b.match(/\d+/)||[999]);
+    return na!==nb?na-nb:a.localeCompare(b);
+  });
+  sorted.forEach(key=>{
+    const item=data[key];
+    rows.push([
+      key,
+      item.name.replace(/\n/g,' '),
+      (item.types||[]).join('+'),
+      item.oos?'نعم':'',
+      (item.types||[]).includes('hazard')?'نعم':'',
+      (item.types||[]).includes('lasa')?'نعم':'',
+      (item.types||[]).includes('high-alert')?'نعم':'',
+      item.shelf?'نعم':'',
+      (item.expiries||[]).join(' | '),
+      item.notes||''
+    ]);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  // UTF-8 BOM so Excel/Sheets reads Arabic correctly
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pharmacy_data.csv';a.click();
+  showToast('📊 تم التصدير — افتح الملف في Google Sheets أو Excel');
+}
+
+function handleImport(input){
+  const file=input.files[0];if(!file){input.value='';return;}
+  requireWriteAuth('استيراد بيانات', ()=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const text=e.target.result;
+        if(file.name.endsWith('.csv')){
+          // CSV import: update names & expiries from the CSV, merge with existing data
+          const lines=text.replace(/^\ufeff/,'').split('\n').slice(1); // skip header
+          let count=0;
+          lines.forEach(line=>{
+            if(!line.trim()) return;
+            const cols=[];let cur='',inQ=false;
+            for(const ch of line){
+              if(ch==='"'){ inQ=!inQ; }
+              else if(ch===','&&!inQ){ cols.push(cur); cur=''; }
+              else cur+=ch;
+            }
+            cols.push(cur);
+            const key=cols[0]?.replace(/"/g,'').trim();
+            const name=cols[1]?.replace(/"/g,'').trim();
+            const expiries=(cols[8]||'').replace(/"/g,'').split('|').map(s=>s.trim()).filter(Boolean);
+            const notes=(cols[9]||'').replace(/"/g,'').trim();
+            if(!key||!name) return;
+            if(!data[key]) data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:''};
+            data[key].name=name;
+            if(expiries.length) data[key].expiries=expiries;
+            if(notes) data[key].notes=notes;
+            count++;
+          });
+          saveData();refreshAll();showToast(`✅ تم استيراد ${count} دواء من CSV`);
+        } else {
+          // JSON import
+          const p=JSON.parse(text);
+          data=p.data||data;shelves=p.shelves||shelves;oosManual=p.oosManual||oosManual;
+          settings=Object.assign(settings,p.settings||{});theme=p.theme||theme;
+          settings.seedVersion=SEED_VERSION; // mark as current version
+          document.getElementById('warnDays').value=settings.warnDays;
+          document.getElementById('critDays').value=settings.critDays;
+          applyTheme();saveData();refreshAll();showToast('✅ تم استيراد JSON وحفظه في Supabase');
+        }
+      }catch(err){showToast('❌ خطأ في الملف: '+err.message);}
+    };
+    r.readAsText(file,'utf-8');
+  });
+  input.value='';
+}
+
+// ══ REFRESH ══
+function refreshAll(){
+  renderDrawers();renderAlerts();renderTable();renderShelves();renderOOS();
+  if(document.getElementById('tab-db').classList.contains('active'))renderDB();
+}
+
+// ══════════════════════════════════════
+//  SUPABASE CONFIG
+// ══════════════════════════════════════
+const SB_TABLE= 'pharmacy_state';
+let SB_URL  = 'https://ivavwzqdqausirioqwts.supabase.co';
+let SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2YXZ3enFkcWF1c2lyaW9xd3RzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NjQyMTYsImV4cCI6MjA5NjQ0MDIxNn0.iVdXLQL3eIcF60_Dtye-BKWd_ZnIYUJNyvSpmuRwxo0';
+
+let sbSaveTimer = null;
+let sbConnected  = false;
+
+async function sbFetch(path, opts={}){
+  if(!SB_URL||!SB_KEY) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 6000); // never let a slow/dead connection block the UI
+  try{
+    const res = await fetch(SB_URL+'/rest/v1/'+path, {
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,
+               'Content-Type':'application/json','Prefer':'return=representation'},
+      signal: ctrl.signal,
+      ...opts
+    });
+    if(!res.ok) return null;
+    return await res.json().catch(()=>null);
+  } catch(e){ return null; }
+  finally{ clearTimeout(timer); }
+}
+
+function sbUpdateCreds(){ /* credentials are hardcoded */ }
+
+async function sbTestConnect(){
+  setSbStatus('syncing');
+  try{
+    const res=await fetch(SB_URL+'/rest/v1/pharmacy_state?id=eq.1&select=id',{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    if(res.ok){ sbConnected=true; setSbStatus('connected'); showToast('✅ Supabase متصل!'); sbLoad(); }
+    else { setSbStatus('offline'); showToast('❌ تحقق من الإعدادات'); }
+  }catch(e){ setSbStatus('offline'); showToast('❌ فشل الاتصال'); }
+}
+
+// Version stamp embedded in SEED_DATA — change this when you export a new JSON.
+// sbLoad compares this against what's in Supabase; if different, it pushes the
+// new seed. If same, it trusts Supabase (which holds any user edits since last export).
+const SEED_VERSION = '2025-07-07';
+
+async function sbLoad(){
+  try{
+    const rows = await sbFetch(`${SB_TABLE}?id=eq.1&select=payload`);
+    const remotePayload = rows&&rows.length&&rows[0].payload ? rows[0].payload : null;
+    const remoteVersion = remotePayload&&remotePayload.settings&&remotePayload.settings.seedVersion;
+
+    if(remotePayload && remoteVersion === SEED_VERSION){
+      // ── Supabase already has this seed version: use it (may have user edits on top) ──
+      const p = remotePayload;
+      data      = p.data      || {};
+      shelves   = p.shelves   || [];
+      oosManual = p.oosManual || [];
+      settings  = Object.assign({warnDays:30,critDays:7,writePassword:'asmd',authMinutes:15}, p.settings||{});
+      theme     = p.theme     || 'dark';
+    } else {
+      // ── New export OR first launch: push SEED_DATA to Supabase ──
+      if(SEED_DATA){
+        data      = SEED_DATA.data      || {};
+        shelves   = SEED_DATA.shelves   || [];
+        oosManual = SEED_DATA.oosManual || [];
+        settings  = Object.assign({warnDays:30,critDays:7,writePassword:'asmd',authMinutes:15}, SEED_DATA.settings||{});
+        theme     = SEED_DATA.theme     || 'dark';
+        settings.seedVersion = SEED_VERSION; // stamp it
+        normalizeShelves();
+        migrateLegacyShelfCells();
+      }
+      // Push seed to Supabase (insert or overwrite)
+      if(remotePayload){
+        await sbFetch(`${SB_TABLE}?id=eq.1`, {method:'PATCH',
+          body:JSON.stringify({payload:{data,shelves,oosManual,settings,theme}})});
+      } else {
+        await sbFetch(`${SB_TABLE}`, {method:'POST',
+          body:JSON.stringify({id:1,payload:{data,shelves,oosManual,settings,theme}})});
+      }
+      showToast('📥 تم تحميل آخر ملف مُصدَّر وحفظه في Supabase');
+    }
+    applyTheme();
+    document.getElementById('warnDays').value = settings.warnDays;
+    document.getElementById('critDays').value  = settings.critDays;
+    normalizeShelves();
+    migrateLegacyShelfCells();
+    sbConnected=true;
+    setSbStatus('connected');
+  } catch(e){ setSbStatus('offline'); showToast('⚠️ تعذّر الاتصال بـ Supabase'); }
+}
+
+async function sbSaveNow(){
+  if(!sbConnected) return;
+  const payload={data,shelves,oosManual,settings,theme};
+  try{
+    await sbFetch(`${SB_TABLE}?id=eq.1`,{method:'PATCH',body:JSON.stringify({payload})});
+    setSbStatus('saved');
+  } catch(e){ setSbStatus('offline'); }
+}
+
+function setSbStatus(s){
+  const el=document.getElementById('sbStatus');
+  if(!el) return;
+  const map={connected:'🟢 Supabase متصل',saved:'✅ تم الحفظ',offline:'🔴 غير متصل',syncing:'⏳ جاري الحفظ...'};
+  el.textContent=map[s]||s;
+  el.dataset.s=s;
+  // always refresh the counts visible in the top bar
+  if(s==='connected'||s==='saved') try{ updateStats(); }catch(e){}
+}
+
+// Override saveData: Supabase ONLY — localStorage is never used for app data
+const _origSaveData = saveData;
+function saveData(){
+  invalidateDoseCountMap();
+  if(!SB_URL||!SB_KEY) return; // no-op if Supabase not configured
+  setSbStatus('syncing');
+  clearTimeout(sbSaveTimer);
+  sbSaveTimer=setTimeout(sbSaveNow, 800);
+}
+
+// ══════════════════════════════════════
+//  VOICE RECOGNITION  🎙️
+// ══════════════════════════════════════
+const VOICE_PASS = 'asmd';
+let voiceUnlocked = false;
+let voiceRecognition = null;
+let voiceState = 'idle';
+// Session log persisted in localStorage across recordings
+let voiceSessionLog = (() => {
+  try { return JSON.parse(localStorage.getItem('voiceSessionLog')||'[]'); } catch(e){ return []; }
+})();
+function saveSessionLog(){
+  try { localStorage.setItem('voiceSessionLog', JSON.stringify(voiceSessionLog)); } catch(e){}
+}
+
+// ── Password gate ──
+function checkVoicePass(){
+  const val = document.getElementById('voicePassInput').value;
+  if(val === VOICE_PASS){
+    voiceUnlocked = true;
+    document.getElementById('voiceGate').style.display = 'none';
+    document.getElementById('voicePanel').style.display = 'block';
+    initVoice();
+    renderVoiceSessionList();
+  } else {
+    document.getElementById('voicePassErr').style.display = 'block';
+    document.getElementById('voicePassInput').value = '';
+  }
+}
+function lockVoice(){
+  voiceUnlocked = false;
+  stopVoice();
+  document.getElementById('voiceGate').style.display = 'flex';
+  document.getElementById('voicePanel').style.display = 'none';
+  document.getElementById('voicePassInput').value = '';
+  document.getElementById('voicePassErr').style.display = 'none';
+}
+
+// ── Arabic letter → slot ──
+// IMPORTANT: Do NOT include 'الف' here — causes "25 أ" → "25000" bug
+// (arabicNorm converts أ/الف after number expansion, "ألف"=1000)
+// We extract slot BEFORE arabicNorm to avoid collisions
+const AR_SLOT_RAW = {
+  // Definite Arabic slot letters only
+  'أ':'A','آ':'A',
+  'ب':'B',
+  'ج':'C',
+  'د':'D'
+};
+// Spoken long-form alternatives (matched as whole words only)
+const AR_SLOT_WORDS = [
+  ['باء','B'],['بي','B'],['بيه','B'],
+  ['جيم','C'],['سي','C'],
+  ['دال','D'],['دي','D'],['ديه','D'],
+  ['ألف','A'],['الف','A'],['آلف','A'],  // kept here only as whole-word
+];
+
+// ── Arabic number words → integer ──
+const ARABIC_NUMS_ORD = [
+  ['واحد وخمسون','51'],['اثنان وخمسون','52'],
+  ['خمسون','50'],['تسعة وأربعون','49'],['ثمانية وأربعون','48'],
+  ['سبعة وأربعون','47'],['ستة وأربعون','46'],['خمسة وأربعون','45'],
+  ['أربعة وأربعون','44'],['ثلاثة وأربعون','43'],['اثنان وأربعون','42'],
+  ['واحد وأربعون','41'],['أربعون','40'],['تسعة وثلاثون','39'],
+  ['ثمانية وثلاثون','38'],['سبعة وثلاثون','37'],['ستة وثلاثون','36'],
+  ['خمسة وثلاثون','35'],['أربعة وثلاثون','34'],['ثلاثة وثلاثون','33'],
+  ['اثنان وثلاثون','32'],['واحد وثلاثون','31'],['ثلاثون','30'],
+  ['تسعة وعشرون','29'],['ثمانية وعشرون','28'],['سبعة وعشرون','27'],
+  ['ستة وعشرون','26'],['خمسة وعشرون','25'],['أربعة وعشرون','24'],
+  ['ثلاثة وعشرون','23'],['اثنان وعشرون','22'],['واحد وعشرون','21'],
+  ['عشرون','20'],['تسعة عشر','19'],['ثمانية عشر','18'],
+  ['سبعة عشر','17'],['ستة عشر','16'],['خمسة عشر','15'],
+  ['أربعة عشر','14'],['ثلاثة عشر','13'],['اثنا عشر','12'],['اثني عشر','12'],
+  ['أحد عشر','11'],['عشرة','10'],
+  ['تسعة','9'],['ثمانية','8'],['سبعة','7'],['ستة','6'],
+  ['خمسة','5'],['أربعة','4'],['ثلاثة','3'],['اثنين','2'],['اثنان','2'],
+  ['واحد','1'],['صفر','0'],
+  // years
+  ['ألفان وثمانية وعشرون','2028'],['ألفان وسبعة وعشرون','2027'],
+  ['ألفان وستة وعشرون','2026'],['ألفان وخمسة وعشرون','2025'],
+  ['ألفان وأربعة وعشرون','2024'],
+];
+
+const ARABIC_MONTHS = {
+  'يناير':'01','جانفي':'01','ينايـر':'01','يناير':'01',
+  'فبراير':'02','شباط':'02','فبراير':'02',
+  'مارس':'03','آذار':'03',
+  'أبريل':'04','نيسان':'04','إبريل':'04','ابريل':'04',
+  'مايو':'05','أيار':'05','ماي':'05',
+  'يونيو':'06','حزيران':'06','يونيه':'06','يونيو':'06',
+  'يوليو':'07','تموز':'07','يوليه':'07','يوليو':'07',
+  'أغسطس':'08','آب':'08','اغسطس':'08',
+  'سبتمبر':'09','أيلول':'09',
+  'أكتوبر':'10','تشرين الأول':'10','أكتوبر':'10',
+  'نوفمبر':'11','تشرين الثاني':'11',
+  'ديسمبر':'12','كانون الأول':'12','ديسمبر':'12',
+};
+
+function arabicNorm(t){
+  let s = t.trim();
+  // sort by length desc so longer phrases match first
+  for(const [k,v] of ARABIC_NUMS_ORD) s = s.replace(new RegExp(k,'g'), v);
+  return s;
+}
+
+function extractSlot(raw){
+  // 1) English inline: "3A", "5B", "12C", "7D" — letter right after digits
+  const inlineEn = raw.match(/\b\d{1,2}\s*([A-Da-d])\b/);
+  if(inlineEn) return inlineEn[1].toUpperCase();
+
+  // 2) Standalone English letter word: "A", "B", "C", "D"
+  const standEn = raw.match(/(?:^|\s)([A-Da-d])(?:\s|$)/);
+  if(standEn) return standEn[1].toUpperCase();
+
+  // 3) Arabic single-char letters — check BEFORE any number expansion
+  for(const [ar, en] of Object.entries(AR_SLOT_RAW)){
+    // use unicode boundary: space or start/end around the letter
+    const re = new RegExp('(?:^|[\\s\\u060C\\u060D،,])' + ar + '(?=[\\s\\u060C،,]|$)');
+    if(re.test(raw)) return en;
+  }
+
+  // 4) Long-form Arabic slot words (whole-word match)
+  for(const [word, en] of AR_SLOT_WORDS){
+    const re = new RegExp('(?:^|\\s)' + word + '(?:\\s|$)','u');
+    if(re.test(raw)) return en;
+  }
+  return null;
+}
+
+// English months lookup for date extraction
+const ENGLISH_MONTHS = {
+  'january':'01','jan':'01','february':'02','feb':'02','march':'03','mar':'03',
+  'april':'04','apr':'04','may':'05','june':'06','jun':'06',
+  'july':'07','jul':'07','august':'08','aug':'08','september':'09','sep':'09',
+  'october':'10','oct':'10','november':'11','nov':'11','december':'12','dec':'12'
+};
+
+function extractDateEnglish(raw){
+  const t = raw.toLowerCase();
+  let m = t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(m){let[,d,mo,y]=m;if(y.length===2)y='20'+y;return `${y.padStart(4,'0')}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;}
+  for(const [mn,mv] of Object.entries(ENGLISH_MONTHS)){
+    const re2=new RegExp('(\\d{1,2})\\s+'+mn+'\\s+(\\d{2,4})','i');
+    m=t.match(re2); if(m){let[,d,y]=m;if(y.length===2)y='20'+y;return `${y}-${mv}-${d.padStart(2,'0')}`;}
+    const re1=new RegExp(mn+'\\s+(\\d{2,4})','i');
+    m=t.match(re1); if(m){let y=m[1];if(y.length===2)y='20'+y;return `${y}-${mv}-01`;}
+  }
+  return null;
+}
+
+function matchDrugByName(raw){
+  const q = raw.toLowerCase().trim();
+  if(!q || q.length < 3) return null;
+  let best=null, bestScore=0;
+  for(const [key,item] of Object.entries(data)){
+    const name=item.name.toLowerCase().replace(/\n/g,' ');
+    const words=q.split(/\s+/).filter(w=>w.length>=3);
+    let score=0;
+    for(const w of words){ if(name.includes(w)) score+=w.length; }
+    if(score>bestScore){bestScore=score;best={key,name:item.name.replace(/\n/g,' ')};}
+  }
+  return bestScore>=3?best:null;
+}
+
+function extractDrawer(rawOriginal){
+  // Step 1: extract slot from ORIGINAL text (before any number expansion)
+  // This prevents "25 أ" → "25000" after arabicNorm
+  const slot = extractSlot(rawOriginal);
+
+  // Step 2: STRIP the slot letter/word from text before arabicNorm
+  //         so it doesn't interfere with number parsing
+  let stripped = rawOriginal;
+  // Remove inline pattern like "25أ" or "25 أ" or "25A"
+  stripped = stripped.replace(/\b(\d{1,2})\s*[A-Da-dأآبجد]\b/g, '$1');
+  // Remove standalone slot words
+  const allSlotWords = Object.keys(AR_SLOT_RAW).concat(AR_SLOT_WORDS.map(x=>x[0]));
+  for(const w of allSlotWords){
+    stripped = stripped.replace(new RegExp('(?:^|\\s)'+w+'(?=\\s|$)','g'),' ');
+  }
+
+  // Step 3: normalize numbers on stripped text
+  const t = arabicNorm(stripped);
+
+  // Step 4: find drawer number 1-50
+  const m = t.match(/\b([1-9]|[1-4]\d|50)\b/);
+  if(m && slot) return {dr: parseInt(m[1]), sl: slot};
+  if(m)         return {dr: parseInt(m[1]), sl: null};
+  return null;
+}
+
+function extractDate(raw){
+  let t = arabicNorm(raw);
+  // dd/mm/yyyy or dd-mm-yyyy
+  let m = t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(m){ let[,d,mo,y]=m; if(y.length===2)y='20'+y; return `${y.padStart(4,'0')}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`; }
+  // Try month-name patterns (longest first)
+  const monthKeys = Object.keys(ARABIC_MONTHS).sort((a,b)=>b.length-a.length);
+  for(const mn of monthKeys){
+    const mv = ARABIC_MONTHS[mn];
+    // "15 مارس 2026"
+    const re2 = new RegExp('(\\d{1,2})\\s+'+mn+'\\s+(\\d{2,4})','i');
+    m = t.match(re2);
+    if(m){ let[,d,y]=m; if(y.length===2)y='20'+y; return `${y}-${mv}-${d.padStart(2,'0')}`; }
+    // "مارس 2026"
+    const re1 = new RegExp(mn+'\\s+(\\d{2,4})','i');
+    m = t.match(re1);
+    if(m){ let y=m[1]; if(y.length===2)y='20'+y; return `${y}-${mv}-01`; }
+  }
+  return null;
+}
+
+function initVoice(){
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRec){
+    document.getElementById('voiceNotSupported').style.display = 'block';
+    return;
+  }
+  if(voiceRecognition) return; // already inited
+  voiceRecognition = new SpeechRec();
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'ar-SA';
+  voiceRecognition.maxAlternatives = 5;
+
+  voiceRecognition.onresult = e => {
+    let interim='', final='';
+    for(let i=e.resultIndex; i<e.results.length; i++){
+      if(e.results[i].isFinal){
+        // take best alternative
+        final += e.results[i][0].transcript;
+      } else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('voiceInterim').textContent = interim || final;
+    if(final) processVoiceFinal(final);
+  };
+  voiceRecognition.onerror = e => {
+    setVoiceStatus('error','❌ خطأ: '+e.error);
+    setVoiceBtn('idle');
+  };
+  voiceRecognition.onend = () => {
+    if(voiceState === 'listening') setVoiceBtn('idle');
+  };
+}
+
+function startVoice(){
+  if(!voiceRecognition){ initVoice(); if(!voiceRecognition) return; }
+  voiceState = 'listening';
+  document.getElementById('voiceInterim').textContent = '';
+  try{ voiceRecognition.start(); } catch(e){}
+  setVoiceBtn('listening');
+  setVoiceStatus('listening','🎙️ جارٍ الاستماع... تكلّم الآن');
+}
+function stopVoice(){
+  voiceState = 'idle';
+  try{ voiceRecognition && voiceRecognition.stop(); }catch(e){}
+  setVoiceBtn('idle');
+}
+
+function setVoiceBtn(state){
+  const btn = document.getElementById('voiceMicBtn');
+  if(!btn) return;
+  if(state==='listening'){
+    btn.textContent='⏹ إيقاف'; btn.className='btn btn-danger';
+    btn.onclick = stopVoice;
+  } else {
+    btn.textContent='🎙️ تسجيل جديد'; btn.className='btn btn-primary';
+    btn.onclick = startVoice;
+  }
+}
+function setVoiceStatus(type,msg){
+  const el=document.getElementById('voiceStatus');
+  if(!el) return;
+  el.textContent=msg;
+  el.className='voice-status voice-status-'+type;
+}
+
+function processVoiceFinal(text){
+  try{ voiceRecognition && voiceRecognition.stop(); }catch(e){}
+  setVoiceBtn('idle');
+  setVoiceStatus('processing','⏳ جارٍ التحليل...');
+
+  const loc = extractDrawer(text);
+  // Try Arabic then English date extraction
+  const date = extractDate(text) || extractDateEnglish(text);
+
+  let resolved = null;
+  if(loc && loc.sl){
+    const key = `${loc.dr}${loc.sl}`;
+    if(data[key]) resolved = {key, name:data[key].name.replace(/\n/g,' ')};
+  }
+  // If no location match, try drug name
+  if(!resolved) resolved = matchDrugByName(text);
+
+  // Always show confirm card so user can correct
+  if(!date){
+    setVoiceStatus('error','❌ لم أتعرف على التاريخ — أكمله يدوياً');
+  } else if(!resolved){
+    setVoiceStatus('error','❌ لم أتعرف على الدرج — اختر من القائمة');
+  } else {
+    setVoiceStatus('ok','✅ تم التعرف — أكّد البيانات');
+  }
+  showVoiceConfirm(text, resolved, date, loc);
+}
+
+function showVoiceConfirm(raw, resolved, date, loc){
+  const box = document.getElementById('voiceConfirmBox');
+  const resolvedKey = resolved ? resolved.key : '';
+  const drawerVal = loc ? loc.dr : '';
+  const dr = resolvedKey.match(/\d+/)?.[0] || drawerVal || '';
+  const sl = resolvedKey.match(/[A-F]/)?.[0] || (loc&&loc.sl) || 'A';
+  const resolvedNameDisplay = resolved
+    ? `<strong style="color:var(--accent)">${resolved.name}</strong>`
+    : '<span style="color:var(--warn)">— لم يُعثر، ابحث يدوياً</span>';
+  const existing = resolved
+    ? (data[resolved.key].expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' ')||'<span style="color:var(--text3)">لا يوجد</span>')
+    : '—';
+
+  box.innerHTML = `
+    <div class="voice-confirm-card" style="margin-top:10px">
+      <div class="voice-raw">📝 النص المُعرَّف: <em>${raw}</em></div>
+
+      <!-- DRUG SEARCH — open autocomplete, no close -->
+      <div class="voice-confirm-row" style="flex-direction:column;align-items:flex-start;gap:5px;width:100%">
+        <span class="voice-lbl">🔍 الدواء (ابحث بالعربي أو الإنجليزي أو رقم الدرج)</span>
+        <div style="position:relative;width:100%">
+          <input type="text" id="vcDrugSearch"
+            value="${resolved ? resolved.name.replace(/\n/g,' ') : ''}"
+            placeholder="اكتب للبحث..."
+            autocomplete="off"
+            spellcheck="false"
+            oninput="vcFilterDrugs(this.value)"
+            onfocus="vcShowDropdown()"
+            style="width:100%;background:var(--surface2);border:1px solid var(--accent);border-radius:6px 6px 0 0;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:12px;outline:none">
+          <!-- Dropdown always visible while confirm card is open -->
+          <div id="vcDropdown" style="
+            width:100%;background:var(--surface);
+            border:1px solid var(--accent);border-top:none;
+            border-radius:0 0 7px 7px;max-height:190px;overflow-y:auto;
+            box-shadow:0 4px 14px rgba(0,0,0,.35)">
+          </div>
+        </div>
+      </div>
+
+      <div class="voice-confirm-row">
+        <span class="voice-lbl">الموقع المحدد</span>
+        <span id="vcLocDisplay" style="font-family:var(--mono);font-size:13px;color:var(--accent2);font-weight:700;background:rgba(0,153,255,.1);padding:2px 9px;border-radius:5px">${dr ? 'درج '+dr+' — '+sl : '—'}</span>
+      </div>
+      <!-- Hidden key fields -->
+      <input type="hidden" id="vcDr" value="${dr}">
+      <input type="hidden" id="vcSl" value="${sl}">
+
+      <div class="voice-confirm-row">
+        <span class="voice-lbl">اسم الدواء</span>
+        <div id="vcDrugName">${resolvedNameDisplay}</div>
+      </div>
+      <div class="voice-confirm-row">
+        <span class="voice-lbl">التواريخ الحالية</span>
+        <div id="vcExisting">${existing}</div>
+      </div>
+      <div class="voice-confirm-row">
+        <span class="voice-lbl">📅 التاريخ الجديد</span>
+        <input type="date" id="vcDate" value="${date||''}"
+          style="background:var(--surface2);border:1px solid var(--accent);border-radius:6px;padding:5px 9px;color:var(--text);font-family:var(--mono);font-size:13px">
+      </div>
+      <div class="voice-confirm-row">
+        <span class="voice-lbl">الوضع</span>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+          <input type="checkbox" id="vcReplace" style="width:14px;height:14px"> استبدال التواريخ القديمة
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="confirmVoiceSave()">✅ تأكيد وحفظ</button>
+        <button class="btn btn-secondary" onclick="dismissVoiceConfirm()">⏭️ تخطّ</button>
+      </div>
+    </div>`;
+  box.style.display = 'block';
+  // Populate dropdown immediately with all results
+  setTimeout(()=>vcFilterDrugs(resolved ? resolved.name.replace(/\n/g,' ') : ''), 30);
+}
+
+// Filter drug dropdown
+function vcShowDropdown(){
+  const inp = document.getElementById('vcDrugSearch');
+  if(inp) vcFilterDrugs(inp.value||'');
+}
+
+function vcFilterDrugs(q){
+  const dd = document.getElementById('vcDropdown');
+  if(!dd) return;
+  const sq = (q||'').trim().toLowerCase();
+  let results;
+  if(!sq){
+    results = Object.entries(data).filter(([k])=>!k.startsWith('x_')).slice(0,50).map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')}));
+  } else {
+    results = Object.entries(data)
+      .filter(([k])=>!k.startsWith('x_'))
+      .filter(([k,v])=>{
+        const nm=v.name.toLowerCase();
+        return nm.includes(sq) || k.toLowerCase().includes(sq) ||
+               k.replace(/[^\d]/g,'').includes(sq); // drawer number
+      })
+      .map(([k,v])=>({key:k,name:v.name.replace(/\n/g,' ')}))
+      .slice(0,50);
+  }
+  if(!results.length){
+    dd.innerHTML='<div style="padding:8px 12px;font-size:11px;color:var(--text3)">لا توجد نتائج</div>';
+    return;
+  }
+  dd.innerHTML = results.map(r=>{
+    const drn=r.key.match(/\d+/)[0], sln=r.key.match(/[A-F]/)[0];
+    const hi = sq ? r.name.replace(
+      new RegExp(sq.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),
+      m=>`<mark style="background:rgba(0,212,170,.3);color:var(--accent);border-radius:2px;padding:0 1px">${m}</mark>`
+    ) : r.name;
+    return `<div onclick="vcSelectDrug('${r.key}')"
+      style="padding:7px 11px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);transition:background .1s"
+      onmouseover="this.style.background='var(--surface2)'"
+      onmouseout="this.style.background='transparent'">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--accent2);min-width:48px;flex-shrink:0;font-weight:700">د${drn}/${sln}</span>
+      <span style="flex:1;line-height:1.35">${hi}</span>
+    </div>`;
+  }).join('');
+}
+
+function vcSelectDrug(key){
+  const item=data[key]; if(!item) return;
+  const dr=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
+  const inp=document.getElementById('vcDrugSearch');
+  if(inp) inp.value=item.name.replace(/\n/g,' ');
+  document.getElementById('vcDr').value=dr;
+  document.getElementById('vcSl').value=sl;
+  document.getElementById('vcLocDisplay').textContent=`درج ${dr} — ${sl}`;
+  document.getElementById('vcDrugName').innerHTML=`<strong style="color:var(--accent)">${item.name.replace(/\n/g,' ')}</strong>`;
+  document.getElementById('vcExisting').innerHTML=item.expiries.length
+    ?item.expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' ')
+    :'<span style="color:var(--text3)">لا يوجد</span>';
+  // keep dropdown open but scroll to top
+  const dd=document.getElementById('vcDropdown');
+  if(dd) dd.scrollTop=0;
+}
+
+function vcUpdateDrug(){
+  const drEl=document.getElementById('vcDr'), slEl=document.getElementById('vcSl');
+  if(!drEl||!slEl) return;
+  const key=`${drEl.value}${slEl.value}`, item=data[key];
+  const locEl=document.getElementById('vcLocDisplay');
+  if(locEl) locEl.textContent=drEl.value?`درج ${drEl.value} — ${slEl.value}`:'—';
+  const dnEl=document.getElementById('vcDrugName');
+  if(dnEl) dnEl.innerHTML=item
+    ?`<strong style="color:var(--accent)">${item.name.replace(/\n/g,' ')}</strong>`
+    :`<span style="color:var(--danger)">درج ${drEl.value}-${slEl.value} غير موجود</span>`;
+  const exEl=document.getElementById('vcExisting');
+  if(exEl) exEl.innerHTML=item
+    ?(item.expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' ')||'<span style="color:var(--text3)">لا يوجد</span>')
+    :'—';
+}
+
+// vcUpdateDrug merged above
+
+function confirmVoiceSave(){
+  const dr = document.getElementById('vcDr').value;
+  const sl = document.getElementById('vcSl').value;
+  const dateVal = document.getElementById('vcDate').value;
+  const replace = document.getElementById('vcReplace').checked;
+  const key = `${dr}${sl}`;
+  if(!data[key]) return setVoiceStatus('error','❌ الدرج غير موجود');
+  if(!dateVal) return setVoiceStatus('error','⚠️ أدخل التاريخ');
+  if(replace) data[key].expiries = [dateVal];
+  else if(!data[key].expiries.includes(dateVal)) data[key].expiries.push(dateVal);
+  saveData(); refreshAll();
+  // Add to session log
+  voiceSessionLog.push({
+    key, name: data[key].name.replace(/\n/g,' '), date: dateVal,
+    replace, ts: new Date().toLocaleTimeString('ar-SA')
+  });
+  saveSessionLog();
+  renderVoiceSessionList();
+  document.getElementById('voiceConfirmBox').style.display = 'none';
+  document.getElementById('voiceInterim').textContent = '';
+  setVoiceStatus('ok', `✅ تم حفظ ${data[key].name.replace(/\n/g,' ').split(' ')[0]} — جاهز لتسجيل جديد`);
+  showToast(`✅ تم حفظ تاريخ ${formatDate(dateVal)} لـ درج ${dr}-${sl}`);
+  // Auto-restart after short delay
+  setTimeout(()=>{
+    if(voiceUnlocked) startVoice();
+  }, 1200);
+}
+
+function dismissVoiceConfirm(){
+  document.getElementById('voiceConfirmBox').style.display = 'none';
+  document.getElementById('voiceInterim').textContent = '';
+  setVoiceStatus('idle','تم التخطّي. جاهز لتسجيل جديد.');
+  setTimeout(()=>{ if(voiceUnlocked) startVoice(); }, 800);
+}
+
+function renderVoiceSessionList(){
+  const el = document.getElementById('voiceSessionList');
+  if(!el) return;
+  const cnt = document.getElementById('voiceSessionCount');
+  if(cnt) cnt.textContent = voiceSessionLog.length > 0 ? `(${voiceSessionLog.length} إدخال)` : '';
+  if(!voiceSessionLog.length){
+    el.innerHTML='<div style="color:var(--text3);font-size:12px;font-style:italic">لا توجد تسجيلات بعد.</div>';
+    return;
+  }
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:5px">` +
+    voiceSessionLog.slice().reverse().map((item,i)=>{
+      const idx = voiceSessionLog.length - 1 - i;
+      const dr = item.key.match(/\d+/)[0], sl = item.key.match(/[A-F]/)[0];
+      const stEl = expStatus(item.date);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--surface2);border-radius:7px;border:1px solid var(--border)">
+        <span style="font-family:var(--mono);font-size:11px;color:var(--accent2);min-width:60px">درج ${dr}–${sl}</span>
+        <span style="flex:1;font-size:12px;font-weight:600;color:var(--text)">${item.name}</span>
+        <span class="exp-tag ${stEl==='critical'?'danger':stEl}">${formatDate(item.date)}</span>
+        ${item.replace?'<span style="font-size:10px;color:var(--warn)">استُبدل</span>':'<span style="font-size:10px;color:var(--success)">أُضيف</span>'}
+        <span style="font-size:10px;color:var(--text3)">${item.ts}</span>
+        <button class="btn btn-danger btn-sm" style="padding:1px 6px" onclick="removeSessionLog(${idx})">×</button>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+function removeSessionLog(idx){
+  voiceSessionLog.splice(idx,1);
+  saveSessionLog();
+  renderVoiceSessionList();
+}
+
+function clearVoiceSession(){
+  if(!voiceSessionLog.length) return;
+  if(confirm('مسح قائمة التسجيلات؟ (البيانات المحفوظة لن تُحذف)')) {
+    voiceSessionLog = [];
+    saveSessionLog();
+    renderVoiceSessionList();
+  }
+}
+
+// ══ SUPABASE SETTINGS GATE ══
+const SB_SETTINGS_PASS = 'asmd';
+let sbSettingsUnlocked = false;
+function openSbSettings(){
+  if(sbSettingsUnlocked){
+    document.getElementById('sbSettingsModal').classList.add('open');
+    document.getElementById('sbSettingsGate').style.display='none';
+    document.getElementById('sbSettingsForm').style.display='block';
+    document.getElementById('sbUrlDisplay').value=SB_URL||'';
+    document.getElementById('sbKeyDisplay').value=SB_KEY||'';
+  } else {
+    document.getElementById('sbSettingsModal').classList.add('open');
+    document.getElementById('sbSettingsGate').style.display='flex';
+    document.getElementById('sbSettingsForm').style.display='none';
+    document.getElementById('sbPassInput').value='';
+    document.getElementById('sbPassErr').style.display='none';
+  }
+}
+function checkSbPass(){
+  if(document.getElementById('sbPassInput').value===SB_SETTINGS_PASS){
+    sbSettingsUnlocked=true;
+    document.getElementById('sbSettingsGate').style.display='none';
+    document.getElementById('sbSettingsForm').style.display='block';
+    document.getElementById('sbUrlDisplay').value=SB_URL||'';
+    document.getElementById('sbKeyDisplay').value=SB_KEY||'';
+    document.getElementById('sbPassErr').style.display='none';
+  } else {
+    document.getElementById('sbPassErr').style.display='block';
+    document.getElementById('sbPassInput').value='';
+  }
+}
+function saveSbSettings(){
+  SB_URL=document.getElementById('sbUrlDisplay').value.trim();
+  SB_KEY=document.getElementById('sbKeyDisplay').value.trim();
+  closeModal('sbSettingsModal');sbTestConnect();
+}
+
+// ══ START ══
+// Architecture: Supabase is the ONLY source of truth.
+// localStorage is never read or written for app data.
+// On load, show a brief "جاري التحميل..." state, then fetch from Supabase.
+// If Supabase is unreachable, show an offline warning.
+initData();
+refreshAll(); // renders empty/default state while waiting for Supabase
+showToast('⏳ جاري تحميل البيانات من Supabase...');
+sbLoad().then(()=>{
+  refreshAll();
+  showToast('✅ تم تحميل البيانات');
+}).catch(()=>{
+  showToast('🔴 تعذّر الاتصال — تحقق من إعدادات Supabase');
+});
+document.getElementById('shelfSearch').addEventListener('input',renderShelves);
+initVoice();
+</script>
+</body>
+</html>
