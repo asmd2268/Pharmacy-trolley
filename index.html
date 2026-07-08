@@ -844,8 +844,16 @@ code{font-family:var(--mono)}
     <label>ابحث بالاسم</label>
     <input type="text" id="pickExtraSearch" placeholder="اكتب اسم الدواء..." oninput="renderPickExtraResults()">
   </div>
-  <div id="pickExtraResults" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
-  <div style="font-size:11px;color:var(--text3);margin-top:8px">ما تلقى الدواء؟ أضفه أولاً من تبويب "قاعدة البيانات" (إضافة دواء)، بعدها ارجع هنا واربطه بالخانة.</div>
+  <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2)">
+      <input type="radio" name="pickExtraScope" value="all" checked onchange="renderPickExtraResults()"> كل القاعدة
+    </label>
+    <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2)">
+      <input type="radio" name="pickExtraScope" value="unassigned" onchange="renderPickExtraResults()"> بدون موقع فقط
+    </label>
+  </div>
+  <div id="pickExtraResults" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:5px"></div>
+  <div style="font-size:11px;color:var(--text3);margin-top:8px">يمكنك ربط أي دواء من القاعدة بهذه الخانة — سيُحدَّث موقعه تلقائياً.</div>
   <div class="modal-actions">
     <button class="btn btn-secondary" onclick="closeModal('pickExtraModal')">إلغاء</button>
   </div>
@@ -2543,7 +2551,13 @@ function renderShelves(){
             <div class="cell-drug">${item.name.replace(/\n/g,' ')}</div>
             ${bestExp?`<div class="cell-exp ${bestSt}">${formatDate(bestExp)}</div>`:'<div class="cell-exp noexp">— بدون تاريخ</div>'}
             ${item.oos?'<span class="oos-badge" style="position:absolute;top:2px;right:3px;font-size:7px">OOS</span>':''}
-            ${dupBadgeHtml(item,key)?'<span style="position:absolute;bottom:2px;left:2px;font-size:7px;background:#7c3aed22;color:#7c3aed;border-radius:6px;padding:0 3px;font-weight:700">🔁</span>':''}`;
+            ${dupBadgeHtml(item,key)?'<span style="position:absolute;bottom:2px;left:2px;font-size:7px;background:#7c3aed22;color:#7c3aed;border-radius:6px;padding:0 3px;font-weight:700">🔁</span>':''}
+            <div class="cell-actions" style="position:absolute;bottom:2px;right:2px;display:none;gap:2px;z-index:5">
+              <button style="font-size:8px;padding:1px 4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text1)" onclick="event.stopPropagation();openExpModal('${key}')" title="تعديل البيانات">✏️</button>
+              <button style="font-size:8px;padding:1px 4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--accent)" onclick="event.stopPropagation();createShelfDrug('${key}')" title="تغيير الدواء">🔄</button>
+            </div>`;
+          div.onmouseenter=()=>{ const a=div.querySelector('.cell-actions'); if(a) a.style.display='flex'; };
+          div.onmouseleave=()=>{ const a=div.querySelector('.cell-actions'); if(a) a.style.display='none'; };
           div.onclick=()=>openExpModal(key);
         } else {
           div.innerHTML=`<span class="cell-label" style="position:static;color:var(--text3);font-size:9px">${dispLabel}</span><div class="cell-add">+</div>`;
@@ -2578,38 +2592,65 @@ window.addEventListener('afterprint', ()=>{
 function createShelfDrug(key){
   pickExtraTargetKey=key;
   const num=key.match(/\d+/)[0], sl=key.match(/[A-F]/)[0];
-  document.getElementById('pickExtraTargetInfo').innerHTML=`الخانة: <span style="color:var(--accent);font-family:var(--mono)">${sl}${num}</span>`;
+  document.getElementById('pickExtraTargetInfo').innerHTML=
+    `الخانة: <span style="color:var(--accent);font-family:var(--mono)">${num}${sl}</span>`;
   document.getElementById('pickExtraSearch').value='';
+  // reset scope to 'all'
+  const allRadio=document.querySelector('input[name="pickExtraScope"][value="all"]');
+  if(allRadio) allRadio.checked=true;
   renderPickExtraResults();
   document.getElementById('pickExtraModal').classList.add('open');
 }
 function renderPickExtraResults(){
   const q=(document.getElementById('pickExtraSearch').value||'').trim().toLowerCase();
+  const scope=(document.querySelector('input[name="pickExtraScope"]:checked')||{}).value||'all';
   const box=document.getElementById('pickExtraResults'); box.innerHTML='';
-  const matches=Object.entries(data)
-    .filter(([k])=>k.startsWith('x_')) // only drugs not yet placed anywhere
-    .filter(([k,v])=>!q||v.name.toLowerCase().includes(q))
-    .slice(0,40);
-  if(!matches.length){
-    box.innerHTML=`<div class="empty" style="padding:14px"><div class="icon">🔎</div>${q?'لا توجد نتائج':'اكتب اسم الدواء للبحث، أو اعرض كل الأدوية غير المعينة'}</div>`;
+  const entries=Object.entries(data)
+    .filter(([k,v])=>{
+      if(k===pickExtraTargetKey) return false; // skip the target cell itself
+      if(scope==='unassigned') return k.startsWith('x_');
+      return true; // 'all' — every drug in the DB
+    })
+    .filter(([k,v])=>!q||v.name.toLowerCase().includes(q)||k.toLowerCase().includes(q))
+    .slice(0,50);
+  if(!entries.length){
+    box.innerHTML=`<div class="empty" style="padding:14px"><div class="icon">🔎</div>${q?'لا توجد نتائج':'اكتب اسم الدواء للبحث'}</div>`;
     return;
   }
-  matches.forEach(([k,v])=>{
+  entries.forEach(([k,v])=>{
     const row=document.createElement('div');
-    row.className='btn btn-secondary';
-    row.style.cssText='justify-content:flex-start;text-align:right;width:100%';
-    row.textContent=v.name.replace(/\n/g,' ');
+    row.style.cssText='display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);cursor:pointer';
+    const isX=k.startsWith('x_');
+    const loc=isX?'<span style="font-size:9px;color:var(--text3)">بدون موقع</span>'
+      :`<span style="font-size:9px;font-family:var(--mono);color:var(--accent2)">${k}</span>`;
+    row.innerHTML=`<div style="flex:1;font-size:12px">${v.name.replace(/\n/g,' ')}</div>${loc}`;
     row.onclick=()=>selectExtraForShelf(k);
     box.appendChild(row);
   });
 }
-function selectExtraForShelf(extraKey){
+function selectExtraForShelf(srcKey){
   if(!pickExtraTargetKey) return;
-  if(data[pickExtraTargetKey]) return showToast('❌ هذه الخانة مشغولة بالفعل');
-  data[pickExtraTargetKey]={...data[extraKey], shelf:true};
-  delete data[extraKey];
-  saveData(); closeModal('pickExtraModal'); refreshAll();
+  const targetOccupied=!!data[pickExtraTargetKey];
+  if(targetOccupied){
+    const occupant=data[pickExtraTargetKey].name.replace(/\n/g,' ');
+    const choice=confirm(
+      `الخانة ${pickExtraTargetKey} مشغولة بـ:\n"${occupant}"\n\n` +
+      `موافق = تبديل (الدواء المختار يأخذ المكان، القديم يصبح بدون تعيين)\n` +
+      `إلغاء = إلغاء العملية`
+    );
+    if(!choice) return;
+    // move old drug to x_
+    const oldKey='x_'+uid();
+    data[oldKey]={...data[pickExtraTargetKey], shelf:false, extra:true, drawerNum:null, drawerSlot:null};
+    delete data[pickExtraTargetKey];
+  }
+  // place selected drug in target
+  data[pickExtraTargetKey]={...data[srcKey], shelf:true, extra:false};
+  delete data[srcKey];
+  closeModal('pickExtraModal');
+  refreshAll();
   showToast('✅ تم ربط الدواء بالخانة');
+  sbSaveNow().then(()=>showToast('☁️ محفوظ في Supabase')).catch(()=>showToast('⚠️ تعذّر الحفظ في Supabase'));
 }
 
 function openAddShelfModal(){
@@ -2733,8 +2774,17 @@ function saveCell(){
       drug:name, types, notes:document.getElementById('cellNotes').value,
       expiries:Array.from(inputs).map(i=>i.value).filter(Boolean)
     };
+    // keep data[] in sync so DB tab and stats reflect the change
+    if(data[editingCellKey]){
+      data[editingCellKey].name=name;
+      data[editingCellKey].types=types;
+      data[editingCellKey].notes=document.getElementById('cellNotes').value;
+      data[editingCellKey].expiries=Array.from(inputs).map(i=>i.value).filter(Boolean);
+      data[editingCellKey].shelf=true;
+    }
   }
-  saveData();closeModal('cellModal');renderShelves();showToast('✅ تم الحفظ');
+  closeModal('cellModal'); refreshAll(); showToast('✅ تم الحفظ');
+  sbSaveNow().then(()=>showToast('☁️ محفوظ في Supabase')).catch(()=>showToast('⚠️ تعذّر الحفظ في Supabase'));
 }
 function clearCell(){
   const sh=shelves.find(s=>s.id===editingShelfId); if(sh&&sh.cells) delete sh.cells[editingCellKey];
