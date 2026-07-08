@@ -1018,7 +1018,7 @@ code{font-family:var(--mono)}
   </div>
   <div class="form-group">
     <label>رقم الدرج <span style="color:var(--danger)">*</span></label>
-    <input type="number" id="newDrugDrawer" min="1" max="200" placeholder="1-200" oninput="checkNewDrugSlot()">
+    <input type="number" id="newDrugDrawer" min="1" max="200" placeholder="1-200" oninput="updateSlotOptions('newDrugSlot',this.value);checkNewDrugSlot()">
   </div>
   <div class="form-group">
     <label>الخانة <span style="color:var(--danger)">*</span></label>
@@ -1054,7 +1054,7 @@ code{font-family:var(--mono)}
   <div class="drug-info" id="moveDrawerInfo"></div>
   <div class="form-group">
     <label>رقم الدرج الجديد <span style="color:var(--danger)">*</span></label>
-    <input type="number" id="moveTargetDrawer" min="1" max="200" placeholder="1-200" oninput="checkMoveTarget()">
+    <input type="number" id="moveTargetDrawer" min="1" max="200" placeholder="1-200" oninput="updateSlotOptions('moveTargetSlot',this.value);checkMoveTarget()">
   </div>
   <div class="form-group">
     <label>الخانة الجديدة <span style="color:var(--danger)">*</span></label>
@@ -1063,6 +1063,8 @@ code{font-family:var(--mono)}
       <option value="B">B</option>
       <option value="C">C</option>
       <option value="D">D</option>
+      <option value="E">E</option>
+      <option value="F">F</option>
     </select>
     <div id="moveTargetWarn" style="display:none;margin-top:5px;font-size:11px;color:var(--danger);background:var(--high-bg);padding:6px 10px;border-radius:5px;border:1px solid rgba(255,71,87,.3)"></div>
   </div>
@@ -1080,7 +1082,7 @@ code{font-family:var(--mono)}
   <div class="drug-info" id="assignDrugInfo"></div>
   <div class="form-group">
     <label>رقم الدرج <span style="color:var(--danger)">*</span></label>
-    <input type="number" id="assignTargetDrawer" min="1" max="200" placeholder="1-200" oninput="checkAssignTarget()">
+    <input type="number" id="assignTargetDrawer" min="1" max="200" placeholder="1-200" oninput="updateSlotOptions('assignTargetSlot',this.value);checkAssignTarget()">
   </div>
   <div class="form-group">
     <label>الخانة <span style="color:var(--danger)">*</span></label>
@@ -1089,6 +1091,8 @@ code{font-family:var(--mono)}
       <option value="B">B</option>
       <option value="C">C</option>
       <option value="D">D</option>
+      <option value="E">E</option>
+      <option value="F">F</option>
     </select>
     <div id="assignTargetWarn" style="display:none;margin-top:5px;font-size:11px;color:var(--danger);background:var(--high-bg);padding:6px 10px;border-radius:5px;border:1px solid rgba(255,71,87,.3)"></div>
   </div>
@@ -1666,6 +1670,42 @@ function openAddDrugModal(){
   document.getElementById('newDrugHighAlert').checked=false;
   document.getElementById('addDrugModal').classList.add('open');
 }
+// ── dynamic slot options: reads what slots actually exist for a given drawer number ──
+function updateSlotOptions(selectId, drawerNum){
+  const sel=document.getElementById(selectId);
+  if(!sel) return;
+  const num=parseInt(drawerNum,10);
+  // Determine available slots: for shelf numbers (>50) detect from data keys and SLOT_LABELS
+  // For regular drawers 1-50, always A-D; for shelf drawers detect max slot used or from shelf config
+  let slots=['A','B','C','D'];
+  if(!isNaN(num) && num>50){
+    // Look at existing keys for this number to find the max slot letter used
+    const usedSlots=new Set();
+    for(const k in data){
+      const km=k.match(/^(\d+)([A-F])$/);
+      if(km && parseInt(km[1],10)===num) usedSlots.add(km[2]);
+    }
+    // Also check shelf config to see if it defines rows with E,F
+    // Find which shelf covers this number
+    let shelfSlots=['A','B','C','D','E','F'];
+    for(const sh of shelves){
+      const end=sh.startNum+(sh.cols||5)-1;
+      if(num>=sh.startNum && num<=end){
+        // Use the shelf's row count (rows = number of slot letters)
+        const rows=sh.rows||6;
+        shelfSlots=ROW_LABELS.slice(0,rows).split('');
+        break;
+      }
+    }
+    // Merge: all slots defined in shelf + any already used in data
+    slots=[...new Set([...shelfSlots,...usedSlots])].sort();
+    if(!slots.length) slots=['A','B','C','D','E','F'];
+  }
+  const cur=sel.value;
+  sel.innerHTML=slots.map(s=>`<option value="${s}"${s===cur?' selected':''}>${s}</option>`).join('');
+  // If previous selection is no longer available, reset to first
+  if(!slots.includes(sel.value)) sel.value=slots[0];
+}
 function checkNewDrugSlot(){
   const dr=document.getElementById('newDrugDrawer').value.trim();
   const sl=document.getElementById('newDrugSlot').value;
@@ -1734,8 +1774,15 @@ function saveNewDrug(){
     const key='x_'+uid();
     data[key]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
   }
-  saveData(); refreshAll(); closeModal('addDrugModal');
-  showToast('✅ تمت إضافة الدواء للقاعدة'+(dr?` (درج ${dr}—${sl})`:'، بدون موقع بعد'));
+  saveData();
+  refreshAll();
+  closeModal('addDrugModal');
+  const loc=dr?` (درج ${dr}—${sl})`:'، بدون موقع بعد';
+  showToast(`✅ تمت إضافة الدواء للقاعدة${loc}`);
+  // confirm Supabase save
+  sbSaveNow()
+    .then(()=>showToast('☁️ تم الحفظ في Supabase'))
+    .catch(()=>showToast('⚠️ مضافة محلياً — لم يُحفظ في Supabase بعد'));
 }
 
 // ══ BULK ADD (paste table) ══
@@ -3532,6 +3579,15 @@ sbLoad().then(()=>{
 });
 document.getElementById('shelfSearch').addEventListener('input',renderShelves);
 initVoice();
+
+// ── Auto-save to Supabase every 60 seconds ──
+setInterval(()=>{
+  if(typeof sbSaveNow==='function' && sbConnected){
+    sbSaveNow()
+      .then(()=>{ setSbStatus('saved'); })
+      .catch(()=>{ setSbStatus('offline'); });
+  }
+}, 60000);
 </script>
 </body>
 </html>
