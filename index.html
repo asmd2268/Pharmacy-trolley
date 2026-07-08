@@ -582,6 +582,15 @@ code{font-family:var(--mono)}
       <option value="unassigned-all">⚠️ غير مضافة في أي مكان</option>
     </select>
     <span id="dbCountLabel" style="font-size:11px;color:var(--text3);background:var(--surface2);padding:3px 8px;border-radius:5px"></span>
+    <div style="display:flex;align-items:center;gap:4px;background:var(--surface2);border-radius:8px;padding:3px 6px;border:1px solid var(--border)">
+      <span style="font-size:10px;color:var(--text3);white-space:nowrap">ترتيب:</span>
+      <select id="dbSort" onchange="renderDB()" style="border:none;background:transparent;color:var(--text1);font-size:11px;cursor:pointer;outline:none">
+        <option value="drawer">رقم الدرج</option>
+        <option value="alpha">أبجدي</option>
+        <option value="exp">تاريخ الانتهاء</option>
+      </select>
+      <button id="dbSortDir" onclick="toggleDbSortDir()" title="عكس الترتيب" style="background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;line-height:1;color:var(--text2)">↑</button>
+    </div>
     <div style="margin-right:auto;display:flex;gap:6px">
       <button class="btn btn-primary btn-sm" onclick="openAddDrugModal()">＋ إضافة دواء</button>
       <button class="btn btn-secondary btn-sm" onclick="openBulkAddModal()">📋 إضافة من جدول</button>
@@ -591,10 +600,10 @@ code{font-family:var(--mono)}
     <table class="drawers-table" id="dbTable">
       <thead><tr>
         <th style="width:36px;text-align:center"><input type="checkbox" id="dbSelectAllChk" title="تحديد الكل" onchange="dbToggleAll(this.checked)" style="width:15px;height:15px;cursor:pointer"></th>
-        <th style="width:80px">الموقع</th>
-        <th>اسم الدواء</th>
+        <th style="width:80px;cursor:pointer;user-select:none" onclick="setDbSort('drawer')" title="ترتيب حسب رقم الدرج"><span id="sortHdr_drawer">الموقع</span></th>
+        <th style="cursor:pointer;user-select:none" onclick="setDbSort('alpha')" title="ترتيب أبجدي"><span id="sortHdr_alpha">اسم الدواء</span></th>
         <th style="width:100px">النوع</th>
-        <th style="width:180px">تواريخ الانتهاء</th>
+        <th style="width:180px;cursor:pointer;user-select:none" onclick="setDbSort('exp')" title="ترتيب حسب تاريخ الانتهاء"><span id="sortHdr_exp">تواريخ الانتهاء</span></th>
         <th style="width:70px">الحالة</th>
         <th style="width:70px">نقل</th>
         <th style="width:50px">تعديل</th>
@@ -1484,34 +1493,71 @@ function isAssignedToShelf(name){
 function renderDB(){
   const q=(document.getElementById('dbSearch').value||'').trim().toLowerCase();
   const f=document.getElementById('dbFilter').value;
+  const sortBy=document.getElementById('dbSort').value;
+  const sortAsc=document.getElementById('dbSortDir').textContent==='↑';
   const tbody=document.getElementById('dbTableBody');
   tbody.innerHTML='';
   let count=0;
-  for(const key in data){
+
+  // ── update column header indicators ──
+  ['drawer','alpha','exp'].forEach(s=>{
+    const el=document.getElementById('sortHdr_'+s);
+    if(!el) return;
+    const base={drawer:'الموقع',alpha:'اسم الدواء',exp:'تواريخ الانتهاء'}[s];
+    el.textContent=sortBy===s ? base+(sortAsc?' ↑':' ↓') : base;
+    el.style.color=sortBy===s?'var(--accent)':'';
+  });
+
+  // ── filter ──
+  let keys=Object.keys(data).filter(key=>{
     const item=data[key];
     const nm=!q||item.name.replace(/\n/g,' ').toLowerCase().includes(q)||key.toLowerCase().includes(q);
-    if(!nm) continue;
+    if(!nm) return false;
     const exSt=slotExpSt(key);
     const assignedDrawer=isAssignedToDrawer(key);
     const assignedShelf=isAssignedToShelf(item.name);
-    let pass=true;
-    if(f==='has-exp')    pass=item.expiries.length>0;
-    else if(f==='no-exp')  pass=item.expiries.length===0;
-    else if(f==='expired') pass=exSt==='danger'&&item.expiries.some(e=>daysUntil(e)<0);
-    else if(f==='warn')    pass=exSt==='warn';
-    else if(f==='hazard')  pass=item.types.includes('hazard');
-    else if(f==='lasa')    pass=item.types.includes('lasa');
-    else if(f==='high-alert') pass=item.types.includes('high-alert');
-    else if(f==='oos')     pass=item.oos;
-    else if(f==='dup-name'){
-      const norm2=item.name.replace(/\n/g,' ').trim().toLowerCase();
-      pass=Object.keys(data).some(k2=>k2!==key&&data[k2].name.replace(/\n/g,' ').trim().toLowerCase()===norm2);
+    if(f==='has-exp')    return item.expiries.length>0;
+    if(f==='no-exp')     return item.expiries.length===0;
+    if(f==='expired')    return exSt==='danger'&&item.expiries.some(e=>daysUntil(e)<0);
+    if(f==='warn')       return exSt==='warn';
+    if(f==='hazard')     return item.types.includes('hazard');
+    if(f==='lasa')       return item.types.includes('lasa');
+    if(f==='high-alert') return item.types.includes('high-alert');
+    if(f==='oos')        return item.oos;
+    if(f==='shelf')      return item.shelf||assignedShelf;
+    if(f==='dup-name'){
+      const n=item.name.replace(/\n/g,' ').trim().toLowerCase();
+      return Object.keys(data).some(k2=>k2!==key&&data[k2].name.replace(/\n/g,' ').trim().toLowerCase()===n);
     }
-    else if(f==='shelf')   pass=item.shelf||assignedShelf;
-    else if(f==='unassigned-drawer') pass=!assignedDrawer;
-    else if(f==='unassigned-shelf')  pass=!assignedShelf;
-    else if(f==='unassigned-all')    pass=!assignedDrawer&&!assignedShelf;
-    if(!pass) continue;
+    if(f==='unassigned-drawer') return !assignedDrawer;
+    if(f==='unassigned-shelf')  return !assignedShelf;
+    if(f==='unassigned-all')    return !assignedDrawer&&!assignedShelf;
+    return true;
+  });
+
+  // ── sort ──
+  keys.sort((a,b)=>{
+    let cmp=0;
+    if(sortBy==='alpha'){
+      cmp=data[a].name.replace(/\n/g,' ').localeCompare(data[b].name.replace(/\n/g,' '),'ar');
+    } else if(sortBy==='exp'){
+      const ea=data[a].expiries.length?data[a].expiries.slice().sort()[0]:'9999';
+      const eb=data[b].expiries.length?data[b].expiries.slice().sort()[0]:'9999';
+      cmp=ea.localeCompare(eb);
+    } else {
+      // drawer: numeric part first, then slot letter
+      const na=parseInt(a.match(/\d+/)||[9999]),nb=parseInt(b.match(/\d+/)||[9999]);
+      cmp=na!==nb?na-nb:a.localeCompare(b);
+    }
+    return sortAsc?cmp:-cmp;
+  });
+
+  // ── render ──
+  for(const key of keys){
+    const item=data[key];
+    const exSt=slotExpSt(key);
+    const assignedDrawer=isAssignedToDrawer(key);
+    const assignedShelf=isAssignedToShelf(item.name);
     count++;
     const nameClean=item.name.replace(/\n/g,' ');
     const exHtml=item.expiries.length
@@ -1525,7 +1571,6 @@ function renderDB(){
     if(item.oos)   tHtml+=`<span class="oos-badge" style="margin-left:2px">OOS</span>`;
     tHtml+=dupBadgeHtml(item,key);
     const stIcon=!item.expiries.length?`<span style="color:var(--noexp)">●</span>`:exSt==='danger'?'🔴':exSt==='warn'?'🟡':'🟢';
-    // location cell
     let locHtml='';
     if(!assignedDrawer){
       locHtml=`<span style="color:var(--warn);font-size:10px;font-style:italic">بدون درج</span>
@@ -1538,13 +1583,10 @@ function renderDB(){
     const tr=document.createElement('tr');
     tr.style.cursor='pointer';
     if(item.oos) tr.classList.add('cell-oos');
-    // checkbox cell — stopPropagation so row click (openExpModal) doesn't fire
     const chkTd=document.createElement('td');
     chkTd.style.cssText='text-align:center;vertical-align:middle';
     const chk=document.createElement('input');
-    chk.type='checkbox';
-    chk.className='db-row-chk';
-    chk.dataset.key=key;
+    chk.type='checkbox'; chk.className='db-row-chk'; chk.dataset.key=key;
     chk.style.cssText='width:15px;height:15px;cursor:pointer';
     chk.onclick=e=>{ e.stopPropagation(); dbUpdateBulkBar(); };
     chkTd.appendChild(chk);
@@ -1562,6 +1604,24 @@ function renderDB(){
   }
   document.getElementById('dbCountLabel').textContent=`${count} دواء`;
   dbUpdateBulkBar();
+}
+// ── Sort helpers ──
+function setDbSort(by){
+  const sel=document.getElementById('dbSort');
+  const dirBtn=document.getElementById('dbSortDir');
+  if(sel.value===by){
+    // same column → flip direction
+    dirBtn.textContent=dirBtn.textContent==='↑'?'↓':'↑';
+  } else {
+    sel.value=by;
+    dirBtn.textContent='↑';
+  }
+  renderDB();
+}
+function toggleDbSortDir(){
+  const btn=document.getElementById('dbSortDir');
+  btn.textContent=btn.textContent==='↑'?'↓':'↑';
+  renderDB();
 }
 // ── Bulk selection helpers ──
 function dbUpdateBulkBar(){
