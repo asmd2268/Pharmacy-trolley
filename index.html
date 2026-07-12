@@ -3791,16 +3791,20 @@ function openBackupModal() {
   loadBackupList();
 }
 
-async function triggerManualBackup() {
-  await doBackup('manual');
-  loadBackupList();
+function triggerManualBackup() {
+  requireWriteAuth('حفظ نسخة احتياطية', async () => {
+    await doBackup('manual');
+    loadBackupList();
+  });
 }
 
 function promptRestore(id, label) {
-  pendingRestoreId = id;
-  document.getElementById('restoreConfirmInfo').innerHTML =
-    'ستُستعاد النسخة المحفوظة بتاريخ: <strong>' + label + '</strong>';
-  document.getElementById('restoreConfirmModal').classList.add('open');
+  requireWriteAuth('استعادة نسخة احتياطية', () => {
+    pendingRestoreId = id;
+    document.getElementById('restoreConfirmInfo').innerHTML =
+      'ستُستعاد النسخة المحفوظة بتاريخ: <strong>' + label + '</strong>';
+    document.getElementById('restoreConfirmModal').classList.add('open');
+  });
 }
 
 async function confirmRestore() {
