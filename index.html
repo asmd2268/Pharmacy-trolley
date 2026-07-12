@@ -497,6 +497,7 @@ code{font-family:var(--mono)}
     <div class="stat-badge" id="oosStatBadge">🚫 <span id="oosCount">0</span></div>
     <div class="stat-badge">📦 <span id="shelfCount">0</span> درج علب</div>
     <div class="stat-badge" id="sbStatus" style="cursor:pointer" onclick="openSbSettings()" title="إعدادات Supabase (محمية)">⚪ Supabase</div>
+    <div class="stat-badge" id="backupStatusBadge" style="cursor:pointer" onclick="openBackupModal()" title="النسخ الاحتياطي">💾 <span id="backupStatusText">النسخ الاحتياطي</span></div>
   </div>
   <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
 </header>
@@ -1073,6 +1074,53 @@ code{font-family:var(--mono)}
     <button class="btn btn-primary" onclick="saveBulkDrugs()">✅ إضافة الكل</button>
   </div>
 </div>
+</div>
+
+<!-- ══ MODAL: Backup & Restore ══ -->
+<div class="modal-overlay" id="backupModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h2>💾 النسخ الاحتياطي</h2>
+      <button class="modal-close" onclick="closeModal('backupModal')">✕</button>
+    </div>
+    <div style="padding:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">النسخ التلقائي</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">يحفظ نسخة تلقائية كل يوم الساعة 23:00 — يُبقي آخر 7 نسخ</div>
+        </div>
+        <div id="backupAutoStatus" style="font-size:12px;color:var(--success)">🟢 مفعّل</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-primary" style="flex:1" onclick="triggerManualBackup()">💾 حفظ نسخة الآن</button>
+        <button class="btn btn-secondary" onclick="loadBackupList()">🔄 تحديث القائمة</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">النسخ المحفوظة (آخر 7 أيام):</div>
+      <div id="backupListContainer" style="min-height:80px">
+        <div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">جاري التحميل...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Restore Confirmation ══ -->
+<div class="modal-overlay" id="restoreConfirmModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h2>⚠️ تأكيد الاستعادة</h2>
+      <button class="modal-close" onclick="closeModal('restoreConfirmModal')">✕</button>
+    </div>
+    <div style="padding:16px">
+      <div style="background:rgba(255,71,87,.1);border:1px solid var(--danger);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--text)">
+        ⚠️ سيتم استبدال البيانات الحالية بالنسخة المختارة. هذا الإجراء لا يمكن التراجع عنه.
+      </div>
+      <div id="restoreConfirmInfo" style="font-size:12px;color:var(--text2);margin-bottom:16px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-danger" style="flex:1" onclick="confirmRestore()">✅ نعم، استعادة</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="closeModal('restoreConfirmModal')">إلغاء</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- SUPABASE SETTINGS MODAL -->
@@ -2946,35 +2994,36 @@ async function sbLoad(){
     const remotePayload = rows&&rows.length&&rows[0].payload ? rows[0].payload : null;
     const remoteVersion = remotePayload&&remotePayload.settings&&remotePayload.settings.seedVersion;
 
-    if(remotePayload && remoteVersion === SEED_VERSION){
-      // ── Supabase already has this seed version: use it (may have user edits on top) ──
+    if(remotePayload){
+      // ══ القاعدة الذهبية: Supabase هو دائماً مصدر الحقيقة ══
+      // لا نكتب SEED فوق بيانات موجودة أبداً — SEED يُستخدم فقط عند أول تشغيل
       const p = remotePayload;
       data      = p.data      || {};
       shelves   = p.shelves   || [];
       oosManual = p.oosManual || [];
       settings  = Object.assign({warnDays:30,critDays:7,writePassword:'asmd',authMinutes:15}, p.settings||{});
       theme     = p.theme     || 'dark';
+      // نحدّث seedVersion بصمت فقط دون المساس بالبيانات
+      if(!remoteVersion || remoteVersion !== SEED_VERSION){
+        settings.seedVersion = SEED_VERSION;
+        await sbFetch(`${SB_TABLE}?id=eq.1`,{method:'PATCH',
+          body:JSON.stringify({payload:{data,shelves,oosManual,settings,theme}})});
+      }
     } else {
-      // ── New export OR first launch: push SEED_DATA to Supabase ──
+      // ── أول تشغيل فقط: لا توجد بيانات في Supabase → ارفع SEED ──
       if(SEED_DATA){
         data      = SEED_DATA.data      || {};
         shelves   = SEED_DATA.shelves   || [];
         oosManual = SEED_DATA.oosManual || [];
         settings  = Object.assign({warnDays:30,critDays:7,writePassword:'asmd',authMinutes:15}, SEED_DATA.settings||{});
         theme     = SEED_DATA.theme     || 'dark';
-        settings.seedVersion = SEED_VERSION; // stamp it
+        settings.seedVersion = SEED_VERSION;
         normalizeShelves();
         migrateLegacyShelfCells();
-      }
-      // Push seed to Supabase (insert or overwrite)
-      if(remotePayload){
-        await sbFetch(`${SB_TABLE}?id=eq.1`, {method:'PATCH',
-          body:JSON.stringify({payload:{data,shelves,oosManual,settings,theme}})});
-      } else {
-        await sbFetch(`${SB_TABLE}`, {method:'POST',
+        await sbFetch(`${SB_TABLE}`,{method:'POST',
           body:JSON.stringify({id:1,payload:{data,shelves,oosManual,settings,theme}})});
+        showToast('📥 أول تشغيل — تم رفع البيانات الأولية');
       }
-      showToast('📥 تم تحميل آخر ملف مُصدَّر وحفظه في Supabase');
     }
     applyTheme();
     document.getElementById('warnDays').value = settings.warnDays;
@@ -2983,6 +3032,8 @@ async function sbLoad(){
     migrateLegacyShelfCells();
     sbConnected=true;
     setSbStatus('connected');
+    // ── نسخة احتياطية عند الفتح إذا لم تُحفظ نسخة اليوم بعد ──
+    scheduleBackupOnOpen();
   } catch(e){ setSbStatus('offline'); showToast('⚠️ تعذّر الاتصال بـ Supabase'); }
 }
 
@@ -3591,12 +3642,236 @@ function saveSbSettings(){
 // localStorage is never read or written for app data.
 // On load, show a brief "جاري التحميل..." state, then fetch from Supabase.
 // If Supabase is unreachable, show an offline warning.
+// ══════════════════════════════════════
+//  BACKUP SYSTEM  💾
+//  - Auto backup daily at 23:00
+//  - Keeps last 7 backups
+//  - Manual backup + restore from modal
+// ══════════════════════════════════════
+
+const BACKUP_TABLE = 'pharmacy_backups';
+let pendingRestoreId = null;
+
+// ── عند الفتح: احفظ نسخة إذا لم تُحفظ نسخة اليوم بعد ──
+async function scheduleBackupOnOpen() {
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const lastKey = localStorage.getItem('lastAutoBackupDate');
+  if (lastKey === todayKey) return; // نسخة اليوم محفوظة مسبقاً
+  // انتظر لحظة ثم احفظ (نعطي sbLoad وقت ينتهي أولاً)
+  setTimeout(async () => {
+    if (!sbConnected) return;
+    await doBackup('auto');
+    localStorage.setItem('lastAutoBackupDate', todayKey);
+  }, 2000);
+}
+
+// يشتغل كل دقيقة للتحقق من الساعة 23:00
+function startBackupScheduler() {
+  setInterval(checkAutoBackup, 60 * 1000);
+}
+
+async function checkAutoBackup() {
+  if (!sbConnected) return;
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  if (h !== 23 || m > 5) return; // بس بين 23:00–23:05
+
+  const todayKey = now.toISOString().slice(0, 10);
+  const lastKey = localStorage.getItem('lastAutoBackupDate');
+  if (lastKey === todayKey) return; // محفوظة اليوم
+
+  await doBackup('auto');
+  localStorage.setItem('lastAutoBackupDate', todayKey);
+}
+
+async function doBackup(type = 'manual') {
+  if (!sbConnected) { showToast('⚠️ غير متصل بـ Supabase'); return; }
+  const now = new Date();
+  const label = now.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+    + ' — ' + now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+
+  const payload = { data, shelves, oosManual, settings, theme };
+  const row = {
+    created_at: now.toISOString(),
+    label,
+    type,
+    payload
+  };
+
+  try {
+    // Insert new backup
+    const res = await fetch(SB_URL + '/rest/v1/' + BACKUP_TABLE, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(row)
+    });
+    if (!res.ok) throw new Error('insert failed');
+
+    // Prune: keep only last 7 backups
+    await pruneOldBackups();
+
+    updateBackupBadge(now.toISOString().slice(0, 10));
+    if (type === 'manual') showToast('✅ تم حفظ النسخة الاحتياطية');
+    else showToast('💾 تم الحفظ التلقائي الليلي');
+  } catch (e) {
+    showToast('⚠️ فشل حفظ النسخة الاحتياطية');
+  }
+}
+
+async function pruneOldBackups() {
+  try {
+    // Get all backups ordered by date
+    const res = await fetch(SB_URL + '/rest/v1/' + BACKUP_TABLE + '?select=id,created_at&order=created_at.desc', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (!res.ok) return;
+    const rows = await res.json();
+    // Delete any beyond the 7th
+    if (rows.length > 7) {
+      const toDelete = rows.slice(7).map(r => r.id);
+      for (const id of toDelete) {
+        await fetch(SB_URL + '/rest/v1/' + BACKUP_TABLE + '?id=eq.' + id, {
+          method: 'DELETE',
+          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+        });
+      }
+    }
+  } catch (e) { /* silent */ }
+}
+
+async function loadBackupList() {
+  const container = document.getElementById('backupListContainer');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">جاري التحميل...</div>';
+
+  if (!sbConnected) {
+    container.innerHTML = '<div style="text-align:center;color:var(--danger);padding:20px;font-size:12px">⚠️ غير متصل بـ Supabase</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/' + BACKUP_TABLE + '?select=id,created_at,label,type&order=created_at.desc&limit=7', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (!res.ok) throw new Error();
+    const rows = await res.json();
+
+    if (!rows.length) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;font-size:12px">لا توجد نسخ احتياطية بعد</div>';
+      return;
+    }
+
+    container.innerHTML = rows.map((r, i) => {
+      const date = new Date(r.created_at);
+      const dateStr = date.toLocaleDateString('ar-SA', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+      const timeStr = date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+      const typeIcon = r.type === 'auto' ? '🤖' : '👤';
+      const typeLabel = r.type === 'auto' ? 'تلقائي' : 'يدوي';
+      const isLatest = i === 0;
+      return `
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border);border-radius:7px;margin-bottom:6px;background:var(--surface2)">
+          <div style="font-size:18px">${typeIcon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${dateStr} — ${timeStr}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:1px">${typeLabel}${isLatest ? ' · <span style="color:var(--success)">الأحدث</span>' : ''}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="promptRestore('${r.id}','${dateStr} ${timeStr}')">🔄 استعادة</button>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = '<div style="text-align:center;color:var(--danger);padding:20px;font-size:12px">⚠️ تعذّر تحميل القائمة</div>';
+  }
+}
+
+function openBackupModal() {
+  document.getElementById('backupModal').classList.add('open');
+  loadBackupList();
+}
+
+async function triggerManualBackup() {
+  await doBackup('manual');
+  loadBackupList();
+}
+
+function promptRestore(id, label) {
+  pendingRestoreId = id;
+  document.getElementById('restoreConfirmInfo').innerHTML =
+    'ستُستعاد النسخة المحفوظة بتاريخ: <strong>' + label + '</strong>';
+  document.getElementById('restoreConfirmModal').classList.add('open');
+}
+
+async function confirmRestore() {
+  if (!pendingRestoreId) return;
+  closeModal('restoreConfirmModal');
+  showToast('⏳ جاري الاستعادة...');
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/' + BACKUP_TABLE + '?id=eq.' + pendingRestoreId + '&select=payload', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (!res.ok) throw new Error();
+    const rows = await res.json();
+    if (!rows.length) throw new Error();
+    const p = rows[0].payload;
+
+    // Restore state
+    data      = p.data      || {};
+    shelves   = p.shelves   || [];
+    oosManual = p.oosManual || [];
+    settings  = p.settings  || settings;
+    theme     = p.theme     || theme;
+
+    applyTheme();
+    refreshAll();
+
+    // Push restored state back to Supabase as current
+    await sbSaveNow();
+    showToast('✅ تمت الاستعادة بنجاح');
+    closeModal('backupModal');
+  } catch (e) {
+    showToast('⚠️ فشلت الاستعادة');
+  }
+  pendingRestoreId = null;
+}
+
+function updateBackupBadge(todayStr) {
+  const el = document.getElementById('backupStatusText');
+  if (el) {
+    el.textContent = 'آخر نسخة: اليوم';
+  }
+}
+
+async function initBackupBadge() {
+  // Show date of last backup in badge
+  if (!sbConnected) return;
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/' + BACKUP_TABLE + '?select=created_at&order=created_at.desc&limit=1', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!rows.length) return;
+    const d = new Date(rows[0].created_at);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    const el = document.getElementById('backupStatusText');
+    if (el) el.textContent = isToday ? '✅ نسخة اليوم' : '💾 ' + d.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
+  } catch (e) { /* silent */ }
+}
+
 initData();
 refreshAll(); // renders empty/default state while waiting for Supabase
 showToast('⏳ جاري تحميل البيانات من Supabase...');
 sbLoad().then(()=>{
   refreshAll();
   showToast('✅ تم تحميل البيانات');
+  startBackupScheduler();
+  initBackupBadge();
 }).catch(()=>{
   showToast('🔴 تعذّر الاتصال — تحقق من إعدادات Supabase');
 });
