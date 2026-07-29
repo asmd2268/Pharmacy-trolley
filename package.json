@@ -1,0 +1,7 @@
+{
+  "name": "pharmacy-trolley",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}
