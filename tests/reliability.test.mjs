@@ -18,6 +18,8 @@ function element() {
 
 function makeContext() {
   const storage = new Map();
+  const location = { origin: 'https://preview.example', pathname: '/', search: '', hash: '' };
+  const history = { replaced: null, replaceState(_state,_title,url) { this.replaced=url; } };
   const document = {
     body: element(),
     getElementById() { return element(); },
@@ -29,9 +31,9 @@ function makeContext() {
     console, document, crypto: { randomUUID: () => 'test-client' },
     localStorage: { getItem: k => storage.get(k) ?? null, setItem: (k,v) => storage.set(k,v), removeItem: k => storage.delete(k) },
     sessionStorage: { getItem: k => storage.get(k) ?? null, setItem: (k,v) => storage.set(k,v), removeItem: k => storage.delete(k) },
-    window: { addEventListener() {}, print() {} }, navigator: {}, structuredClone,
+    window: { addEventListener() {}, print() {} }, navigator: {}, structuredClone, location, history,
     setTimeout: () => 1, clearTimeout() {}, setInterval: () => 1,
-    Blob, URL, AbortController, fetch: async () => { throw new Error('Unexpected network access in test'); },
+    Blob, URL, URLSearchParams, AbortController, fetch: async () => { throw new Error('Unexpected network access in test'); },
     confirm: () => false,
   });
   vm.runInContext(script, context, { filename: 'index.html' });
@@ -111,4 +113,17 @@ test('content security policy blocks objects and base URL injection', () => {
   assert.match(html, /Content-Security-Policy/);
   assert.match(html, /object-src 'none'/);
   assert.match(html, /base-uri 'none'/);
+});
+
+test('invite and recovery callbacks require both session tokens', () => {
+  const context = makeContext();
+  assert.equal(vm.runInContext("location.hash='#type=invite&access_token=a';handleAuthCallback()", context), false);
+  assert.equal(vm.runInContext("location.hash='#type=invite&access_token=a&refresh_token=r&expires_in=3600';handleAuthCallback()", context), true);
+  assert.equal(vm.runInContext("sbPasswordSetupSession.type", context), 'invite');
+  assert.equal(vm.runInContext("history.replaced", context), '/');
+});
+
+test('password reset returns to the current deployed page', () => {
+  const context = makeContext();
+  assert.equal(vm.runInContext('passwordResetRedirectUrl()', context), 'https://preview.example/');
 });

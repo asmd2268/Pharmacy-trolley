@@ -1143,7 +1143,22 @@ code{font-family:var(--mono)}
   <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="authEmail" autocomplete="username" dir="ltr"></div>
   <div class="form-group"><label>كلمة المرور</label><input type="password" id="authPassword" autocomplete="current-password" dir="ltr" onkeydown="if(event.key==='Enter')sbSignIn()"></div>
   <div id="authLoginError" style="display:none;color:var(--danger);font-size:12px;margin-bottom:8px"></div>
-  <div class="modal-actions"><button class="btn btn-primary" id="authLoginBtn" onclick="sbSignIn()">دخول</button></div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" id="authRecoveryBtn" onclick="sbRequestPasswordReset()">نسيت كلمة المرور؟</button>
+    <button class="btn btn-primary" id="authLoginBtn" onclick="sbSignIn()">دخول</button>
+  </div>
+</div>
+</div>
+
+<!-- PASSWORD SETUP / RECOVERY -->
+<div id="passwordSetupModal" class="modal-overlay">
+<div class="modal" style="max-width:420px">
+  <h2 id="passwordSetupTitle">🔑 إنشاء كلمة مرور</h2>
+  <div class="drug-info">استخدم 12 حرفًا على الأقل. لا تُخزّن كلمة المرور داخل التطبيق.</div>
+  <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="newAuthPassword" minlength="12" autocomplete="new-password" dir="ltr"></div>
+  <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="confirmAuthPassword" minlength="12" autocomplete="new-password" dir="ltr" onkeydown="if(event.key==='Enter')sbCompletePasswordSetup()"></div>
+  <div id="passwordSetupError" style="display:none;color:var(--danger);font-size:12px;margin-bottom:8px"></div>
+  <div class="modal-actions"><button class="btn btn-primary" id="passwordSetupBtn" onclick="sbCompletePasswordSetup()">حفظ كلمة المرور والدخول</button></div>
 </div>
 </div>
 
@@ -2922,6 +2937,7 @@ const SB_SESSION_KEY='pharmacy_auth_session_v1';
 let sbSession=null;
 let sbUser=null;
 let sbUserRole='';
+let sbPasswordSetupSession=null;
 
 function storeSbSession(session){
   sbSession=session;
@@ -2975,6 +2991,63 @@ function showAuthLogin(message=''){
   const err=document.getElementById('authLoginError');
   if(err){err.textContent=message;err.style.display=message?'':'none';}
   if(modal) modal.classList.add('open');
+}
+
+function passwordResetRedirectUrl(){ return location.origin+location.pathname; }
+
+function handleAuthCallback(){
+  const hash=new URLSearchParams(String(location.hash||'').replace(/^#/,''));
+  const type=hash.get('type');
+  const accessToken=hash.get('access_token'),refreshToken=hash.get('refresh_token');
+  if(!['invite','recovery'].includes(type)||!accessToken||!refreshToken) return false;
+  sbPasswordSetupSession={
+    accessToken,refreshToken,type,
+    expiresAt:Date.now()+(Number(hash.get('expires_in')||3600)*1000)
+  };
+  history.replaceState(null,'',location.pathname+location.search);
+  document.getElementById('passwordSetupTitle').textContent=type==='invite'?'🔑 إنشاء كلمة مرور الحساب':'🔑 تعيين كلمة مرور جديدة';
+  document.getElementById('passwordSetupModal').classList.add('open');
+  return true;
+}
+
+async function sbRequestPasswordReset(){
+  const email=document.getElementById('authEmail').value.trim();
+  const btn=document.getElementById('authRecoveryBtn');
+  if(!email) return showAuthLogin('أدخل البريد الإلكتروني أولًا');
+  btn.disabled=true;
+  try{
+    const redirectTo=passwordResetRedirectUrl();
+    const res=await fetch(`${SB_URL}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,{
+      method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({email})
+    });
+    if(!res.ok){ const detail=await res.json().catch(()=>({})); throw new Error(detail.msg||'تعذّر إرسال رابط إعادة التعيين'); }
+    showAuthLogin('✅ إذا كان الحساب موجودًا فسيصل رابط آمن إلى البريد.');
+  }catch(e){ showAuthLogin(e.message); }
+  finally{btn.disabled=false;}
+}
+
+async function sbCompletePasswordSetup(){
+  const password=document.getElementById('newAuthPassword').value;
+  const confirmPassword=document.getElementById('confirmAuthPassword').value;
+  const error=document.getElementById('passwordSetupError');
+  const btn=document.getElementById('passwordSetupBtn');
+  const fail=message=>{error.textContent=message;error.style.display='';};
+  if(!sbPasswordSetupSession) return fail('انتهت جلسة الرابط. اطلب رابطًا جديدًا.');
+  if(password.length<12) return fail('استخدم 12 حرفًا على الأقل');
+  if(password!==confirmPassword) return fail('كلمتا المرور غير متطابقتين');
+  btn.disabled=true; error.style.display='none';
+  try{
+    const res=await fetch(`${SB_URL}/auth/v1/user`,{
+      method:'PUT',headers:{apikey:SB_KEY,Authorization:'Bearer '+sbPasswordSetupSession.accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({password})
+    });
+    const user=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(user.msg||'تعذّر حفظ كلمة المرور');
+    storeSbSession({...sbPasswordSetupSession,user}); sbUser=user; sbPasswordSetupSession=null;
+    document.getElementById('newAuthPassword').value='';document.getElementById('confirmAuthPassword').value='';
+    await loadSbUserRole(); closeModal('passwordSetupModal'); await startApplication();
+  }catch(e){fail(e.message);}
+  finally{btn.disabled=false;}
 }
 
 async function sbSignIn(){
@@ -4031,6 +4104,7 @@ async function startApplication(){
 async function bootApplication(){
   initData(); refreshAll();
   try{
+    if(handleAuthCallback()) return;
     if(!await sbEnsureSession()) return showAuthLogin();
     sbUser=sbSession.user;
     await loadSbUserRole();
