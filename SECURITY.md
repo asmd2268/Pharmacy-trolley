@@ -4,12 +4,18 @@ The application now requires Supabase Auth and reads the caller's role from `pub
 
 Safe rollout order:
 
-1. Keep the verified pre-fix export outside Supabase.
-2. Create the administrator in Supabase Auth.
-3. Review and run `supabase/security_migration.sql` in a maintenance window.
+1. Keep a same-day verified export outside Supabase.
+2. Create the administrator in Supabase Auth and have the user accept the invitation.
+3. Run `supabase/security_migration.sql`. This preparation phase deliberately keeps the legacy UI working.
 4. Add the administrator to `public.app_users` using the commented bootstrap statement.
-5. Test reader, writer, and administrator accounts against staging.
-6. Deploy the updated `index.html` only after the authenticated staging checks pass.
+5. Test reader, writer, and administrator behavior against the preview deployment, including a confirmed write and restore safety check.
+6. Deploy the updated `index.html` while the legacy anon access still exists.
+7. Confirm the authenticated production UI can read and perform one controlled write.
+8. Run `supabase/security_cutover.sql` to revoke anonymous access.
+9. Confirm anonymous REST access is denied and authenticated access still works.
+
+If production must be reverted after step 8, redeploy the legacy HTML and run
+`supabase/security_rollback.sql` to restore only the minimum legacy grants.
 
 At the hosting layer, send `Content-Security-Policy: frame-ancestors 'none'` and
 `X-Content-Type-Options: nosniff` as HTTP response headers. `frame-ancestors`

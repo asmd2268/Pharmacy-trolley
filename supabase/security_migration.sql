@@ -1,5 +1,6 @@
--- Review and run in a controlled maintenance window before deploying the new UI.
--- This migration replaces public anonymous writes with authenticated, role-based access.
+-- Phase 1 (safe preparation): add authenticated role-based access and history.
+-- This file intentionally keeps the existing anon grants/policies working so the
+-- current production UI remains available during account and preview testing.
 
 begin;
 
@@ -38,8 +39,8 @@ grant execute on function public.pharmacy_has_role(text[]) to authenticated;
 alter table public.pharmacy_state enable row level security;
 alter table public.pharmacy_backups enable row level security;
 
-revoke all on public.pharmacy_state from public, anon, authenticated;
-revoke all on public.pharmacy_backups from public, anon, authenticated;
+revoke all on public.pharmacy_state from authenticated;
+revoke all on public.pharmacy_backups from authenticated;
 grant select on public.pharmacy_state to authenticated;
 grant insert, update on public.pharmacy_state to authenticated;
 grant select, insert on public.pharmacy_backups to authenticated;
@@ -120,6 +121,8 @@ for each row execute function public.archive_pharmacy_state();
 
 commit;
 
--- After creating the first Supabase Auth user, bootstrap exactly one administrator:
+-- After creating the first Supabase Auth user, bootstrap exactly one administrator
+-- before preview testing (running this separately does not disable the old UI):
 -- insert into public.app_users(user_id, role)
--- select id, 'admin' from auth.users where email = 'REPLACE_WITH_ADMIN_EMAIL';
+-- select id, 'admin' from auth.users where email = 'REPLACE_WITH_ADMIN_EMAIL'
+-- on conflict (user_id) do update set role = excluded.role, active = true;
