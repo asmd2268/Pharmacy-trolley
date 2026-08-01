@@ -120,7 +120,11 @@ test('invite and recovery callbacks require both session tokens', () => {
   assert.equal(vm.runInContext("location.hash='#type=invite&access_token=a';handleAuthCallback()", context), false);
   assert.equal(vm.runInContext("location.hash='#type=invite&access_token=a&refresh_token=r&expires_in=3600';handleAuthCallback()", context), true);
   assert.equal(vm.runInContext("sbPasswordSetupSession.type", context), 'invite');
+  assert.equal(vm.runInContext("JSON.parse(sessionStorage.getItem(SB_PASSWORD_SETUP_KEY)).accessToken", context), 'a');
   assert.equal(vm.runInContext("history.replaced", context), '/');
+  vm.runInContext("sbPasswordSetupSession=null", context);
+  assert.equal(vm.runInContext("restorePasswordSetupSession()", context), true);
+  assert.equal(vm.runInContext("sbPasswordSetupSession.refreshToken", context), 'r');
 });
 
 test('password reset returns to the current deployed page', () => {
