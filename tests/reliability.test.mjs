@@ -87,9 +87,12 @@ test('confirmed save increments the revision exactly once', async () => {
   assert.equal(vm.runInContext('sbDirty', context), false);
 });
 
-test('shelf search explicitly considers drug names', () => {
-  assert.match(fullScript, /const shelfHasDrugMatch=shelf=>/);
-  assert.match(fullScript, /normalizeSearchText\(item\.name\)\.includes\(q\)/);
+test('shelf search finds drug names and drawer positions', () => {
+  const context = makeContext();
+  vm.runInContext(`data={'51A':{name:'WARFARIN TABLET 5 MG',expiries:['2027-02-28'],types:[],oos:false,shelf:true,notes:''}}`, context);
+  assert.equal(vm.runInContext("shelfHasSearchMatch({name:'الدرج الكبير',cols:5,rows:4,startNum:51},normalizeSearchText('warfarin'))", context), true);
+  assert.equal(vm.runInContext("shelfHasSearchMatch({name:'الدرج الكبير',cols:5,rows:4,startNum:51},normalizeSearchText('A51'))", context), true);
+  assert.equal(vm.runInContext("shelfHasSearchMatch({name:'الدرج الكبير',cols:5,rows:4,startNum:51},normalizeSearchText('metformin'))", context), false);
 });
 
 test('legacy client-side password gate is not executable', () => {
