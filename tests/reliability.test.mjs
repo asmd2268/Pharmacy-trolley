@@ -95,6 +95,11 @@ test('shelf search finds drug names and drawer positions', () => {
   assert.equal(vm.runInContext("shelfHasSearchMatch({name:'الدرج الكبير',cols:5,rows:4,startNum:51},normalizeSearchText('metformin'))", context), false);
 });
 
+test('move and assign dialogs support all shelf rows A-F', () => {
+  assert.match(html, /id="moveTargetSlot"[\s\S]*?<option value="F">F<\/option>/);
+  assert.match(html, /id="assignTargetSlot"[\s\S]*?<option value="F">F<\/option>/);
+});
+
 test('legacy client-side password gate is not executable', () => {
   assert.doesNotMatch(html, /id="writeAuthModal"|id="securitySettingsModal"/);
   assert.doesNotMatch(html, /"writePassword":"asmd"/);
