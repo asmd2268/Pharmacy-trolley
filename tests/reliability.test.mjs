@@ -97,6 +97,7 @@ test('shelf search finds drug names and drawer positions', () => {
 
 test('legacy client-side password gate is not executable', () => {
   assert.doesNotMatch(html, /id="writeAuthModal"|id="securitySettingsModal"/);
+  assert.doesNotMatch(html, /"writePassword":"asmd"/);
   assert.doesNotMatch(fullScript, /function _writeAuthSubmit|function saveSecuritySettings/);
   assert.match(fullScript, /\['writer','admin'\]\.includes\(sbUserRole\)/);
   const context = makeContext();
