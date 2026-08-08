@@ -2751,7 +2751,7 @@ async function saveEditShelf(){
   const photoInput=document.getElementById('editShelfPhoto');
   const file=photoInput&&photoInput.files&&photoInput.files[0];
   const finish=()=>{ saveData();closeModal('editShelfModal');renderShelves();showToast('✅ تم تعديل درج العلب'); };
-  if(file){ try{ sh.photoPath=await uploadShelfPhoto(file,sh.id); sh.photo=null; finish(); }catch(e){showToast('⚠️ '+e.message);} }
+  if(file){ try{ const oldPath=sh.photoPath; sh.photoPath=await uploadShelfPhoto(file,sh.id); sh.photo=null; if(oldPath) await deleteShelfPhoto(oldPath); finish(); }catch(e){showToast('⚠️ '+e.message);} }
   else finish();
 }
 function openShelfPhotoPreview(id){
@@ -3107,6 +3107,7 @@ async function sbSignIn(){
 }
 
 async function sbSignOut(){
+  if(window._shelfPhotoRefreshTimer){ clearInterval(window._shelfPhotoRefreshTimer); window._shelfPhotoRefreshTimer=null; }
   const accessToken=sbSession&&sbSession.accessToken;
   if(accessToken){
     try{
