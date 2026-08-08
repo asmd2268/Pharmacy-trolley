@@ -2698,6 +2698,7 @@ function readShelfPhoto(file,callback){
   reader.readAsDataURL(file);
 }
 async function uploadShelfPhoto(file,shelfId){
+  if(!/^image\/(?:png|jpe?g|webp|gif)$/i.test(file?.type||'')||file.size>2*1024*1024) throw new Error('الصورة يجب أن تكون PNG/JPG/WebP/GIF وأقل من 2MB');
   if(!sbSession?.accessToken) throw new Error('يجب تسجيل الدخول لرفع الصورة');
   const ext=(file.type||'image/jpeg').split('/')[1].replace('jpeg','jpg');
   const path=`${sbUser.id}/${shelfId}-${Date.now()}.${ext}`;
@@ -2711,9 +2712,14 @@ async function shelfPhotoUrl(path){
   if(!res.ok)return '';
   const json=await res.json(); return json.signedURL?`${SB_URL}/storage/v1${json.signedURL}`:'';
 }
+async function deleteShelfPhoto(path){
+  if(!path||!sbSession?.accessToken)return;
+  await fetch(`${SB_URL}/storage/v1/object/shelf-images/${encodeURIComponent(path)}`,{method:'DELETE',headers:{apikey:SB_KEY,Authorization:`Bearer ${sbSession.accessToken}`}});
+}
 async function hydrateShelfPhotoUrls(){
   if(!sbSession?.accessToken)return;
   await Promise.all(shelves.map(async sh=>{ if(sh.photoPath){ const url=await shelfPhotoUrl(sh.photoPath); if(url)sh.photo=url; } }));
+  if(!window._shelfPhotoRefreshTimer) window._shelfPhotoRefreshTimer=setInterval(()=>hydrateShelfPhotoUrls().then(renderShelves).catch(()=>{}),50*60*1000);
 }
 
 function openEditShelfModal(id){
@@ -2732,7 +2738,7 @@ function openEditShelfModal(id){
 }
 function removeShelfPhoto(){
   const sh=shelves.find(s=>s.id===editingShelfId);
-  if(sh) sh.photo=null;
+  if(sh){ sh.photo=null; sh.photoPath=null; }
   document.getElementById('editShelfPhotoCurrent').innerHTML='<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
 }
 async function saveEditShelf(){
@@ -2753,9 +2759,11 @@ function openShelfPhotoPreview(id){
   document.getElementById('shelfPhotoPreviewImg').src=src;
   document.getElementById('shelfPhotoModal').classList.add('open');
 }
-function deleteShelf(){
+async function deleteShelf(){
   if(!confirm('حذف تعريف الرف؟ ستبقى سجلات الأدوية وتواريخها محفوظة في قاعدة البيانات.'))return;
+  const sh=shelves.find(s=>s.id===editingShelfId);
   shelves=shelves.filter(s=>s.id!==editingShelfId);
+  if(sh?.photoPath) await deleteShelfPhoto(sh.photoPath);
   saveData();closeModal('editShelfModal');renderShelves();showToast('🗑️ تم الحذف');
 }
 
@@ -2949,7 +2957,7 @@ function startAuthTimeout(){
   ['pointerdown','keydown','input','click'].forEach(type=>document.addEventListener(type,()=>{lastActivityAt=Date.now();},{passive:true}));
   setInterval(()=>{
     const minutes=Math.max(5,Number(settings.authMinutes)||15);
-    if(sbUser&&Date.now()-lastActivityAt>minutes*60000) signOut();
+    if(sbUser&&Date.now()-lastActivityAt>minutes*60000) sbSignOut();
   },60000);
 }
 let sbPasswordSetupSession=null;
@@ -3126,7 +3134,7 @@ function validateStatePayload(payload){
     (item.oos===undefined||typeof item.oos==='boolean')&&(item.shelf===undefined||typeof item.shelf==='boolean')
   );
   const shelvesOk=(payload.shelves||[]).every(s=>s&&/^[a-z0-9_-]{3,64}$/i.test(s.id)&&
-    typeof s.name==='string'&&s.name.length>0&&s.name.length<=200&&(!s.photo||!!safeImageSrc(s.photo))&&
+    typeof s.name==='string'&&s.name.length>0&&s.name.length<=200&&(!s.photo||!!safeImageSrc(s.photo))&&(!s.photoPath||/^[a-f0-9-]{36}\/[a-z0-9_-]{3,64}-\d+\.(?:jpg|png|webp|gif)$/i.test(s.photoPath))&&
     Number.isInteger(Number(s.cols))&&Number(s.cols)>0&&Number(s.cols)<=50&&
     Number.isInteger(Number(s.rows))&&Number(s.rows)>0&&Number(s.rows)<=26);
   const oosOk=(payload.oosManual||[]).every(item=>item&&/^[a-z0-9_-]{3,64}$/i.test(item.id)&&
