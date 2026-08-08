@@ -1410,6 +1410,7 @@ function normalizeSearchText(value){
 }
 function safeImageSrc(value){
   const v=String(value||'');
+  if(/^https:\/\/ivavwzqdqausirioqwts\.supabase\.co\/storage\/v1\/object\/sign\/shelf-images\//.test(v)) return v;
   return /^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(v)?v:'';
 }
 function isValidDataKey(value){ return /^(?:[1-9]\d{0,2}[A-F]|x_[a-z0-9_-]{3,64})$/i.test(String(value||'')); }
@@ -2671,7 +2672,7 @@ function getNextShelfStartNum(){
   });
   return maxEnd+1;
 }
-function saveNewShelf(){
+async function saveNewShelf(){
   const name=cleanUserText(document.getElementById('newShelfName').value,200);
   if(!name)return showToast('⚠️ أدخل اسم الرف');
   const cols=Math.min(50,Math.max(1,parseInt(document.getElementById('newShelfCols').value)||5));
@@ -2679,11 +2680,11 @@ function saveNewShelf(){
   const startNum=getNextShelfStartNum();
   const photoInput=document.getElementById('newShelfPhoto');
   const file=photoInput&&photoInput.files&&photoInput.files[0];
-  const finish=(photo)=>{
-    shelves.push({id:uid(),name,cols,rows,startNum,cells:{},photo:photo||null});
+  const finish=async(photoPath)=>{
+    shelves.push({id:uid(),name,cols,rows,startNum,cells:{},photo:null,photoPath:photoPath||null});
     saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`);
   };
-  if(file) readShelfPhoto(file,finish);
+  if(file){ try{ const id=uid(); const path=await uploadShelfPhoto(file,id); shelves.push({id,name,cols,rows,startNum,cells:{},photo:null,photoPath:path}); saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`); }catch(e){showToast('⚠️ '+e.message);} }
   else finish(null);
 }
 
@@ -2695,6 +2696,24 @@ function readShelfPhoto(file,callback){
   reader.onload=()=>{ const src=safeImageSrc(reader.result); if(src) callback(src); else showToast('⚠️ تعذّر قراءة الصورة بأمان'); };
   reader.onerror=()=>showToast('⚠️ تعذّر قراءة الصورة');
   reader.readAsDataURL(file);
+}
+async function uploadShelfPhoto(file,shelfId){
+  if(!sbSession?.accessToken) throw new Error('يجب تسجيل الدخول لرفع الصورة');
+  const ext=(file.type||'image/jpeg').split('/')[1].replace('jpeg','jpg');
+  const path=`${sbUser.id}/${shelfId}-${Date.now()}.${ext}`;
+  const res=await fetch(`${SB_URL}/storage/v1/object/shelf-images/${encodeURIComponent(path)}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${sbSession.accessToken}`,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},body:file});
+  if(!res.ok) throw new Error('تعذر رفع صورة الرف');
+  return path;
+}
+async function shelfPhotoUrl(path){
+  if(!path||!sbSession?.accessToken)return '';
+  const res=await fetch(`${SB_URL}/storage/v1/object/sign/shelf-images/${encodeURIComponent(path)}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${sbSession.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:3600})});
+  if(!res.ok)return '';
+  const json=await res.json(); return json.signedURL?`${SB_URL}/storage/v1${json.signedURL}`:'';
+}
+async function hydrateShelfPhotoUrls(){
+  if(!sbSession?.accessToken)return;
+  await Promise.all(shelves.map(async sh=>{ if(sh.photoPath){ const url=await shelfPhotoUrl(sh.photoPath); if(url)sh.photo=url; } }));
 }
 
 function openEditShelfModal(id){
@@ -2716,7 +2735,7 @@ function removeShelfPhoto(){
   if(sh) sh.photo=null;
   document.getElementById('editShelfPhotoCurrent').innerHTML='<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
 }
-function saveEditShelf(){
+async function saveEditShelf(){
   const sh=shelves.find(s=>s.id===editingShelfId);
   if(!sh)return;
   sh.name=cleanUserText(document.getElementById('editShelfName').value,200)||sh.name;
@@ -2726,7 +2745,7 @@ function saveEditShelf(){
   const photoInput=document.getElementById('editShelfPhoto');
   const file=photoInput&&photoInput.files&&photoInput.files[0];
   const finish=()=>{ saveData();closeModal('editShelfModal');renderShelves();showToast('✅ تم تعديل درج العلب'); };
-  if(file) readShelfPhoto(file,photo=>{sh.photo=photo;finish();});
+  if(file){ try{ sh.photoPath=await uploadShelfPhoto(file,sh.id); sh.photo=null; finish(); }catch(e){showToast('⚠️ '+e.message);} }
   else finish();
 }
 function openShelfPhotoPreview(id){
@@ -3267,6 +3286,7 @@ async function sbLoad({ignorePending=false}={}){
     document.getElementById('warnDays').value = settings.warnDays;
     document.getElementById('critDays').value  = settings.critDays;
     normalizeShelves();
+    await hydrateShelfPhotoUrls();
     migrateLegacyShelfCells();
     sbConnected=true;
     sbDirty=false;
