@@ -17,11 +17,18 @@
     return next;
   }
   function remove(records, key) { const next = {...records}; delete next[key]; return next; }
+  function update(records, key, changes) {
+    const next = {...records}, current = next[key]; if (!current) return next;
+    next[key] = {...current, ...(changes || {})};
+    if (Array.isArray(next[key].expiries)) next[key].expiries = next[key].expiries.slice();
+    if (Array.isArray(next[key].types)) next[key].types = next[key].types.slice();
+    return next;
+  }
   function unassign(records, fromKey, toKey) {
     const next = {...records}, source = next[fromKey]; if (!source) return next;
     next[toKey] = {...source, drawerNum: null, drawerSlot: null, extra: true};
     delete next[fromKey];
     return next;
   }
-  global.PharmacyMedicationOperations = Object.freeze({createRecord, fromRaw, assign, remove, unassign});
+  global.PharmacyMedicationOperations = Object.freeze({createRecord, fromRaw, update, assign, remove, unassign});
 }(window));

@@ -2307,13 +2307,8 @@ function saveExpiries(){
   if(document.getElementById('typeHazard').checked)    types.push('hazard');
   if(document.getElementById('typeLasa').checked)      types.push('lasa');
   if(document.getElementById('typeHighAlert').checked) types.push('high-alert');
-  data[editingKey].expiries=normalizeExpiries(Array.from(inputs).map(i=>i.value));
-  data[editingKey].types   =types;
-  data[editingKey].oos     =document.getElementById('flagOOS').checked;
-  data[editingKey].shelf   =document.getElementById('flagShelf').checked;
-  data[editingKey].notes   =cleanUserText(document.getElementById('drugNotes').value,1000);
-  data[editingKey].name    =cleanUserText(document.getElementById('modalDrugName').value,500)||data[editingKey].name;
-  data[editingKey].dupType =document.getElementById('dupTypeSelect').value||undefined;
+  const changes={expiries:normalizeExpiries(Array.from(inputs).map(i=>i.value)),types,oos:document.getElementById('flagOOS').checked,shelf:document.getElementById('flagShelf').checked,notes:cleanUserText(document.getElementById('drugNotes').value,1000),name:cleanUserText(document.getElementById('modalDrugName').value,500)||data[editingKey].name,dupType:document.getElementById('dupTypeSelect').value||undefined};
+  if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.update(data,editingKey,changes); else Object.assign(data[editingKey],changes);
   saveData(); closeModal('expModal'); refreshAll(); showToast('✅ تم الحفظ');
 }
 
