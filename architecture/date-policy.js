@@ -9,4 +9,5 @@
   function format(value) { if (!value) return ''; const parts = String(value).split('-'); return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : ''; }
   function daysLabel(days) { if (days < 0) return 'منتهي منذ ' + Math.abs(days) + ' يوم'; if (days === 0) return 'اليوم!'; return days + ' يوم'; }
   global.PharmacyDatePolicy = Object.freeze({ isIsoDate, format, daysLabel });
+  if (typeof global.isValidIsoDate !== 'function') global.isValidIsoDate = isIsoDate;
 }(window));

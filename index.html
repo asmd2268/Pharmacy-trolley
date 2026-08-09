@@ -933,12 +933,6 @@ function safeImageSrc(value){
   return /^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(v)?v:'';
 }
 function isValidDataKey(value){ return /^(?:[1-9]\d{0,2}[A-F]|x_[a-z0-9_-]{3,64})$/i.test(String(value||'')); }
-function isValidIsoDate(value){
-  if(window.PharmacyDatePolicy) return PharmacyDatePolicy.isIsoDate(value);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value||''))) return false;
-  const [y,m,d]=value.split('-').map(Number),date=new Date(Date.UTC(y,m-1,d));
-  return date.getUTCFullYear()===y&&date.getUTCMonth()===m-1&&date.getUTCDate()===d;
-}
 function normalizeExpiries(values){ return [...new Set((values||[]).filter(isValidIsoDate))].sort(); }
 function sanitizeSettings(value){
   const clean=Object.assign({warnDays:30,critDays:7,authMinutes:15},structuredClone(value||{}));
