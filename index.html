@@ -2266,6 +2266,7 @@ function openExpModal(key){
   document.getElementById('expModal').classList.add('open');
 }
 function deleteShelfDrugEntry(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   if(!editingKey) return;
   if(!confirm('حذف هذا الدواء من الخانة؟')) return;
   if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.remove(data,editingKey); else delete data[editingKey];
@@ -2273,6 +2274,7 @@ function deleteShelfDrugEntry(){
 }
 // unassign: move drawer slot drug to x_ key so it stays in DB without a location
 function unassignDrugSlot(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   if(!editingKey) return;
   if(!confirm('سيُبقى الدواء في قاعدة البيانات لكن بدون موقع محدد. تأكيد؟')) return;
   const newKey='x_'+uid();
@@ -2314,6 +2316,7 @@ function addExpRow(){
   document.getElementById('expListEdit').appendChild(row);
 }
 function saveExpiries(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const inputs=document.querySelectorAll('#expListEdit input[type=date]');
   const types=[];
   if(document.getElementById('typeHazard').checked)    types.push('hazard');
@@ -2699,6 +2702,7 @@ function getNextShelfStartNum(){
   return maxEnd+1;
 }
 async function saveNewShelf(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const name=cleanUserText(document.getElementById('newShelfName').value,200);
   if(!name)return showToast('⚠️ أدخل اسم الرف');
   const cols=Math.min(50,Math.max(1,parseInt(document.getElementById('newShelfCols').value)||5));
@@ -2763,6 +2767,7 @@ function removeShelfPhoto(){
   document.getElementById('editShelfPhotoCurrent').innerHTML='<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
 }
 async function saveEditShelf(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const sh=shelves.find(s=>s.id===editingShelfId);
   if(!sh)return;
   const changes={name:cleanUserText(document.getElementById('editShelfName').value,200)||sh.name,cols:Math.min(50,Math.max(1,parseInt(document.getElementById('editShelfCols').value)||sh.cols)),rows:Math.min(26,Math.max(1,parseInt(document.getElementById('editShelfRows').value)||sh.rows)),startNum:Math.min(999,Math.max(1,parseInt(document.getElementById('editShelfStartNum').value)||sh.startNum||1))};
@@ -2781,6 +2786,7 @@ function openShelfPhotoPreview(id){
   document.getElementById('shelfPhotoModal').classList.add('open');
 }
 async function deleteShelf(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   if(!confirm('حذف تعريف الرف؟ ستبقى سجلات الأدوية وتواريخها محفوظة في قاعدة البيانات.'))return;
   const sh=shelves.find(s=>s.id===editingShelfId);
   shelves=window.PharmacyShelfOperations?PharmacyShelfOperations.create().remove(shelves,editingShelfId):shelves.filter(s=>s.id!==editingShelfId);
@@ -2841,6 +2847,7 @@ function saveCell(){
   sbSaveNow().then(()=>showToast('✅ تم الحفظ المؤكد في Supabase')).catch(()=>showToast('⚠️ لم يتأكد الحفظ — احتفظنا بنسخة محلية للاسترداد'));
 }
 function clearCell(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const sh=shelves.find(s=>s.id===editingShelfId); if(sh&&sh.cells) delete sh.cells[editingCellKey];
   saveData();closeModal('cellModal');renderShelves();showToast('🗑️ تم مسح الخلية');
 }

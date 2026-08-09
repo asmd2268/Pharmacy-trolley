@@ -21,6 +21,13 @@ test('password setup enforces strength requirements', () => {
   assert.ok(appHtml.includes("/[^A-Za-z0-9]/.test(p)"));
 });
 
+test('destructive UI handlers enforce writer authorization', () => {
+  for (const name of ['deleteShelfDrugEntry','unassignDrugSlot','saveExpiries','saveNewShelf','saveEditShelf','deleteShelf','clearCell']) {
+    const block = appHtml.slice(appHtml.indexOf(`function ${name}`), appHtml.indexOf(`function ${name}`) + 500);
+    assert.match(block, /isWriteAuthFresh\(\)/, name);
+  }
+});
+
 test('hosting security headers are enforced', () => {
   assert.match(vercelConfig, /frame-ancestors 'none'/);
   assert.match(vercelConfig, /X-Content-Type-Options/);
