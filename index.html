@@ -1224,6 +1224,7 @@ code{font-family:var(--mono)}
 <script src="./architecture/state-repository.js"></script>
 <script src="./architecture/supabase-rest-client.js"></script>
 <script src="./architecture/auth-session.js"></script>
+<script src="./architecture/save-coordinator.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -2940,6 +2941,7 @@ let sbConnected  = false;
 let sbHydrating = false;
 let sbSaveRequested = false;
 let sbSaveLoopPromise = null;
+let sbSaveCoordinator = null;
 let sbStateRevision = 0;
 let sbStateHasRevision = false;
 let sbDirty = false;
@@ -3338,6 +3340,15 @@ async function runSaveLoop(){
 }
 
 function sbSaveNow(){
+  if(window.PharmacySaveCoordinator){
+    if(!sbSaveCoordinator) sbSaveCoordinator=PharmacySaveCoordinator.create({
+      isHydrating:()=>sbHydrating,
+      isAllowed:()=>['writer','admin'].includes(sbUserRole),
+      isBlocked:()=>!!sbConflict,
+      saveSnapshot:saveOneSnapshot
+    });
+    return sbSaveCoordinator.request();
+  }
   if(sbHydrating) return Promise.resolve(false);
   if(!['writer','admin'].includes(sbUserRole)) return Promise.reject(new Error('الحساب للقراءة فقط'));
   sbSaveRequested=true;
