@@ -22,7 +22,7 @@ test('password setup enforces strength requirements', () => {
 });
 
 test('destructive UI handlers enforce writer authorization', () => {
-  for (const name of ['deleteShelfDrugEntry','unassignDrugSlot','saveExpiries','saveNewShelf','saveEditShelf','deleteShelf','clearCell']) {
+  for (const name of ['deleteShelfDrugEntry','unassignDrugSlot','saveExpiries','saveNewDrug','saveBulkDrugs','confirmMoveDrawer','confirmAssignDrawer','saveNewShelf','saveEditShelf','deleteShelf','removeShelfPhoto','removeManualOOS','clearCell']) {
     const block = appHtml.slice(appHtml.indexOf(`function ${name}`), appHtml.indexOf(`function ${name}`) + 500);
     assert.match(block, /isWriteAuthFresh\(\)/, name);
   }

@@ -1824,6 +1824,7 @@ function checkNewDrugNameDup(nameVal){
   } else { dupWarn.style.display='none'; }
 }
 function saveNewDrug(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const nameVal=document.getElementById('newDrugName').value.trim();
   if(!nameVal) return showToast('⚠️ أدخل اسم الدواء');
   // dup check
@@ -1905,6 +1906,7 @@ function parseBulkDrugs(){
   preview._parsed=parsed;
 }
 function saveBulkDrugs(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const preview=document.getElementById('bulkPreviewArea');
   const parsed=preview._parsed;
   if(!parsed||!parsed.length) return showToast('⚠️ اضغط "معاينة" أولاً');
@@ -1954,6 +1956,7 @@ function checkMoveTarget(){
   } else { warn.style.display='none'; }
 }
 function confirmMoveDrawer(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const dr=document.getElementById('moveTargetDrawer').value.trim();
   const sl=document.getElementById('moveTargetSlot').value;
   if(!dr) return showToast('⚠️ أدخل رقم الدرج');
@@ -2020,6 +2023,7 @@ function checkAssignTarget(){
   } else { warn.style.display='none'; }
 }
 function confirmAssignDrawer(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const dr=document.getElementById('assignTargetDrawer').value.trim();
   const sl=document.getElementById('assignTargetSlot').value;
   if(!dr) return showToast('⚠️ أدخل رقم الدرج');
@@ -2465,7 +2469,7 @@ function saveManualOOS(){
   oosManual.push({id:uid(),name,note});
   saveData();closeModal('addOOSModal');renderOOS();updateStats();showToast('✅ تمت الإضافة');
 }
-function removeManualOOS(id){oosManual=oosManual.filter(m=>m.id!==id);saveData();renderOOS();updateStats();}
+function removeManualOOS(id){if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');oosManual=oosManual.filter(m=>m.id!==id);saveData();renderOOS();updateStats();}
 
 // ══ SHELF ══
 function getNewShelfSize(){
@@ -2762,6 +2766,7 @@ function openEditShelfModal(id){
   document.getElementById('editShelfModal').classList.add('open');
 }
 function removeShelfPhoto(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const sh=shelves.find(s=>s.id===editingShelfId);
   if(sh){ sh.photo=null; sh.photoPath=null; }
   document.getElementById('editShelfPhotoCurrent').innerHTML='<span style="font-size:11px;color:var(--text3)">لا توجد صورة</span>';
