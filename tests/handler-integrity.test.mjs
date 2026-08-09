@@ -22,3 +22,12 @@ test('architecture modules load before the main application script', () => {
   const required = ['./architecture/date-policy.js','./architecture/text-helpers.js','./architecture/search-helpers.js','./architecture/validation-policy.js'];
   for (const src of required) assert.ok(html.indexOf(src) < main, `${src} must load before the application`);
 });
+
+test('main application does not define duplicate named functions', () => {
+  const counts = new Map();
+  for (const match of html.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)) {
+    counts.set(match[1], (counts.get(match[1]) || 0) + 1);
+  }
+  const duplicates = [...counts].filter(([, count]) => count > 1).map(([name]) => name);
+  assert.deepEqual(duplicates, []);
+});
