@@ -750,6 +750,7 @@
 <script src="./architecture/medication-policy.js"></script>
 <script src="./architecture/medication-operations.js"></script>
 <script src="./architecture/search-helpers.js"></script>
+<script src="./architecture/text-helpers.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -941,7 +942,6 @@ function isValidIsoDate(value){
   const [y,m,d]=value.split('-').map(Number),date=new Date(Date.UTC(y,m-1,d));
   return date.getUTCFullYear()===y&&date.getUTCMonth()===m-1&&date.getUTCDate()===d;
 }
-function cleanUserText(value,max=500){ return String(value??'').replace(/[\u0000-\u001F\u007F]/g,' ').trim().slice(0,max); }
 function normalizeExpiries(values){ return [...new Set((values||[]).filter(isValidIsoDate))].sort(); }
 function sanitizeSettings(value){
   const clean=Object.assign({warnDays:30,critDays:7,authMinutes:15},structuredClone(value||{}));
