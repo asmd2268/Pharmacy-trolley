@@ -3,7 +3,9 @@
   'use strict';
   function createRecord(name, options) {
     options = options || {};
-    return {name: String(name || '').trim(), expiries: Array.isArray(options.expiries) ? options.expiries.slice() : [], types: Array.isArray(options.types) ? options.types.slice() : [], oos: options.oos === true, shelf: options.shelf === true, notes: String(options.notes || '')};
+    const record = {name: String(name || '').trim(), expiries: Array.isArray(options.expiries) ? options.expiries.slice() : [], types: Array.isArray(options.types) ? options.types.slice() : [], oos: options.oos === true, shelf: options.shelf === true, notes: String(options.notes || '')};
+    ['extra','drawerNum','drawerSlot'].forEach(function (key) { if (Object.prototype.hasOwnProperty.call(options, key)) record[key] = options[key]; });
+    return record;
   }
   function assign(records, fromKey, toKey) {
     const next = {...records}, source = next[fromKey]; if (!source) return next;

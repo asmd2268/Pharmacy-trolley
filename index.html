@@ -1837,22 +1837,22 @@ function saveNewDrug(){
       if(choice){
         const oldKey='x_'+uid();
         data[oldKey]={...data[key], drawerNum:null, drawerSlot:null, extra:true};
-        data[key]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true};
+        data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(nameVal,{types,extra:true}):{name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true};
         saveData(); refreshAll(); closeModal('addDrugModal');
         showToast(`✅ تمت الإضافة في درج ${dr}—${sl} — "${occupantName}" أصبح بدون تعيين`);
       } else {
         const newKey='x_'+uid();
-        data[newKey]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
+        data[newKey]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(nameVal,{types,extra:true,drawerNum:null,drawerSlot:null}):{name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
         saveData(); refreshAll(); closeModal('addDrugModal');
         showToast('✅ تمت إضافة الدواء بدون موقع');
       }
       return;
     }
-    data[key]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true};
+    data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(nameVal,{types,extra:true}):{name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true};
   } else {
     // no slot yet — store as extra
     const key='x_'+uid();
-    data[key]={name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
+    data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(nameVal,{types,extra:true,drawerNum:null,drawerSlot:null}):{name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
   }
   saveData(); refreshAll(); closeModal('addDrugModal');
   showToast('✅ تمت إضافة الدواء للقاعدة'+(dr?` (درج ${dr}—${sl})`:'، بدون موقع بعد'));
@@ -1901,11 +1901,11 @@ function saveBulkDrugs(){
     if(isDup||slotTaken){skipped++;return;}
     if(dr&&sl){
       const key=`${dr}${sl}`;
-      if(!data[key]){data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true};added++;}
+      if(!data[key]){data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name,{extra:true}):{name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true};added++;}
       else skipped++;
     } else {
       const key='x_'+uid();
-      data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
+      data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name,{extra:true,drawerNum:null,drawerSlot:null}):{name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
       added++;
     }
   });
@@ -1976,8 +1976,8 @@ function confirmMoveDrawer(){
   }
 
   // slot is free — simple move
-  data[newKey]={...data[movingKey]};
-  delete data[movingKey];
+  if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.assign(data,movingKey,newKey);
+  else { data[newKey]={...data[movingKey]}; delete data[movingKey]; }
   saveData();refreshAll();closeModal('moveDrawerModal');
   showToast(`✅ تم نقل الدواء إلى درج ${dr}—${sl}`);
 }
@@ -2040,8 +2040,8 @@ function confirmAssignDrawer(){
     return;
   }
 
-  data[newKey]={...data[assigningKey]};
-  delete data[assigningKey];
+  if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.assign(data,assigningKey,newKey);
+  else { data[newKey]={...data[assigningKey]}; delete data[assigningKey]; }
   saveData();refreshAll();closeModal('assignDrawerModal');
   showToast(`✅ تم تعيين الدواء في درج ${dr}—${sl}`);
 }

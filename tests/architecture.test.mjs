@@ -42,7 +42,9 @@ test('backup policy keeps the newest thirty records', () => {
 
 test('medication operations preserve records without mutating input', () => {
   const api = load('medication-operations.js').PharmacyMedicationOperations;
-  const original = {a: api.createRecord('Drug A', {shelf: true})};
+  const original = {a: api.createRecord(' Drug A ', {shelf: true, extra: true, drawerNum: null, drawerSlot: null})};
+  assert.equal(original.a.name, 'Drug A');
+  assert.equal(original.a.extra, true);
   const moved = api.assign(original, 'a', '51A');
   assert.equal(moved['51A'].name, 'Drug A');
   assert.equal(original.a.name, 'Drug A');
