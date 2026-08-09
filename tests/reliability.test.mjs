@@ -14,6 +14,7 @@ const shelfStorage = await readFile(new URL('../architecture/shelf-storage.js', 
 const settingsPolicy = await readFile(new URL('../architecture/settings-policy.js', import.meta.url), 'utf8');
 const validationPolicy = await readFile(new URL('../architecture/validation-policy.js', import.meta.url), 'utf8');
 const storagePolicy = await readFile(new URL('../architecture/storage-policy.js', import.meta.url), 'utf8');
+const authRuntime = await readFile(new URL('../architecture/auth-runtime.js', import.meta.url), 'utf8');
 
 function element() {
   return {
@@ -51,6 +52,7 @@ function makeContext() {
   vm.runInContext(settingsPolicy, context, { filename: 'settings-policy.js' });
   vm.runInContext(validationPolicy, context, { filename: 'validation-policy.js' });
   vm.runInContext(storagePolicy, context, { filename: 'storage-policy.js' });
+  vm.runInContext(authRuntime, context, { filename: 'auth-runtime.js' });
   context.normalizeSearchText = context.window.normalizeSearchText;
   context.escapeHtml = context.window.escapeHtml;
   context.cleanUserText = context.window.cleanUserText;

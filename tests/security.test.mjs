@@ -9,7 +9,8 @@ const appHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8'
 const appScript = await readFile(new URL('../app.js', import.meta.url), 'utf8');
 const voiceScript = await readFile(new URL('../architecture/voice-module.js', import.meta.url), 'utf8');
 const backupScript = await readFile(new URL('../architecture/backup-module.js', import.meta.url), 'utf8');
-const appSource = `${appHtml}\n${appScript}\n${voiceScript}\n${backupScript}`;
+const authScript = await readFile(new URL('../architecture/auth-runtime.js', import.meta.url), 'utf8');
+const appSource = `${appHtml}\n${appScript}\n${voiceScript}\n${backupScript}\n${authScript}`;
 const vercelConfig = await readFile(new URL('../vercel.json', import.meta.url), 'utf8');
 
 test('identifier generation does not use Math.random', () => {
