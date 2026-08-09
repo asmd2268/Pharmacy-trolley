@@ -1329,16 +1329,6 @@ function initData() {
 // exact same key format as drawers (number+slot, e.g. "51A"). This is what
 // makes the shelf page a real, live view of the database instead of a
 // separate copy -- anything here shows up in search, alerts, and the DB tab too.
-function seedShelfIntoData(startNum,grid){
-  const rows='ABCDEF';
-  grid.forEach((row,ri)=>{
-    row.forEach((name,ci)=>{
-      if(!name) return;
-      const key=`${startNum+ci}${rows[ri]}`;
-      if(!data[key]) data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name,{shelf:true}):{name,expiries:[],types:[],oos:false,shelf:true,notes:''};
-    });
-  });
-}
 // Shelf layouts are loaded only from authenticated Supabase data.
 // One-time migration: pull drug names out of any legacy shelf.cells (from an
 // older version of this app) into the main `data` object so they become real,
@@ -1405,7 +1395,6 @@ function applyTheme() {
 function daysUntil(d){ if(!d)return Infinity; const e=new Date(d),n=new Date(); n.setHours(0,0,0,0); e.setHours(0,0,0,0); return Math.round((e-n)/86400000); }
 function expStatus(d){ const n=daysUntil(d); return window.PharmacyMedicationPolicy?PharmacyMedicationPolicy.expiryStatus(n,settings):(n<0?'expired':n<=settings.critDays?'critical':n<=settings.warnDays?'warn':'ok'); }
 function slotExpSt(key){ const d=data[key]; if(window.PharmacyMedicationPolicy)return PharmacyMedicationPolicy.itemStatus(d,daysUntil,settings); if(!d||!d.expiries||!d.expiries.length)return'none'; let w='ok'; for(const e of d.expiries){const s=expStatus(e);if(s==='expired'||s==='critical')return'danger';if(s==='warn')w='warn';} return w; }
-function cellExpSt(cell){ if(window.PharmacyMedicationPolicy)return PharmacyMedicationPolicy.itemStatus(cell,daysUntil,settings); if(!cell||!cell.expiries||!cell.expiries.length)return'none'; let w='ok'; for(const e of cell.expiries){const s=expStatus(e);if(s==='expired'||s==='critical')return'danger';if(s==='warn')w='warn';} return w; }
 function formatDate(s){ return window.PharmacyDatePolicy?PharmacyDatePolicy.format(s):(!s?'':(()=>{const[y,m,d]=s.split('-');return`${d}/${m}/${y}`})()); }
 function daysLabel(n){ return window.PharmacyDatePolicy?PharmacyDatePolicy.daysLabel(n):(n<0?`منتهي منذ ${Math.abs(n)} يوم`:n===0?'اليوم!':`${n} يوم`); }
 let _uidCounter=0;
@@ -1456,9 +1445,6 @@ function requireWriteAuth(label, callback){
   showToast(`⛔ لا تملك صلاحية تنفيذ: ${label}`);
   return false;
 }
-function openSecuritySettingsModal(){
-  openSbSettings();
-}
 // ── duplicate-name badge helper ──
 function dupBadgeHtml(item, key){
   const norm=item.name.replace(/\n/g,' ').trim().toLowerCase();
@@ -1492,18 +1478,6 @@ function switchTab(name,el){
 let zoomLevel=0;
 const ZOOM_STEPS=[280,320,360,420,500,600];
 // ══ SHELF POSITION LOOKUP ══
-function getShelfPos(drugKey){
-  for(const sh of shelves){
-    for(const ck in sh.cells||{}){
-      const cell=sh.cells[ck];
-      if(cell&&cell.drug&&cell.drug.trim()===(data[drugKey]&&data[drugKey].name||'').replace(/\n/g,' ').trim()){
-        return `${sh.name} — عمود/صف ${ck}`;
-      }
-    }
-  }
-  return null;
-}
-
 function zoomDrawers(dir){
   zoomLevel=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoomLevel+dir));
   const minW=ZOOM_STEPS[zoomLevel];
@@ -1558,23 +1532,6 @@ const EXTRA_DRUGS_SEED = [
   "WARFARIN TABLET\n2 MG","VITAMIN D3 CHOLCALCIFEROL\n5000 I.U."
 ];
 
-function initExtraDrugs(){
-  // seed extra drugs only once (check by looking for any x_ key)
-  const hasExtra = Object.keys(data).some(k=>k.startsWith('x_'));
-  if(hasExtra) return;
-  // get all existing names (normalized) to avoid duplication with RAW_DRUGS
-  const existingNames = new Set(Object.values(data).map(d=>d.name.replace(/\n/g,' ').trim().toLowerCase()));
-  EXTRA_DRUGS_SEED.forEach(name=>{
-    const norm = name.replace(/\n/g,' ').trim().toLowerCase();
-    if(!existingNames.has(norm)){
-      const key='x_'+uid();
-      data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name,{extra:true,drawerNum:null,drawerSlot:null}):{name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
-      existingNames.add(norm);
-    }
-  });
-  saveData();
-}
-
 // helper: is a drug assigned to any fixed drawer slot?
 function isAssignedToDrawer(key){
   // fixed slots are like "1A","12B" etc (no x_ prefix)
@@ -1582,17 +1539,6 @@ function isAssignedToDrawer(key){
 }
 
 // helper: is a drug assigned to any shelf cell?
-function isAssignedToShelf(name){
-  const n=name.replace(/\n/g,' ').trim().toLowerCase();
-  for(const sh of shelves){
-    for(const ck in sh.cells||{}){
-      const c=sh.cells[ck];
-      if(c&&c.drug&&c.drug.trim().toLowerCase()===n) return true;
-    }
-  }
-  return false;
-}
-
 // ══ DATABASE ══
 function renderDB(){
   const q=(document.getElementById('dbSearch').value||'').trim().toLowerCase();
@@ -2720,15 +2666,6 @@ async function saveNewShelf(){
   else finish(null);
 }
 
-function readShelfPhoto(file,callback){
-  if(!/^image\/(?:png|jpe?g|webp|gif)$/i.test(file.type||'')||file.size>2*1024*1024){
-    showToast('⚠️ الصورة يجب أن تكون PNG/JPG/WebP/GIF وأقل من 2MB'); return;
-  }
-  const reader=new FileReader();
-  reader.onload=()=>{ const src=safeImageSrc(reader.result); if(src) callback(src); else showToast('⚠️ تعذّر قراءة الصورة بأمان'); };
-  reader.onerror=()=>showToast('⚠️ تعذّر قراءة الصورة');
-  reader.readAsDataURL(file);
-}
 async function uploadShelfPhoto(file,shelfId){
   if(!window.PharmacyShelfStorage) throw new Error('وحدة تخزين صور الأرفف غير متاحة');
   if(!window._pharmacyShelfStorage) window._pharmacyShelfStorage=PharmacyShelfStorage.create({url:SB_URL,key:SB_KEY,token:()=>sbSession?.accessToken,userId:()=>sbUser?.id||''});
@@ -2797,18 +2734,6 @@ async function deleteShelf(){
 }
 
 // ══ CELL MODAL ══
-function openCellModal(shelfId,cellKey,cell,dispLabel){
-  editingShelfId=shelfId; editingCellKey=cellKey;
-  const sh=shelves.find(s=>s.id===shelfId);
-  document.getElementById('cellModalInfo').innerHTML=`<strong>${escapeHtml(sh.name)}</strong> — خلية <span style="font-family:var(--mono);color:var(--accent)">${escapeHtml(dispLabel||cellKey)}</span>`;
-  document.getElementById('cellDrugName').value=(cell&&cell.drug)||'';
-  document.getElementById('cellHazard').checked   =(cell&&(cell.types||[]).includes('hazard'))||false;
-  document.getElementById('cellLasa').checked     =(cell&&(cell.types||[]).includes('lasa'))||false;
-  document.getElementById('cellHighAlert').checked=(cell&&(cell.types||[]).includes('high-alert'))||false;
-  document.getElementById('cellNotes').value      =(cell&&cell.notes)||'';
-  renderExpRows((cell&&cell.expiries)||[],'cellExpList');
-  document.getElementById('cellModal').classList.add('open');
-}
 function addCellExpRow(){
   const rows=document.querySelectorAll('#cellExpList .exp-row');
   if(rows.length>=10)return;
@@ -2898,55 +2823,6 @@ function exportCSV(){
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pharmacy_data.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),0);
   showToast('📊 تم التصدير — افتح الملف في Google Sheets أو Excel');
-}
-
-function handleImport(input){
-  const file=input.files[0];if(!file){input.value='';return;}
-  requireWriteAuth('استيراد بيانات', ()=>{
-    const r=new FileReader();
-    r.onload=e=>{
-      try{
-        const text=e.target.result;
-        if(file.name.endsWith('.csv')){
-          // CSV import: update names & expiries from the CSV, merge with existing data
-          const lines=text.replace(/^\ufeff/,'').split('\n').slice(1); // skip header
-          let count=0;
-          lines.forEach(line=>{
-            if(!line.trim()) return;
-            const cols=[];let cur='',inQ=false;
-            for(const ch of line){
-              if(ch==='"'){ inQ=!inQ; }
-              else if(ch===','&&!inQ){ cols.push(cur); cur=''; }
-              else cur+=ch;
-            }
-            cols.push(cur);
-            const key=cols[0]?.replace(/"/g,'').trim();
-            const name=cleanUserText(cols[1]?.replace(/"/g,''),500);
-            const expiries=normalizeExpiries((cols[8]||'').replace(/"/g,'').split('|').map(s=>s.trim()));
-            const notes=cleanUserText((cols[9]||'').replace(/"/g,''),1000);
-            if(!isValidDataKey(key)||!name) return;
-            if(!data[key]) data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name):{name,expiries:[],types:[],oos:false,shelf:false,notes:''};
-            data[key].name=name;
-            if(expiries.length) data[key].expiries=expiries;
-            if(notes) data[key].notes=notes;
-            count++;
-          });
-          saveData();refreshAll();showToast(`✅ تم استيراد ${count} دواء من CSV`);
-        } else {
-          // JSON import
-          const p=JSON.parse(text);
-          if(!validateStatePayload(p)) throw new Error('بنية JSON أو التواريخ غير صالحة');
-          applyStatePayload(p);
-          settings.seedVersion=SEED_VERSION; // mark as current version
-          document.getElementById('warnDays').value=settings.warnDays;
-          document.getElementById('critDays').value=settings.critDays;
-          applyTheme();saveData();refreshAll();showToast('✅ تم استيراد JSON وحفظه في Supabase');
-        }
-      }catch(err){showToast('❌ خطأ في الملف: '+err.message);}
-    };
-    r.readAsText(file,'utf-8');
-  });
-  input.value='';
 }
 
 // ══ REFRESH ══
@@ -3268,16 +3144,6 @@ async function sbFetch(path, opts={}){
   if(!SB_URL||!SB_KEY) throw new Error('Supabase غير مهيأ');
   if(!window._pharmacySupabaseRequest) window._pharmacySupabaseRequest=PharmacySupabaseRestClient.create({url:SB_URL,key:SB_KEY,ensureSession:sbEnsureSession,accessToken:()=>sbSession&&sbSession.accessToken,refreshSession:refreshSbSession});
   return window._pharmacySupabaseRequest(path,opts);
-}
-
-function sbUpdateCreds(){ /* credentials are hardcoded */ }
-
-async function sbTestConnect(){
-  setSbStatus('syncing');
-  try{
-    await sbFetch(`${SB_TABLE}?id=eq.1&select=id`);
-    sbConnected=true; setSbStatus('connected'); showToast('✅ Supabase متصل!'); await sbLoad();
-  }catch(e){ setSbStatus('offline'); showToast('❌ فشل الاتصال'); }
 }
 
 // Version stamp embedded in SEED_DATA — change this when you export a new JSON.
@@ -3865,24 +3731,6 @@ function vcSelectDrug(key){
   const dd=document.getElementById('vcDropdown');
   if(dd) dd.scrollTop=0;
 }
-
-function vcUpdateDrug(){
-  const drEl=document.getElementById('vcDr'), slEl=document.getElementById('vcSl');
-  if(!drEl||!slEl) return;
-  const key=`${drEl.value}${slEl.value}`, item=data[key];
-  const locEl=document.getElementById('vcLocDisplay');
-  if(locEl) locEl.textContent=drEl.value?`درج ${drEl.value} — ${slEl.value}`:'—';
-  const dnEl=document.getElementById('vcDrugName');
-  if(dnEl) dnEl.innerHTML=item
-    ?`<strong style="color:var(--accent)">${escapeHtml(item.name.replace(/\n/g,' '))}</strong>`
-    :`<span style="color:var(--danger)">درج ${drEl.value}-${slEl.value} غير موجود</span>`;
-  const exEl=document.getElementById('vcExisting');
-  if(exEl) exEl.innerHTML=item
-    ?(item.expiries.map(e=>`<span class="exp-tag ok">${formatDate(e)}</span>`).join(' ')||'<span style="color:var(--text3)">لا يوجد</span>')
-    :'—';
-}
-
-// vcUpdateDrug merged above
 
 function confirmVoiceSave(){
   if(!isWriteAuthFresh()) return setVoiceStatus('error','⛔ الحساب للقراءة فقط');
