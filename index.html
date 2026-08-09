@@ -1412,7 +1412,19 @@ function slotExpSt(key){ const d=data[key]; if(window.PharmacyMedicationPolicy)r
 function cellExpSt(cell){ if(window.PharmacyMedicationPolicy)return PharmacyMedicationPolicy.itemStatus(cell,daysUntil,settings); if(!cell||!cell.expiries||!cell.expiries.length)return'none'; let w='ok'; for(const e of cell.expiries){const s=expStatus(e);if(s==='expired'||s==='critical')return'danger';if(s==='warn')w='warn';} return w; }
 function formatDate(s){ return window.PharmacyDatePolicy?PharmacyDatePolicy.format(s):(!s?'':(()=>{const[y,m,d]=s.split('-');return`${d}/${m}/${y}`})()); }
 function daysLabel(n){ return window.PharmacyDatePolicy?PharmacyDatePolicy.daysLabel(n):(n<0?`منتهي منذ ${Math.abs(n)} يوم`:n===0?'اليوم!':`${n} يوم`); }
-function uid(){ return crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2); }
+let _uidCounter=0;
+function uid(){
+  const c=globalThis.crypto;
+  if(c&&typeof c.randomUUID==='function') return c.randomUUID();
+  if(c&&typeof c.getRandomValues==='function'){
+    const bytes=new Uint8Array(16); c.getRandomValues(bytes);
+    bytes[6]=(bytes[6]&15)|64; bytes[8]=(bytes[8]&63)|128;
+    const h=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+    return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+  }
+  _uidCounter=(_uidCounter+1)%1000000;
+  return `local-${Date.now().toString(36)}-${_uidCounter.toString(36)}`;
+}
 function escapeHtml(value){
   return window.PharmacyTextPolicy?PharmacyTextPolicy.escape(value):String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
 }

@@ -5,6 +5,12 @@ import test from 'node:test';
 const prepare = await readFile(new URL('../supabase/security_migration.sql', import.meta.url), 'utf8');
 const cutover = await readFile(new URL('../supabase/security_cutover.sql', import.meta.url), 'utf8');
 const rollback = await readFile(new URL('../supabase/security_rollback.sql', import.meta.url), 'utf8');
+const appHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+
+test('identifier generation does not use Math.random', () => {
+  assert.doesNotMatch(appHtml, /Math\.random\s*\(/);
+  assert.match(appHtml, /getRandomValues/);
+});
 
 test('preparation does not revoke production anonymous access', () => {
   assert.doesNotMatch(prepare, /revoke all on public\.pharmacy_(?:state|backups) from [^;]*(?:anon|public)/i);
