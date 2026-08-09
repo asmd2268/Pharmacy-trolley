@@ -1229,6 +1229,7 @@ code{font-family:var(--mono)}
 <script src="./architecture/date-policy.js"></script>
 <script src="./architecture/shelf-module.js"></script>
 <script src="./architecture/shelf-storage.js"></script>
+<script src="./architecture/shelf-operations.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -2696,10 +2697,11 @@ async function saveNewShelf(){
   const photoInput=document.getElementById('newShelfPhoto');
   const file=photoInput&&photoInput.files&&photoInput.files[0];
   const finish=async(photoPath)=>{
-    shelves.push({id:uid(),name,cols,rows,startNum,cells:{},photo:null,photoPath:photoPath||null});
+    const shelf={id:uid(),name,cols,rows,startNum,cells:{},photo:null,photoPath:photoPath||null};
+    shelves=window.PharmacyShelfOperations?PharmacyShelfOperations.create().add(shelves,shelf):shelves.concat([shelf]);
     saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`);
   };
-  if(file){ try{ const id=uid(); const path=await uploadShelfPhoto(file,id); shelves.push({id,name,cols,rows,startNum,cells:{},photo:null,photoPath:path}); saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`); }catch(e){showToast('⚠️ '+e.message);} }
+  if(file){ try{ const id=uid(); const path=await uploadShelfPhoto(file,id); const shelf={id,name,cols,rows,startNum,cells:{},photo:null,photoPath:path}; shelves=window.PharmacyShelfOperations?PharmacyShelfOperations.create().add(shelves,shelf):shelves.concat([shelf]); saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`); }catch(e){showToast('⚠️ '+e.message);} }
   else finish(null);
 }
 
@@ -2753,14 +2755,14 @@ function removeShelfPhoto(){
 async function saveEditShelf(){
   const sh=shelves.find(s=>s.id===editingShelfId);
   if(!sh)return;
-  sh.name=cleanUserText(document.getElementById('editShelfName').value,200)||sh.name;
-  sh.cols=Math.min(50,Math.max(1,parseInt(document.getElementById('editShelfCols').value)||sh.cols));
-  sh.rows=Math.min(26,Math.max(1,parseInt(document.getElementById('editShelfRows').value)||sh.rows));
-  sh.startNum=Math.min(999,Math.max(1,parseInt(document.getElementById('editShelfStartNum').value)||sh.startNum||1));
+  const changes={name:cleanUserText(document.getElementById('editShelfName').value,200)||sh.name,cols:Math.min(50,Math.max(1,parseInt(document.getElementById('editShelfCols').value)||sh.cols)),rows:Math.min(26,Math.max(1,parseInt(document.getElementById('editShelfRows').value)||sh.rows)),startNum:Math.min(999,Math.max(1,parseInt(document.getElementById('editShelfStartNum').value)||sh.startNum||1))};
+  if(window.PharmacyShelfOperations){ shelves=PharmacyShelfOperations.create().update(shelves,editingShelfId,changes); }
+  else Object.assign(sh,changes);
+  const current=shelves.find(s=>s.id===editingShelfId);
   const photoInput=document.getElementById('editShelfPhoto');
   const file=photoInput&&photoInput.files&&photoInput.files[0];
   const finish=()=>{ saveData();closeModal('editShelfModal');renderShelves();showToast('✅ تم تعديل درج العلب'); };
-  if(file){ try{ const oldPath=sh.photoPath; sh.photoPath=await uploadShelfPhoto(file,sh.id); sh.photo=null; if(oldPath) await deleteShelfPhoto(oldPath); finish(); }catch(e){showToast('⚠️ '+e.message);} }
+  if(file){ try{ const oldPath=current.photoPath; const newPath=await uploadShelfPhoto(file,current.id); if(window.PharmacyShelfOperations)shelves=PharmacyShelfOperations.create().update(shelves,editingShelfId,{photoPath:newPath,photo:null});else{current.photoPath=newPath;current.photo=null;} if(oldPath) await deleteShelfPhoto(oldPath); finish(); }catch(e){showToast('⚠️ '+e.message);} }
   else finish();
 }
 function openShelfPhotoPreview(id){
@@ -2771,7 +2773,7 @@ function openShelfPhotoPreview(id){
 async function deleteShelf(){
   if(!confirm('حذف تعريف الرف؟ ستبقى سجلات الأدوية وتواريخها محفوظة في قاعدة البيانات.'))return;
   const sh=shelves.find(s=>s.id===editingShelfId);
-  shelves=shelves.filter(s=>s.id!==editingShelfId);
+  shelves=window.PharmacyShelfOperations?PharmacyShelfOperations.create().remove(shelves,editingShelfId):shelves.filter(s=>s.id!==editingShelfId);
   if(sh?.photoPath) await deleteShelfPhoto(sh.photoPath);
   saveData();closeModal('editShelfModal');renderShelves();showToast('🗑️ تم الحذف');
 }
