@@ -22,3 +22,5 @@ jobs:
           cache: npm
       - name: Run tests
         run: npm test
+      - name: Check patch formatting
+        run: git diff --check
