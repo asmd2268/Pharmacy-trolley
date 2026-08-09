@@ -1418,6 +1418,7 @@ function normalizeSearchText(value){
   return window.PharmacyTextPolicy?PharmacyTextPolicy.normalize(value):String(value??'').normalize('NFKC').toLowerCase().replace(/[\u064B-\u065F\u0670]/g,'').replace(/[إأآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/\s+/g,' ').trim();
 }
 function safeImageSrc(value){
+  if(window.PharmacyShelfStorage) return PharmacyShelfStorage.safeImageSrc(value,SB_URL);
   const v=String(value||'');
   if(/^https:\/\/ivavwzqdqausirioqwts\.supabase\.co\/storage\/v1\/object\/sign\/shelf-images\//.test(v)) return v;
   return /^data:image\/(?:png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(v)?v:'';
