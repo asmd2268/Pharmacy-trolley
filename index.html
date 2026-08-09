@@ -1379,10 +1379,6 @@ function normalizeShelves(){
   if(changed){ saveData(); if(typeof sbSaveNow==='function') sbSaveNow(); }
 }
 
-function saveData() {
-  // Stub — overridden below in the Supabase section to save only to Supabase
-  invalidateDoseCountMap();
-}
 function saveSettings() {
   settings.warnDays=parseInt(document.getElementById('warnDays').value)||30;
   settings.critDays=parseInt(document.getElementById('critDays').value)||7;

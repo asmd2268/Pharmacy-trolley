@@ -28,6 +28,10 @@ test('destructive UI handlers enforce writer authorization', () => {
   }
 });
 
+test('application has one persistence entry point', () => {
+  assert.equal((appHtml.match(/function\s+saveData\s*\(/g) || []).length, 1);
+});
+
 test('hosting security headers are enforced', () => {
   assert.match(vercelConfig, /frame-ancestors 'none'/);
   assert.match(vercelConfig, /X-Content-Type-Options/);
