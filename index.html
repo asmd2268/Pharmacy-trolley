@@ -967,12 +967,6 @@ function zoomDrawers(dir){
   document.getElementById('zoomLabel').textContent=pct+'%';
 }
 
-// helper: is a drug assigned to any fixed drawer slot?
-function isAssignedToDrawer(key){
-  // fixed slots are like "1A","12B" etc (no x_ prefix)
-  return !key.startsWith('x_');
-}
-
 // helper: is a drug assigned to any shelf cell?
 // ══ DATABASE ══
 function renderDB(){

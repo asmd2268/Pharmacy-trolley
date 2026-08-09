@@ -58,6 +58,7 @@ function makeContext() {
   context.safeImageSrc = context.window.safeImageSrc;
   context.sanitizeSettings = context.window.sanitizeSettings;
   context.isValidDataKey = context.window.isValidDataKey;
+  context.isAssignedToDrawer = context.window.isAssignedToDrawer;
   vm.runInContext(script, context, { filename: 'index.html' });
   return context;
 }
