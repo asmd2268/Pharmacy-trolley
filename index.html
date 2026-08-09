@@ -911,8 +911,6 @@ function applyTheme() {
 function daysUntil(d){ if(!d)return Infinity; const e=new Date(d),n=new Date(); n.setHours(0,0,0,0); e.setHours(0,0,0,0); return Math.round((e-n)/86400000); }
 function expStatus(d){ const n=daysUntil(d); return window.PharmacyMedicationPolicy?PharmacyMedicationPolicy.expiryStatus(n,settings):(n<0?'expired':n<=settings.critDays?'critical':n<=settings.warnDays?'warn':'ok'); }
 function slotExpSt(key){ const d=data[key]; if(window.PharmacyMedicationPolicy)return PharmacyMedicationPolicy.itemStatus(d,daysUntil,settings); if(!d||!d.expiries||!d.expiries.length)return'none'; let w='ok'; for(const e of d.expiries){const s=expStatus(e);if(s==='expired'||s==='critical')return'danger';if(s==='warn')w='warn';} return w; }
-function formatDate(s){ return window.PharmacyDatePolicy?PharmacyDatePolicy.format(s):(!s?'':(()=>{const[y,m,d]=s.split('-');return`${d}/${m}/${y}`})()); }
-function daysLabel(n){ return window.PharmacyDatePolicy?PharmacyDatePolicy.daysLabel(n):(n<0?`منتهي منذ ${Math.abs(n)} يوم`:n===0?'اليوم!':`${n} يوم`); }
 let _uidCounter=0;
 function uid(){
   const c=globalThis.crypto;
