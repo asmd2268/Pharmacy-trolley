@@ -2373,7 +2373,7 @@ function passwordPolicyError(password){
 
 function showPasswordSetup(session){
   sbPasswordSetupSession=session;
-  sessionStorage.setItem(SB_PASSWORD_SETUP_KEY,JSON.stringify(session));
+  if(window.PharmacyStoragePolicy) PharmacyStoragePolicy.write(sessionStorage,SB_PASSWORD_SETUP_KEY,session);
   document.getElementById('passwordSetupTitle').textContent=session.type==='invite'?'🔑 إنشاء كلمة مرور الحساب':'🔑 تعيين كلمة مرور جديدة';
   document.getElementById('passwordSetupModal').classList.add('open');
 }
@@ -2521,11 +2521,10 @@ function payloadFingerprint(payload=appStatePayload()){
 
 function persistPendingWrite(){
   if(sbHydrating) return;
-  try{
-    localStorage.setItem(SB_PENDING_KEY,JSON.stringify({
-      createdAt:new Date().toISOString(),baseRevision:sbStateRevision,payload:appStatePayload()
-    }));
-  }catch(e){ console.warn('Could not persist pending write',e); }
+  const ok=window.PharmacyStoragePolicy&&PharmacyStoragePolicy.write(localStorage,SB_PENDING_KEY,{
+    createdAt:new Date().toISOString(),baseRevision:sbStateRevision,payload:appStatePayload()
+  },(e)=>console.warn('Could not persist pending write',e));
+  if(!ok) console.warn('Could not persist pending write');
 }
 
 function clearPendingWrite(){

@@ -4,7 +4,10 @@
   function createSessionStore(storage, key) {
     return {
       read: function () { try { return JSON.parse(storage.getItem(key) || 'null'); } catch (_) { return null; } },
-      write: function (value) { if (value) storage.setItem(key, JSON.stringify(value)); else storage.removeItem(key); }
+      write: function (value) {
+        try { if (value) storage.setItem(key, JSON.stringify(value)); else storage.removeItem(key); return true; }
+        catch (_) { return false; }
+      }
     };
   }
   global.PharmacyAuthSession = Object.freeze({ createStore: createSessionStore });
