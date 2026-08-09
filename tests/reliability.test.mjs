@@ -8,6 +8,7 @@ const fullScript = html.match(/<script>([\s\S]*)<\/script>/)?.[1];
 if (!fullScript) throw new Error('Inline application script was not found.');
 const script = fullScript.split('let backupSchedulerStarted=false;')[0];
 const searchHelpers = await readFile(new URL('../architecture/search-helpers.js', import.meta.url), 'utf8');
+const textHelpers = await readFile(new URL('../architecture/text-helpers.js', import.meta.url), 'utf8');
 
 function element() {
   return {
@@ -38,7 +39,10 @@ function makeContext() {
     confirm: () => false,
   });
   vm.runInContext(searchHelpers, context, { filename: 'search-helpers.js' });
+  vm.runInContext(textHelpers, context, { filename: 'text-helpers.js' });
   context.normalizeSearchText = context.window.normalizeSearchText;
+  context.escapeHtml = context.window.escapeHtml;
+  context.cleanUserText = context.window.cleanUserText;
   vm.runInContext(script, context, { filename: 'index.html' });
   return context;
 }
