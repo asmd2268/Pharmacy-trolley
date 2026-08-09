@@ -6,10 +6,18 @@ const prepare = await readFile(new URL('../supabase/security_migration.sql', imp
 const cutover = await readFile(new URL('../supabase/security_cutover.sql', import.meta.url), 'utf8');
 const rollback = await readFile(new URL('../supabase/security_rollback.sql', import.meta.url), 'utf8');
 const appHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const vercelConfig = await readFile(new URL('../vercel.json', import.meta.url), 'utf8');
 
 test('identifier generation does not use Math.random', () => {
   assert.doesNotMatch(appHtml, /Math\.random\s*\(/);
   assert.match(appHtml, /getRandomValues/);
+});
+
+test('hosting security headers are enforced', () => {
+  assert.match(vercelConfig, /frame-ancestors 'none'/);
+  assert.match(vercelConfig, /X-Content-Type-Options/);
+  assert.match(vercelConfig, /Strict-Transport-Security/);
+  assert.match(vercelConfig, /Permissions-Policy/);
 });
 
 test('preparation does not revoke production anonymous access', () => {
