@@ -1221,6 +1221,7 @@ code{font-family:var(--mono)}
 </div>
 </div>
 
+<script src="./architecture/state-repository.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -3119,7 +3120,8 @@ async function sbSignOut(){
 }
 
 function appStatePayload(){
-  return {data,shelves,oosManual,settings,theme};
+  const repo=window.PharmacyStateRepository;
+  return repo?repo.createPayload({data,shelves,oosManual,settings,theme}):{data,shelves,oosManual,settings,theme};
 }
 
 function validateStatePayload(payload){
@@ -3154,11 +3156,13 @@ function applyStatePayload(payload){
 }
 
 function payloadFingerprint(payload=appStatePayload()){
-  const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.keys(value).sort().reduce((o,k)=>(o[k]=canonical(value[k]),o),{}):value;
-  return JSON.stringify(canonical({
+  const value={
     data:payload.data||{}, shelves:payload.shelves||[], oosManual:payload.oosManual||[],
     settings:payload.settings||{}, theme:payload.theme||'dark'
-  }));
+  };
+  if(window.PharmacyStateRepository) return window.PharmacyStateRepository.fingerprint(value);
+  const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.keys(v).sort().reduce((o,k)=>(o[k]=canonical(v[k]),o),{}):v;
+  return JSON.stringify(canonical(value));
 }
 
 function persistPendingWrite(){
