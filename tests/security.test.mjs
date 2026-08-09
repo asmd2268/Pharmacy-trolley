@@ -18,6 +18,7 @@ test('hosting security headers are enforced', () => {
   assert.match(vercelConfig, /X-Content-Type-Options/);
   assert.match(vercelConfig, /Strict-Transport-Security/);
   assert.match(vercelConfig, /Permissions-Policy/);
+  assert.match(vercelConfig, /microphone=\(self\)/);
 });
 
 test('preparation does not revoke production anonymous access', () => {
