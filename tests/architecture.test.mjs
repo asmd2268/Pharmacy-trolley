@@ -51,5 +51,8 @@ test('medication operations preserve records without mutating input', () => {
   const unassigned = api.unassign(moved, '51A', 'x_1');
   assert.equal(unassigned['x_1'].extra, true);
   assert.equal(unassigned['x_1'].drawerNum, null);
+  const imported = api.fromRaw({name: 'Drug B', expiries: 'bad', types: ['hazard'], extra: true});
+  assert.deepEqual(plain(imported.expiries), []);
+  assert.equal(imported.extra, true);
   assert.deepEqual(plain(api.remove(moved, '51A')), {});
 });

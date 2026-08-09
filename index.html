@@ -1739,7 +1739,7 @@ function doImportFile(input){
             const notes=cleanUserText((cols[9]||'').replace(/"/g,''),1000);
             if(!isValidDataKey(key)||!name) return;
             if(_importMode==='add' && data[key]) return; // skip existing
-            if(!data[key]) data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:''};
+            if(!data[key]) data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name):{name,expiries:[],types:[],oos:false,shelf:false,notes:''};
             data[key].name=name;
             if(expiries.length) data[key].expiries=expiries;
             if(notes) data[key].notes=notes;
@@ -1761,7 +1761,7 @@ function doImportFile(input){
             Object.keys(src).forEach(k=>{
               if(_importMode==='add' && data[k]) return;
               if(!validateStatePayload({data:{[k]:src[k]},shelves:[],oosManual:[]})) throw new Error(`سجل غير صالح: ${k}`);
-              data[k]=src[k];
+              data[k]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.fromRaw(src[k],src[k]&&src[k].name):src[k];
             });
           }
           saveData();closeModal('importExportModal');refreshAll();
@@ -2909,7 +2909,7 @@ function handleImport(input){
             const expiries=normalizeExpiries((cols[8]||'').replace(/"/g,'').split('|').map(s=>s.trim()));
             const notes=cleanUserText((cols[9]||'').replace(/"/g,''),1000);
             if(!isValidDataKey(key)||!name) return;
-            if(!data[key]) data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:''};
+            if(!data[key]) data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name):{name,expiries:[],types:[],oos:false,shelf:false,notes:''};
             data[key].name=name;
             if(expiries.length) data[key].expiries=expiries;
             if(notes) data[key].notes=notes;

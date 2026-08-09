@@ -7,6 +7,10 @@
     ['extra','drawerNum','drawerSlot'].forEach(function (key) { if (Object.prototype.hasOwnProperty.call(options, key)) record[key] = options[key]; });
     return record;
   }
+  function fromRaw(raw, fallbackName) {
+    raw = raw || {};
+    return createRecord(raw.name || fallbackName || '', {expiries: raw.expiries, types: raw.types, oos: raw.oos, shelf: raw.shelf, notes: raw.notes, extra: raw.extra, drawerNum: raw.drawerNum, drawerSlot: raw.drawerSlot});
+  }
   function assign(records, fromKey, toKey) {
     const next = {...records}, source = next[fromKey]; if (!source) return next;
     if (toKey !== fromKey) { next[toKey] = {...source}; delete next[fromKey]; }
@@ -19,5 +23,5 @@
     delete next[fromKey];
     return next;
   }
-  global.PharmacyMedicationOperations = Object.freeze({createRecord, assign, remove, unassign});
+  global.PharmacyMedicationOperations = Object.freeze({createRecord, fromRaw, assign, remove, unassign});
 }(window));
