@@ -15,3 +15,10 @@ test('all inline event handlers reference declared application functions', () =>
   const missing = [...names].filter(name => !ignored.has(name) && !new RegExp(`(?:function\\s+${name}\\b|(?:const|let|var)\\s+${name}\\s*=)`).test(source));
   assert.deepEqual(missing, []);
 });
+
+test('architecture modules load before the main application script', () => {
+  const main = html.indexOf('<script>');
+  assert.ok(main > 0, 'main inline script should exist');
+  const required = ['./architecture/date-policy.js','./architecture/text-helpers.js','./architecture/search-helpers.js','./architecture/validation-policy.js'];
+  for (const src of required) assert.ok(html.indexOf(src) < main, `${src} must load before the application`);
+});
