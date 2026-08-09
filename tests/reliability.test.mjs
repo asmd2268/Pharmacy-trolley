@@ -7,6 +7,7 @@ const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const fullScript = html.match(/<script>([\s\S]*)<\/script>/)?.[1];
 if (!fullScript) throw new Error('Inline application script was not found.');
 const script = fullScript.split('let backupSchedulerStarted=false;')[0];
+const searchHelpers = await readFile(new URL('../architecture/search-helpers.js', import.meta.url), 'utf8');
 
 function element() {
   return {
@@ -36,6 +37,8 @@ function makeContext() {
     Blob, URL, URLSearchParams, AbortController, fetch: async () => { throw new Error('Unexpected network access in test'); },
     confirm: () => false,
   });
+  vm.runInContext(searchHelpers, context, { filename: 'search-helpers.js' });
+  context.normalizeSearchText = context.window.normalizeSearchText;
   vm.runInContext(script, context, { filename: 'index.html' });
   return context;
 }
