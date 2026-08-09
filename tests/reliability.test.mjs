@@ -15,6 +15,7 @@ const settingsPolicy = await readFile(new URL('../architecture/settings-policy.j
 const validationPolicy = await readFile(new URL('../architecture/validation-policy.js', import.meta.url), 'utf8');
 const storagePolicy = await readFile(new URL('../architecture/storage-policy.js', import.meta.url), 'utf8');
 const authRuntime = await readFile(new URL('../architecture/auth-runtime.js', import.meta.url), 'utf8');
+const persistenceRuntime = await readFile(new URL('../architecture/persistence-runtime.js', import.meta.url), 'utf8');
 
 function element() {
   return {
@@ -53,6 +54,7 @@ function makeContext() {
   vm.runInContext(validationPolicy, context, { filename: 'validation-policy.js' });
   vm.runInContext(storagePolicy, context, { filename: 'storage-policy.js' });
   vm.runInContext(authRuntime, context, { filename: 'auth-runtime.js' });
+  vm.runInContext(persistenceRuntime, context, { filename: 'persistence-runtime.js' });
   context.normalizeSearchText = context.window.normalizeSearchText;
   context.escapeHtml = context.window.escapeHtml;
   context.cleanUserText = context.window.cleanUserText;
