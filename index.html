@@ -1234,6 +1234,7 @@ code{font-family:var(--mono)}
 <script src="./architecture/backup-policy.js"></script>
 <script src="./architecture/session-timeout.js"></script>
 <script src="./architecture/medication-policy.js"></script>
+<script src="./architecture/medication-operations.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -1334,7 +1335,7 @@ function seedShelfIntoData(startNum,grid){
     row.forEach((name,ci)=>{
       if(!name) return;
       const key=`${startNum+ci}${rows[ri]}`;
-      if(!data[key]) data[key]={name,expiries:[],types:[],oos:false,shelf:true,notes:''};
+      if(!data[key]) data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name,{shelf:true}):{name,expiries:[],types:[],oos:false,shelf:true,notes:''};
     });
   });
 }

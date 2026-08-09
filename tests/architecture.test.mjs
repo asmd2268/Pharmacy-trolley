@@ -39,3 +39,12 @@ test('backup policy keeps the newest thirty records', () => {
   assert.equal(api.keepLatest(rows).length, 30);
   assert.equal(api.staleRows(rows).length, 1);
 });
+
+test('medication operations preserve records without mutating input', () => {
+  const api = load('medication-operations.js').PharmacyMedicationOperations;
+  const original = {a: api.createRecord('Drug A', {shelf: true})};
+  const moved = api.assign(original, 'a', '51A');
+  assert.equal(moved['51A'].name, 'Drug A');
+  assert.equal(original.a.name, 'Drug A');
+  assert.deepEqual(plain(api.remove(moved, '51A')), {});
+});
