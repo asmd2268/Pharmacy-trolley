@@ -10,6 +10,7 @@ const script = fullScript.split('let backupSchedulerStarted=false;')[0];
 const searchHelpers = await readFile(new URL('../architecture/search-helpers.js', import.meta.url), 'utf8');
 const textHelpers = await readFile(new URL('../architecture/text-helpers.js', import.meta.url), 'utf8');
 const datePolicy = await readFile(new URL('../architecture/date-policy.js', import.meta.url), 'utf8');
+const idHelper = await readFile(new URL('../architecture/id-helper.js', import.meta.url), 'utf8');
 
 function element() {
   return {
@@ -42,10 +43,12 @@ function makeContext() {
   vm.runInContext(searchHelpers, context, { filename: 'search-helpers.js' });
   vm.runInContext(textHelpers, context, { filename: 'text-helpers.js' });
   vm.runInContext(datePolicy, context, { filename: 'date-policy.js' });
+  vm.runInContext(idHelper, context, { filename: 'id-helper.js' });
   context.normalizeSearchText = context.window.normalizeSearchText;
   context.escapeHtml = context.window.escapeHtml;
   context.cleanUserText = context.window.cleanUserText;
   context.isValidIsoDate = context.window.isValidIsoDate;
+  context.uid = context.window.uid;
   vm.runInContext(script, context, { filename: 'index.html' });
   return context;
 }

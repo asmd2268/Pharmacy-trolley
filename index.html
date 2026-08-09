@@ -751,6 +751,8 @@
 <script src="./architecture/medication-operations.js"></script>
 <script src="./architecture/search-helpers.js"></script>
 <script src="./architecture/text-helpers.js"></script>
+<script src="./architecture/id-helper.js"></script>
+<!-- Secure identifiers use crypto.randomUUID with crypto.getRandomValues fallback. -->
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -911,19 +913,6 @@ function applyTheme() {
 function daysUntil(d){ if(!d)return Infinity; const e=new Date(d),n=new Date(); n.setHours(0,0,0,0); e.setHours(0,0,0,0); return Math.round((e-n)/86400000); }
 function expStatus(d){ const n=daysUntil(d); return window.PharmacyMedicationPolicy?PharmacyMedicationPolicy.expiryStatus(n,settings):(n<0?'expired':n<=settings.critDays?'critical':n<=settings.warnDays?'warn':'ok'); }
 function slotExpSt(key){ const d=data[key]; if(window.PharmacyMedicationPolicy)return PharmacyMedicationPolicy.itemStatus(d,daysUntil,settings); if(!d||!d.expiries||!d.expiries.length)return'none'; let w='ok'; for(const e of d.expiries){const s=expStatus(e);if(s==='expired'||s==='critical')return'danger';if(s==='warn')w='warn';} return w; }
-let _uidCounter=0;
-function uid(){
-  const c=globalThis.crypto;
-  if(c&&typeof c.randomUUID==='function') return c.randomUUID();
-  if(c&&typeof c.getRandomValues==='function'){
-    const bytes=new Uint8Array(16); c.getRandomValues(bytes);
-    bytes[6]=(bytes[6]&15)|64; bytes[8]=(bytes[8]&63)|128;
-    const h=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
-    return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
-  }
-  _uidCounter=(_uidCounter+1)%1000000;
-  return `local-${Date.now().toString(36)}-${_uidCounter.toString(36)}`;
-}
 function safeImageSrc(value){
   if(window.PharmacyShelfStorage) return PharmacyShelfStorage.safeImageSrc(value,SB_URL);
   const v=String(value||'');
