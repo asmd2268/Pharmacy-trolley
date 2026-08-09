@@ -48,5 +48,8 @@ test('medication operations preserve records without mutating input', () => {
   const moved = api.assign(original, 'a', '51A');
   assert.equal(moved['51A'].name, 'Drug A');
   assert.equal(original.a.name, 'Drug A');
+  const unassigned = api.unassign(moved, '51A', 'x_1');
+  assert.equal(unassigned['x_1'].extra, true);
+  assert.equal(unassigned['x_1'].drawerNum, null);
   assert.deepEqual(plain(api.remove(moved, '51A')), {});
 });

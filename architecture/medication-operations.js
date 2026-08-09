@@ -13,5 +13,11 @@
     return next;
   }
   function remove(records, key) { const next = {...records}; delete next[key]; return next; }
-  global.PharmacyMedicationOperations = Object.freeze({createRecord, assign, remove});
+  function unassign(records, fromKey, toKey) {
+    const next = {...records}, source = next[fromKey]; if (!source) return next;
+    next[toKey] = {...source, drawerNum: null, drawerSlot: null, extra: true};
+    delete next[fromKey];
+    return next;
+  }
+  global.PharmacyMedicationOperations = Object.freeze({createRecord, assign, remove, unassign});
 }(window));

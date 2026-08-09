@@ -2256,7 +2256,7 @@ function openExpModal(key){
 function deleteShelfDrugEntry(){
   if(!editingKey) return;
   if(!confirm('حذف هذا الدواء من الخانة؟')) return;
-  delete data[editingKey];
+  if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.remove(data,editingKey); else delete data[editingKey];
   saveData(); closeModal('expModal'); refreshAll(); showToast('🗑️ تم الحذف');
 }
 // unassign: move drawer slot drug to x_ key so it stays in DB without a location
@@ -2264,8 +2264,8 @@ function unassignDrugSlot(){
   if(!editingKey) return;
   if(!confirm('سيُبقى الدواء في قاعدة البيانات لكن بدون موقع محدد. تأكيد؟')) return;
   const newKey='x_'+uid();
-  data[newKey]={...data[editingKey], drawerNum:null, drawerSlot:null, extra:true};
-  delete data[editingKey];
+  if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.unassign(data,editingKey,newKey);
+  else { data[newKey]={...data[editingKey], drawerNum:null, drawerSlot:null, extra:true}; delete data[editingKey]; }
   editingKey=newKey;
   saveData(); closeModal('expModal'); refreshAll();
   showToast('📤 تم إلغاء الموقع — الدواء لا يزال في قاعدة البيانات بدون تعيين');
@@ -2660,8 +2660,8 @@ function selectExtraForShelf(srcKey){
     if(!choice) return;
     // move old drug to x_
     const oldKey='x_'+uid();
-    data[oldKey]={...data[pickExtraTargetKey], shelf:false, extra:true, drawerNum:null, drawerSlot:null};
-    delete data[pickExtraTargetKey];
+    if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.unassign(data,pickExtraTargetKey,oldKey);
+    else { data[oldKey]={...data[pickExtraTargetKey], shelf:false, extra:true, drawerNum:null, drawerSlot:null}; delete data[pickExtraTargetKey]; }
   }
   // place selected drug in target
   data[pickExtraTargetKey]={...data[srcKey], shelf:true, extra:false};
