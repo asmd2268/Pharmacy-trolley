@@ -14,6 +14,10 @@ older cached page or a test harness can still start safely.
 - `save-coordinator.js`: serialized save queue and conflict-safe persistence.
 - `backup-policy.js`: backup retention and stale-row selection.
 - `session-timeout.js`: inactivity timeout lifecycle.
+- `auth-runtime.js`: Supabase sign-in, recovery, invite, and session lifecycle.
+- `persistence-runtime.js`: conflict-safe Supabase loading, saving, and pending-write recovery.
+- `voice-module.js`: voice capture, drug resolution, and voice-session confirmation.
+- `backup-module.js`: backup scheduling, retention, listing, and restoration UI flow.
 - `text-policy.js`: normalization and HTML escaping.
 - `date-policy.js` / `medication-policy.js`: date and expiry classification rules.
 - `shelf-search.js`, `shelf-module.js`, `shelf-operations.js`: shelf queries and immutable shelf changes.
