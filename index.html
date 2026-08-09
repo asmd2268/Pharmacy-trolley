@@ -752,6 +752,7 @@
 <script src="./architecture/search-helpers.js"></script>
 <script src="./architecture/text-helpers.js"></script>
 <script src="./architecture/id-helper.js"></script>
+<script src="./architecture/settings-policy.js"></script>
 <!-- Secure identifiers use crypto.randomUUID with crypto.getRandomValues fallback. -->
 <script>
 // ══════════════════════════════════════
@@ -915,11 +916,6 @@ function expStatus(d){ const n=daysUntil(d); return window.PharmacyMedicationPol
 function slotExpSt(key){ const d=data[key]; if(window.PharmacyMedicationPolicy)return PharmacyMedicationPolicy.itemStatus(d,daysUntil,settings); if(!d||!d.expiries||!d.expiries.length)return'none'; let w='ok'; for(const e of d.expiries){const s=expStatus(e);if(s==='expired'||s==='critical')return'danger';if(s==='warn')w='warn';} return w; }
 function isValidDataKey(value){ return /^(?:[1-9]\d{0,2}[A-F]|x_[a-z0-9_-]{3,64})$/i.test(String(value||'')); }
 function normalizeExpiries(values){ return [...new Set((values||[]).filter(isValidIsoDate))].sort(); }
-function sanitizeSettings(value){
-  const clean=Object.assign({warnDays:30,critDays:7,authMinutes:15},structuredClone(value||{}));
-  delete clean.writePassword;
-  return clean;
-}
 
 // ══ ROLE-BASED WRITE PROTECTION ══
 function invalidateDoseCountMap(){ /* no-op — dose-count cache not used in this build */ }
