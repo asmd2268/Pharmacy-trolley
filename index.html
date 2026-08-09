@@ -1223,6 +1223,7 @@ code{font-family:var(--mono)}
 
 <script src="./architecture/state-repository.js"></script>
 <script src="./architecture/supabase-rest-client.js"></script>
+<script src="./architecture/auth-session.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -2951,6 +2952,7 @@ const SB_CLIENT_ID = (()=>{
 })();
 const SB_SESSION_KEY='pharmacy_auth_session_v1';
 const SB_PASSWORD_SETUP_KEY='pharmacy_password_setup_session_v1';
+const sbSessionStore=window.PharmacyAuthSession?window.PharmacyAuthSession.createStore(sessionStorage,SB_SESSION_KEY):null;
 let sbSession=null;
 let sbUser=null;
 let sbUserRole='';
@@ -2966,12 +2968,13 @@ let sbPasswordSetupSession=null;
 
 function storeSbSession(session){
   sbSession=session;
-  if(session) sessionStorage.setItem(SB_SESSION_KEY,JSON.stringify(session));
+  if(sbSessionStore) sbSessionStore.write(session);
+  else if(session) sessionStorage.setItem(SB_SESSION_KEY,JSON.stringify(session));
   else sessionStorage.removeItem(SB_SESSION_KEY);
 }
 
 function readSbSession(){
-  try{return JSON.parse(sessionStorage.getItem(SB_SESSION_KEY)||'null');}catch(e){return null;}
+  return sbSessionStore?sbSessionStore.read():(()=>{try{return JSON.parse(sessionStorage.getItem(SB_SESSION_KEY)||'null');}catch(e){return null;}})();
 }
 
 async function sbAuthRequest(path,body){
