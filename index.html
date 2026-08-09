@@ -1228,6 +1228,7 @@ code{font-family:var(--mono)}
 <script src="./architecture/shelf-search.js"></script>
 <script src="./architecture/date-policy.js"></script>
 <script src="./architecture/shelf-module.js"></script>
+<script src="./architecture/shelf-storage.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -2712,23 +2713,17 @@ function readShelfPhoto(file,callback){
   reader.readAsDataURL(file);
 }
 async function uploadShelfPhoto(file,shelfId){
-  if(!/^image\/(?:png|jpe?g|webp|gif)$/i.test(file?.type||'')||file.size>2*1024*1024) throw new Error('الصورة يجب أن تكون PNG/JPG/WebP/GIF وأقل من 2MB');
-  if(!sbSession?.accessToken) throw new Error('يجب تسجيل الدخول لرفع الصورة');
-  const ext=(file.type||'image/jpeg').split('/')[1].replace('jpeg','jpg');
-  const path=`${sbUser.id}/${shelfId}-${Date.now()}.${ext}`;
-  const res=await fetch(`${SB_URL}/storage/v1/object/shelf-images/${encodeURIComponent(path)}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${sbSession.accessToken}`,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},body:file});
-  if(!res.ok) throw new Error('تعذر رفع صورة الرف');
-  return path;
+  if(!window.PharmacyShelfStorage) throw new Error('وحدة تخزين صور الأرفف غير متاحة');
+  if(!window._pharmacyShelfStorage) window._pharmacyShelfStorage=PharmacyShelfStorage.create({url:SB_URL,key:SB_KEY,token:()=>sbSession?.accessToken,userId:()=>sbUser?.id||''});
+  return window._pharmacyShelfStorage.upload(file,shelfId);
 }
 async function shelfPhotoUrl(path){
-  if(!path||!sbSession?.accessToken)return '';
-  const res=await fetch(`${SB_URL}/storage/v1/object/sign/shelf-images/${encodeURIComponent(path)}`,{method:'POST',headers:{apikey:SB_KEY,Authorization:`Bearer ${sbSession.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:3600})});
-  if(!res.ok)return '';
-  const json=await res.json(); return json.signedURL?`${SB_URL}/storage/v1${json.signedURL}`:'';
+  if(!window._pharmacyShelfStorage) window._pharmacyShelfStorage=PharmacyShelfStorage.create({url:SB_URL,key:SB_KEY,token:()=>sbSession?.accessToken,userId:()=>sbUser?.id||''});
+  return window._pharmacyShelfStorage.signedUrl(path);
 }
 async function deleteShelfPhoto(path){
-  if(!path||!sbSession?.accessToken)return;
-  await fetch(`${SB_URL}/storage/v1/object/shelf-images/${encodeURIComponent(path)}`,{method:'DELETE',headers:{apikey:SB_KEY,Authorization:`Bearer ${sbSession.accessToken}`}});
+  if(!window._pharmacyShelfStorage) window._pharmacyShelfStorage=PharmacyShelfStorage.create({url:SB_URL,key:SB_KEY,token:()=>sbSession?.accessToken,userId:()=>sbUser?.id||''});
+  return window._pharmacyShelfStorage.remove(path);
 }
 async function hydrateShelfPhotoUrls(){
   if(!sbSession?.accessToken)return;
