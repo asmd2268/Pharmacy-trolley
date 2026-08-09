@@ -12,4 +12,7 @@
   if (typeof global.isValidIsoDate !== 'function') global.isValidIsoDate = isIsoDate;
   if (typeof global.formatDate !== 'function') global.formatDate = format;
   if (typeof global.daysLabel !== 'function') global.daysLabel = daysLabel;
+  if (typeof global.normalizeExpiries !== 'function') global.normalizeExpiries = function(values) {
+    return [...new Set((values||[]).filter(isIsoDate))].sort();
+  };
 }(window));
