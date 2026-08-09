@@ -1226,6 +1226,7 @@ code{font-family:var(--mono)}
 <script src="./architecture/auth-session.js"></script>
 <script src="./architecture/save-coordinator.js"></script>
 <script src="./architecture/shelf-search.js"></script>
+<script src="./architecture/date-policy.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -1401,8 +1402,8 @@ function daysUntil(d){ if(!d)return Infinity; const e=new Date(d),n=new Date(); 
 function expStatus(d){ const n=daysUntil(d); if(n<0)return'expired'; if(n<=settings.critDays)return'critical'; if(n<=settings.warnDays)return'warn'; return'ok'; }
 function slotExpSt(key){ const d=data[key]; if(!d||!d.expiries||!d.expiries.length)return'none'; let w='ok'; for(const e of d.expiries){const s=expStatus(e); if(s==='expired'||s==='critical')return'danger'; if(s==='warn')w='warn';} return w; }
 function cellExpSt(cell){ if(!cell||!cell.expiries||!cell.expiries.length)return'none'; let w='ok'; for(const e of cell.expiries){const s=expStatus(e); if(s==='expired'||s==='critical')return'danger'; if(s==='warn')w='warn';} return w; }
-function formatDate(s){ if(!s)return''; const[y,m,d]=s.split('-'); return`${d}/${m}/${y}`; }
-function daysLabel(n){ if(n<0)return`منتهي منذ ${Math.abs(n)} يوم`; if(n===0)return'اليوم!'; return`${n} يوم`; }
+function formatDate(s){ return window.PharmacyDatePolicy?PharmacyDatePolicy.format(s):(!s?'':(()=>{const[y,m,d]=s.split('-');return`${d}/${m}/${y}`})()); }
+function daysLabel(n){ return window.PharmacyDatePolicy?PharmacyDatePolicy.daysLabel(n):(n<0?`منتهي منذ ${Math.abs(n)} يوم`:n===0?'اليوم!':`${n} يوم`); }
 function uid(){ return crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2); }
 function escapeHtml(value){
   return String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
@@ -1420,6 +1421,7 @@ function safeImageSrc(value){
 }
 function isValidDataKey(value){ return /^(?:[1-9]\d{0,2}[A-F]|x_[a-z0-9_-]{3,64})$/i.test(String(value||'')); }
 function isValidIsoDate(value){
+  if(window.PharmacyDatePolicy) return PharmacyDatePolicy.isIsoDate(value);
   if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value||''))) return false;
   const [y,m,d]=value.split('-').map(Number),date=new Date(Date.UTC(y,m-1,d));
   return date.getUTCFullYear()===y&&date.getUTCMonth()===m-1&&date.getUTCDate()===d;
