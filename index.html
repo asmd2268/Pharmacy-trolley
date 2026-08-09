@@ -1355,7 +1355,7 @@ function migrateLegacyShelfCells(){
       const rowLetter=m[1], colIdx=parseInt(m[2],10)-1;
       const key=`${startNum+colIdx}${rowLetter}`;
       if(!data[key]){
-        data[key]={name:c.drug, expiries:c.expiries||[], types:c.types||[], oos:false, shelf:true, notes:c.notes||''};
+        data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(c.drug,{expiries:c.expiries,types:c.types,shelf:true,notes:c.notes}):{name:c.drug, expiries:c.expiries||[], types:c.types||[], oos:false, shelf:true, notes:c.notes||''};
         changed=true;
       }
     }
@@ -1560,7 +1560,7 @@ function initExtraDrugs(){
     const norm = name.replace(/\n/g,' ').trim().toLowerCase();
     if(!existingNames.has(norm)){
       const key='x_'+uid();
-      data[key]={name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
+      data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(name,{extra:true,drawerNum:null,drawerSlot:null}):{name,expiries:[],types:[],oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
       existingNames.add(norm);
     }
   });
