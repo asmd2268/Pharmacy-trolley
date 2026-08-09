@@ -30,4 +30,5 @@
     });
   }
   global.PharmacyShelfStorage = Object.freeze({create, assertImage, safeImageSrc});
+  if(typeof global.safeImageSrc!=='function') global.safeImageSrc=function(value){ return safeImageSrc(value,global.SB_URL); };
 }(window));
