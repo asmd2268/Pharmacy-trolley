@@ -1231,6 +1231,7 @@ code{font-family:var(--mono)}
 <script src="./architecture/shelf-storage.js"></script>
 <script src="./architecture/shelf-operations.js"></script>
 <script src="./architecture/text-policy.js"></script>
+<script src="./architecture/backup-policy.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -4010,15 +4011,16 @@ async function doBackup(type = 'manual') {
 }
 
 async function pruneOldBackups() {
-  if(sbUserRole!=='admin') return;
+  if(!['writer','admin'].includes(sbUserRole)) return;
   try {
     // Get all backups ordered by date
     const rows=await sbFetch(BACKUP_TABLE+'?select=id,created_at&order=created_at.desc');
     // Delete any beyond the 30th
-    if (rows.length > 30) {
-      const toDelete = rows.slice(30).map(r => r.id);
-      for (const id of toDelete) {
-        await sbFetch(BACKUP_TABLE+'?id=eq.'+encodeURIComponent(id),{method:'DELETE'});
+    const policy=window.PharmacyBackupPolicy;
+    const toDelete = policy?policy.staleRows(rows,policy.MAX_BACKUPS):(rows.length>30?rows.slice(30):[]);
+    if (toDelete.length) {
+      for (const row of toDelete) {
+        await sbFetch(BACKUP_TABLE+'?id=eq.'+encodeURIComponent(row.id),{method:'DELETE'});
       }
     }
   } catch (e) { /* silent */ }
