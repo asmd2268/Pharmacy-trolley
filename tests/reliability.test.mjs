@@ -14,6 +14,7 @@ const idHelper = await readFile(new URL('../architecture/id-helper.js', import.m
 const shelfStorage = await readFile(new URL('../architecture/shelf-storage.js', import.meta.url), 'utf8');
 const settingsPolicy = await readFile(new URL('../architecture/settings-policy.js', import.meta.url), 'utf8');
 const validationPolicy = await readFile(new URL('../architecture/validation-policy.js', import.meta.url), 'utf8');
+const storagePolicy = await readFile(new URL('../architecture/storage-policy.js', import.meta.url), 'utf8');
 
 function element() {
   return {
@@ -50,6 +51,7 @@ function makeContext() {
   vm.runInContext(shelfStorage, context, { filename: 'shelf-storage.js' });
   vm.runInContext(settingsPolicy, context, { filename: 'settings-policy.js' });
   vm.runInContext(validationPolicy, context, { filename: 'validation-policy.js' });
+  vm.runInContext(storagePolicy, context, { filename: 'storage-policy.js' });
   context.normalizeSearchText = context.window.normalizeSearchText;
   context.escapeHtml = context.window.escapeHtml;
   context.cleanUserText = context.window.cleanUserText;
@@ -59,12 +61,19 @@ function makeContext() {
   context.sanitizeSettings = context.window.sanitizeSettings;
   context.isValidDataKey = context.window.isValidDataKey;
   context.isAssignedToDrawer = context.window.isAssignedToDrawer;
+  context.PharmacyStoragePolicy = context.window.PharmacyStoragePolicy;
   vm.runInContext(script, context, { filename: 'index.html' });
   return context;
 }
 
 test('application JavaScript compiles', () => {
   assert.doesNotThrow(() => new vm.Script(fullScript));
+});
+
+test('storage policy reports quota failures without throwing', () => {
+  const context = makeContext();
+  const result = vm.runInContext("PharmacyStoragePolicy.write({setItem(){throw Object.assign(new Error('full'),{name:'QuotaExceededError'})}}, 'x', {ok:true}, ()=>{})", context);
+  assert.equal(result, false);
 });
 
 test('search normalization handles Arabic variants and whitespace', () => {

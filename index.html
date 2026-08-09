@@ -754,6 +754,7 @@
 <script src="./architecture/id-helper.js"></script>
 <script src="./architecture/settings-policy.js"></script>
 <script src="./architecture/validation-policy.js"></script>
+<script src="./architecture/storage-policy.js"></script>
 <!-- Secure identifiers use crypto.randomUUID with crypto.getRandomValues fallback. -->
 <script>
 // ══════════════════════════════════════
@@ -2734,7 +2735,7 @@ let voiceSessionLog = (() => {
   try { return JSON.parse(localStorage.getItem('voiceSessionLog')||'[]'); } catch(e){ return []; }
 })();
 function saveSessionLog(){
-  try { localStorage.setItem('voiceSessionLog', JSON.stringify(voiceSessionLog)); } catch(e){}
+  PharmacyStoragePolicy.write(localStorage,'voiceSessionLog',voiceSessionLog,(e)=>{ if(e&&e.name==='QuotaExceededError') toast('مساحة التخزين ممتلئة، تعذر حفظ سجل الإدخال الصوتي','error'); });
 }
 
 // ── Password gate ──
@@ -3267,7 +3268,7 @@ async function scheduleBackupOnOpen() {
   // انتظر لحظة ثم احفظ (نعطي sbLoad وقت ينتهي أولاً)
   setTimeout(async () => {
     if (!sbConnected) return;
-    if(await doBackup('auto')) localStorage.setItem('lastAutoBackupDate', todayKey);
+    if(await doBackup('auto')) PharmacyStoragePolicy.write(localStorage,'lastAutoBackupDate',todayKey);
   }, 2000);
 }
 
@@ -3287,7 +3288,7 @@ async function checkAutoBackup() {
   const lastKey = localStorage.getItem('lastAutoBackupDate');
   if (lastKey === todayKey) return; // محفوظة اليوم
 
-  if(await doBackup('auto')) localStorage.setItem('lastAutoBackupDate', todayKey);
+  if(await doBackup('auto')) PharmacyStoragePolicy.write(localStorage,'lastAutoBackupDate',todayKey);
 }
 
 async function doBackup(type = 'manual') {
