@@ -13,6 +13,14 @@ test('identifier generation does not use Math.random', () => {
   assert.match(appHtml, /getRandomValues/);
 });
 
+test('password setup enforces strength requirements', () => {
+  assert.match(appHtml, /function passwordPolicyError\(password\)/);
+  assert.ok(appHtml.includes("/[A-Z]/.test(p)"));
+  assert.ok(appHtml.includes("/[a-z]/.test(p)"));
+  assert.ok(appHtml.includes("/[0-9]/.test(p)"));
+  assert.ok(appHtml.includes("/[^A-Za-z0-9]/.test(p)"));
+});
+
 test('hosting security headers are enforced', () => {
   assert.match(vercelConfig, /frame-ancestors 'none'/);
   assert.match(vercelConfig, /X-Content-Type-Options/);

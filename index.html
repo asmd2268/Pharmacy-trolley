@@ -1160,7 +1160,7 @@ code{font-family:var(--mono)}
 <div id="passwordSetupModal" class="modal-overlay">
 <div class="modal" style="max-width:420px">
   <h2 id="passwordSetupTitle">🔑 إنشاء كلمة مرور</h2>
-  <div class="drug-info">استخدم 12 حرفًا على الأقل. لا تُخزّن كلمة المرور داخل التطبيق.</div>
+  <div class="drug-info">استخدم 12 حرفًا على الأقل، مع حرف كبير وصغير ورقم ورمز. لا تُخزّن كلمة المرور داخل التطبيق.</div>
   <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="newAuthPassword" minlength="12" autocomplete="new-password" dir="ltr"></div>
   <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="confirmAuthPassword" minlength="12" autocomplete="new-password" dir="ltr" onkeydown="if(event.key==='Enter')sbCompletePasswordSetup()"></div>
   <div id="passwordSetupError" style="display:none;color:var(--danger);font-size:12px;margin-bottom:8px"></div>
@@ -3046,6 +3046,15 @@ function showAuthLogin(message=''){
 }
 
 function passwordResetRedirectUrl(){ return location.origin+location.pathname; }
+function passwordPolicyError(password){
+  const p=String(password||'');
+  if(p.length<12) return 'استخدم 12 حرفًا على الأقل';
+  if(!/[A-Z]/.test(p)) return 'أضف حرفًا إنجليزيًا كبيرًا واحدًا على الأقل';
+  if(!/[a-z]/.test(p)) return 'أضف حرفًا إنجليزيًا صغيرًا واحدًا على الأقل';
+  if(!/[0-9]/.test(p)) return 'أضف رقماً واحداً على الأقل';
+  if(!/[^A-Za-z0-9]/.test(p)) return 'أضف رمزاً واحداً على الأقل';
+  return '';
+}
 
 function showPasswordSetup(session){
   sbPasswordSetupSession=session;
@@ -3101,7 +3110,8 @@ async function sbCompletePasswordSetup(){
   const btn=document.getElementById('passwordSetupBtn');
   const fail=message=>{error.textContent=message;error.style.display='';};
   if(!sbPasswordSetupSession) return fail('انتهت جلسة الرابط. اطلب رابطًا جديدًا.');
-  if(password.length<12) return fail('استخدم 12 حرفًا على الأقل');
+  const policyError=passwordPolicyError(password);
+  if(policyError) return fail(policyError);
   if(password!==confirmPassword) return fail('كلمتا المرور غير متطابقتين');
   btn.disabled=true; error.style.display='none';
   try{
