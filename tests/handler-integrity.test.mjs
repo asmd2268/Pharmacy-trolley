@@ -37,3 +37,11 @@ test('application and architecture modules avoid Math.random for identifiers', a
   const modules = await Promise.all(files.filter(f => f.endsWith('.js')).map(f => readFile(new URL(`../architecture/${f}`, import.meta.url), 'utf8')));
   assert.equal(`${html}\n${modules.join('\n')}`.includes('Math.random'), false);
 });
+
+test('all referenced architecture modules exist', async () => {
+  const refs = [...html.matchAll(/<script\s+src="(\.\/architecture\/[^\"]+\.js)"/g)].map(m => m[1]);
+  for (const ref of refs) {
+    const source = await readFile(new URL(`../${ref}`, import.meta.url), 'utf8');
+    assert.ok(source.length > 0, `${ref} should not be empty`);
+  }
+});
