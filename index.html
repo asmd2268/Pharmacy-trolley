@@ -1222,6 +1222,7 @@ code{font-family:var(--mono)}
 </div>
 
 <script src="./architecture/state-repository.js"></script>
+<script src="./architecture/supabase-rest-client.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -3218,29 +3219,8 @@ async function reloadLatestAfterConflict(){
 
 async function sbFetch(path, opts={}){
   if(!SB_URL||!SB_KEY) throw new Error('Supabase غير مهيأ');
-  if(!await sbEnsureSession()) throw new Error('يلزم تسجيل الدخول');
-  const ctrl = new AbortController();
-  const timer = setTimeout(()=>ctrl.abort(), opts.timeoutMs||10000);
-  const {headers:extraHeaders={},timeoutMs,...fetchOpts}=opts;
-  try{
-    const request=()=>fetch(SB_URL+'/rest/v1/'+path, {
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+sbSession.accessToken,
-               'Content-Type':'application/json','Prefer':'return=representation',...extraHeaders},
-      signal:ctrl.signal,...fetchOpts
-    });
-    let res=await request();
-    if(res.status===401&&await refreshSbSession()) res=await request();
-    if(!res.ok){
-      const detail=await res.text().catch(()=>'');
-      throw new Error(`Supabase ${res.status}: ${detail.slice(0,180)}`);
-    }
-    if(res.status===204) return null;
-    return await res.json().catch(()=>null);
-  } catch(e){
-    if(e.name==='AbortError') throw new Error('انتهت مهلة الاتصال قبل تأكيد الحفظ');
-    throw e;
-  }
-  finally{ clearTimeout(timer); }
+  if(!window._pharmacySupabaseRequest) window._pharmacySupabaseRequest=PharmacySupabaseRestClient.create({url:SB_URL,key:SB_KEY,ensureSession:sbEnsureSession,accessToken:()=>sbSession&&sbSession.accessToken,refreshSession:refreshSbSession});
+  return window._pharmacySupabaseRequest(path,opts);
 }
 
 function sbUpdateCreds(){ /* credentials are hardcoded */ }
