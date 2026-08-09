@@ -13,6 +13,7 @@ const datePolicy = await readFile(new URL('../architecture/date-policy.js', impo
 const idHelper = await readFile(new URL('../architecture/id-helper.js', import.meta.url), 'utf8');
 const shelfStorage = await readFile(new URL('../architecture/shelf-storage.js', import.meta.url), 'utf8');
 const settingsPolicy = await readFile(new URL('../architecture/settings-policy.js', import.meta.url), 'utf8');
+const validationPolicy = await readFile(new URL('../architecture/validation-policy.js', import.meta.url), 'utf8');
 
 function element() {
   return {
@@ -48,6 +49,7 @@ function makeContext() {
   vm.runInContext(idHelper, context, { filename: 'id-helper.js' });
   vm.runInContext(shelfStorage, context, { filename: 'shelf-storage.js' });
   vm.runInContext(settingsPolicy, context, { filename: 'settings-policy.js' });
+  vm.runInContext(validationPolicy, context, { filename: 'validation-policy.js' });
   context.normalizeSearchText = context.window.normalizeSearchText;
   context.escapeHtml = context.window.escapeHtml;
   context.cleanUserText = context.window.cleanUserText;
@@ -55,6 +57,7 @@ function makeContext() {
   context.uid = context.window.uid;
   context.safeImageSrc = context.window.safeImageSrc;
   context.sanitizeSettings = context.window.sanitizeSettings;
+  context.isValidDataKey = context.window.isValidDataKey;
   vm.runInContext(script, context, { filename: 'index.html' });
   return context;
 }
