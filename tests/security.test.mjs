@@ -6,30 +6,32 @@ const prepare = await readFile(new URL('../supabase/security_migration.sql', imp
 const cutover = await readFile(new URL('../supabase/security_cutover.sql', import.meta.url), 'utf8');
 const rollback = await readFile(new URL('../supabase/security_rollback.sql', import.meta.url), 'utf8');
 const appHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const appScript = await readFile(new URL('../app.js', import.meta.url), 'utf8');
+const appSource = `${appHtml}\n${appScript}`;
 const vercelConfig = await readFile(new URL('../vercel.json', import.meta.url), 'utf8');
 
 test('identifier generation does not use Math.random', () => {
-  assert.doesNotMatch(appHtml, /Math\.random\s*\(/);
-  assert.match(appHtml, /getRandomValues/);
+  assert.doesNotMatch(appSource, /Math\.random\s*\(/);
+  assert.match(appSource, /getRandomValues/);
 });
 
 test('password setup enforces strength requirements', () => {
-  assert.match(appHtml, /function passwordPolicyError\(password\)/);
-  assert.ok(appHtml.includes("/[A-Z]/.test(p)"));
-  assert.ok(appHtml.includes("/[a-z]/.test(p)"));
-  assert.ok(appHtml.includes("/[0-9]/.test(p)"));
-  assert.ok(appHtml.includes("/[^A-Za-z0-9]/.test(p)"));
+  assert.match(appSource, /function passwordPolicyError\(password\)/);
+  assert.ok(appSource.includes("/[A-Z]/.test(p)"));
+  assert.ok(appSource.includes("/[a-z]/.test(p)"));
+  assert.ok(appSource.includes("/[0-9]/.test(p)"));
+  assert.ok(appSource.includes("/[^A-Za-z0-9]/.test(p)"));
 });
 
 test('destructive UI handlers enforce writer authorization', () => {
   for (const name of ['deleteShelfDrugEntry','unassignDrugSlot','saveExpiries','saveNewDrug','saveBulkDrugs','confirmMoveDrawer','confirmAssignDrawer','saveNewShelf','saveEditShelf','deleteShelf','removeShelfPhoto','saveManualOOS','removeManualOOS','clearCell','confirmVoiceSave','confirmRestore']) {
-    const block = appHtml.slice(appHtml.indexOf(`function ${name}`), appHtml.indexOf(`function ${name}`) + 500);
+    const block = appSource.slice(appSource.indexOf(`function ${name}`), appSource.indexOf(`function ${name}`) + 500);
     assert.match(block, /isWriteAuthFresh\(\)/, name);
   }
 });
 
 test('application has one persistence entry point', () => {
-  assert.equal((appHtml.match(/function\s+saveData\s*\(/g) || []).length, 1);
+  assert.equal((appSource.match(/function\s+saveData\s*\(/g) || []).length, 1);
 });
 
 test('hosting security headers are enforced', () => {
