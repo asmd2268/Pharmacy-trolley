@@ -5,6 +5,9 @@ begin;
 
 revoke all on public.pharmacy_state from public, anon;
 revoke all on public.pharmacy_backups from public, anon;
+-- These functions are internal policy/trigger helpers, not public RPC endpoints.
+revoke execute on function public.archive_pharmacy_state() from public, anon, authenticated;
+revoke execute on function public.pharmacy_has_role(text[]) from anon;
 
 commit;
 

@@ -21,6 +21,11 @@ test('hosting security headers are enforced', () => {
   assert.match(vercelConfig, /microphone=\(self\)/);
 });
 
+test('cutover closes internal RPC helpers', () => {
+  assert.match(cutover, /revoke execute on function public\.archive_pharmacy_state\(\) from public, anon, authenticated/i);
+  assert.match(cutover, /revoke execute on function public\.pharmacy_has_role\(text\[\]\) from anon/i);
+});
+
 test('preparation does not revoke production anonymous access', () => {
   assert.doesNotMatch(prepare, /revoke all on public\.pharmacy_(?:state|backups) from [^;]*(?:anon|public)/i);
   assert.match(prepare, /create table if not exists public\.app_users/i);
