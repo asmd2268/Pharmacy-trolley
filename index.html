@@ -2463,6 +2463,7 @@ function renderOOS(){
 }
 function openAddOOSModal(){document.getElementById('oosManualName').value='';document.getElementById('oosManualNote').value='';document.getElementById('addOOSModal').classList.add('open');}
 function saveManualOOS(){
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   const name=cleanUserText(document.getElementById('oosManualName').value,500);
   if(!name)return showToast('⚠️ أدخل اسم الدواء');
   const note=cleanUserText(document.getElementById('oosManualNote').value,1000);
