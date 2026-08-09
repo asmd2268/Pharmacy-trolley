@@ -1227,6 +1227,7 @@ code{font-family:var(--mono)}
 <script src="./architecture/save-coordinator.js"></script>
 <script src="./architecture/shelf-search.js"></script>
 <script src="./architecture/date-policy.js"></script>
+<script src="./architecture/shelf-module.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -2477,7 +2478,8 @@ function shelfHasSearchMatch(shelf,q){
 function renderShelves(){
   const q=normalizeSearchText(document.getElementById('shelfSearch').value||'');
   const wrap=document.getElementById('shelfWrap'); wrap.innerHTML='';
-  const filtered=shelves.filter(s=>shelfHasSearchMatch(s,q));
+  const shelfModule=window.PharmacyShelfModule&&PharmacyShelfModule.create({normalize:normalizeSearchText,rowLabel});
+  const filtered=shelfModule?shelfModule.visibleShelves(shelves,data,q):shelves.filter(s=>shelfHasSearchMatch(s,q));
   if(!filtered.length){wrap.innerHTML='<div class="empty"><div class="icon">🔎</div>لا يوجد رف أو دواء مطابق للبحث</div>';updateStats();return;}
 
   filtered.forEach(shelf=>{
@@ -2536,7 +2538,7 @@ function renderShelves(){
         const dispLabel=`${rowLabel(r)}${num}`; // e.g. A51 — shown to the user
         const item=data[key];
         const div=document.createElement('div');
-        const cellMatches=!q||normalizeSearchText(shelf.name).includes(q)||(item&&(normalizeSearchText(item.name).includes(q)||normalizeSearchText(key).includes(q)||normalizeSearchText(dispLabel).includes(q)));
+        const cellMatches=shelfModule?shelfModule.cellMatches(shelf,data,r,c,q):(!q||normalizeSearchText(shelf.name).includes(q)||(item&&(normalizeSearchText(item.name).includes(q)||normalizeSearchText(key).includes(q)||normalizeSearchText(dispLabel).includes(q))));
         let cellCls='shelf-cell';
         if(item){
           const cSt=slotExpSt(key);
