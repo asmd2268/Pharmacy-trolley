@@ -1232,6 +1232,7 @@ code{font-family:var(--mono)}
 <script src="./architecture/shelf-operations.js"></script>
 <script src="./architecture/text-policy.js"></script>
 <script src="./architecture/backup-policy.js"></script>
+<script src="./architecture/session-timeout.js"></script>
 <script>
 // ══════════════════════════════════════
 //  DRUGS (50 × 4)
@@ -2965,7 +2966,12 @@ let sbSession=null;
 let sbUser=null;
 let sbUserRole='';
 let lastActivityAt=Date.now();
+let sbSessionTimeout=null;
 function startAuthTimeout(){
+  if(window.PharmacySessionTimeout){
+    if(!sbSessionTimeout) sbSessionTimeout=PharmacySessionTimeout.create({minutes:()=>settings.authMinutes,isAuthenticated:()=>!!sbUser,onTimeout:sbSignOut});
+    sbSessionTimeout.start(); return;
+  }
   ['pointerdown','keydown','input','click'].forEach(type=>document.addEventListener(type,()=>{lastActivityAt=Date.now();},{passive:true}));
   setInterval(()=>{
     const minutes=Math.max(5,Number(settings.authMinutes)||15);
@@ -3120,6 +3126,7 @@ async function sbSignIn(){
 }
 
 async function sbSignOut(){
+  if(sbSessionTimeout) sbSessionTimeout.stop();
   if(window._shelfPhotoRefreshTimer){ clearInterval(window._shelfPhotoRefreshTimer); window._shelfPhotoRefreshTimer=null; }
   const accessToken=sbSession&&sbSession.accessToken;
   if(accessToken){
