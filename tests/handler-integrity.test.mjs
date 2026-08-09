@@ -31,3 +31,9 @@ test('main application does not define duplicate named functions', () => {
   const duplicates = [...counts].filter(([, count]) => count > 1).map(([name]) => name);
   assert.deepEqual(duplicates, []);
 });
+
+test('application and architecture modules avoid Math.random for identifiers', async () => {
+  const files = await readdir(new URL('../architecture', import.meta.url));
+  const modules = await Promise.all(files.filter(f => f.endsWith('.js')).map(f => readFile(new URL(`../architecture/${f}`, import.meta.url), 'utf8')));
+  assert.equal(`${html}\n${modules.join('\n')}`.includes('Math.random'), false);
+});
