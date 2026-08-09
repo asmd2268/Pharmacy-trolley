@@ -3889,6 +3889,7 @@ function vcUpdateDrug(){
 // vcUpdateDrug merged above
 
 function confirmVoiceSave(){
+  if(!isWriteAuthFresh()) return setVoiceStatus('error','⛔ الحساب للقراءة فقط');
   const dr = document.getElementById('vcDr').value;
   const sl = document.getElementById('vcSl').value;
   const dateVal = document.getElementById('vcDate').value;
@@ -4128,6 +4129,7 @@ function promptRestore(id, label) {
 }
 
 async function confirmRestore() {
+  if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   if (!pendingRestoreId) return;
   closeModal('restoreConfirmModal');
   showToast('⏳ جاري الاستعادة...');
