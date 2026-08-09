@@ -15,4 +15,10 @@
   if (typeof global.normalizeExpiries !== 'function') global.normalizeExpiries = function(values) {
     return [...new Set((values||[]).filter(isIsoDate))].sort();
   };
+  if (typeof global.daysUntil !== 'function') global.daysUntil = function(value) {
+    if(!value) return Infinity;
+    const expiry=new Date(value), today=new Date();
+    today.setHours(0,0,0,0); expiry.setHours(0,0,0,0);
+    return Math.round((expiry-today)/86400000);
+  };
 }(window));
