@@ -158,6 +158,7 @@ async function confirmRestore() {
     refreshAll();
     sbDirty=true; persistPendingWrite();
     await sbSaveNow();
+    if(window.PharmacyAuditLog){ PharmacyAuditLog.log('restore_backup',null,null,{backupId:pendingRestoreId}); }
     showToast('✅ تمت الاستعادة بنجاح');
     closeModal('backupModal');
   } catch (e) {
