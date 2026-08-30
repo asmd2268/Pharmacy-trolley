@@ -105,6 +105,7 @@ async function sbLoad({ignorePending=false}={}){
     sbConnected=true;
     sbDirty=false;
     setSbStatus('connected');
+    if(window.PharmacyAuditLog) try{ PharmacyAuditLog.flushQueue(); }catch(e){}
     if(!ignorePending){
       const pending=readPendingWrite();
       if(pending) showSyncConflict('توجد تغييرات محلية من جلسة سابقة لم يُؤكَّد حفظها. نزّلها أو حمّل أحدث نسخة قبل المتابعة.',{type:'recovery',pending});
