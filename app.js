@@ -192,6 +192,7 @@ function switchTab(name,el){
   if(name==='shelf')  renderShelves();
   if(name==='oos')    renderOOS();
   if(name==='table')  renderTable();
+  if(name==='audit' && window.PharmacyAuditLog) PharmacyAuditLog.render();
 }
 
 // ══ ZOOM ══
@@ -324,7 +325,9 @@ async function dbBulkDelete(){
   const keys=[...document.querySelectorAll('.db-row-chk:checked')].map(c=>c.dataset.key);
   if(!keys.length){ showToast('⚠️ لم تحدد أي دواء'); return; }
   if(!confirm(`حذف ${keys.length} دواء نهائياً؟`)) return;
+  const _deletedNames=keys.map(k=>data[k]?data[k].name:'').filter(Boolean);
   keys.forEach(k=>{ delete data[k]; });
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('bulk_delete',null,null,{count:keys.length,keys,names:_deletedNames.slice(0,20)}); }
   saveData();
   let confirmed=false;
   try{ await sbSaveNow(); confirmed=true; } catch(e){}
@@ -371,6 +374,7 @@ function doImportFile(input){
             count++;
           });
           saveData();closeModal('importExportModal');renderDB();
+          if(window.PharmacyAuditLog){ PharmacyAuditLog.log('import_data',null,null,{mode:_importMode,format:'csv',count}); }
           showToast(`✅ تم استيراد ${count} دواء من CSV`);
         } else {
           // JSON
@@ -390,6 +394,7 @@ function doImportFile(input){
             });
           }
           saveData();closeModal('importExportModal');refreshAll();
+          if(window.PharmacyAuditLog){ PharmacyAuditLog.log('import_data',null,null,{mode:_importMode,format:'json'}); }
           showToast('✅ تم الاستيراد وحفظه في Supabase');
         }
       }catch(err){showToast('❌ خطأ في الملف: '+err.message);}
@@ -465,11 +470,13 @@ function saveNewDrug(){
         data[oldKey]={...data[key], drawerNum:null, drawerSlot:null, extra:true};
         data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(nameVal,{types,extra:true}):{name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true};
         saveData(); refreshAll(); closeModal('addDrugModal');
+        if(window.PharmacyAuditLog){ PharmacyAuditLog.log('add_drug',key,nameVal,{location:`${dr}${sl}`,displaced:occupantName,displacedTo:oldKey}); }
         showToast(`✅ تمت الإضافة في درج ${dr}—${sl} — "${occupantName}" أصبح بدون تعيين`);
       } else {
         const newKey='x_'+uid();
         data[newKey]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(nameVal,{types,extra:true,drawerNum:null,drawerSlot:null}):{name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
         saveData(); refreshAll(); closeModal('addDrugModal');
+        if(window.PharmacyAuditLog){ PharmacyAuditLog.log('add_drug',newKey,nameVal,{unassigned:true}); }
         showToast('✅ تمت إضافة الدواء بدون موقع');
       }
       return;
@@ -481,6 +488,7 @@ function saveNewDrug(){
     data[key]=window.PharmacyMedicationOperations?PharmacyMedicationOperations.createRecord(nameVal,{types,extra:true,drawerNum:null,drawerSlot:null}):{name:nameVal,expiries:[],types,oos:false,shelf:false,notes:'',extra:true,drawerNum:null,drawerSlot:null};
   }
   saveData(); refreshAll(); closeModal('addDrugModal');
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('add_drug',dr&&sl?`${dr}${sl}`:'x_unassigned',nameVal,{location:dr&&sl?`${dr}${sl}`:'unassigned',types}); }
   showToast('✅ تمت إضافة الدواء للقاعدة'+(dr?` (درج ${dr}—${sl})`:'، بدون موقع بعد'));
 }
 
@@ -537,6 +545,7 @@ function saveBulkDrugs(){
     }
   });
   saveData();refreshAll();closeModal('bulkAddModal');
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('bulk_add',null,null,{count:added,skipped}); }
   showToast(`✅ تمت إضافة ${added} دواء، تخطي ${skipped} مكرر/خانة مشغولة`);
 }
 
@@ -586,27 +595,33 @@ function confirmMoveDrawer(){
     );
     if(choice){
       // swap
+      const movingName=data[movingKey].name.replace(/\n/g,' ');
       const tmp={...data[newKey]};
       data[newKey]={...data[movingKey]};
       data[movingKey]=tmp;
       saveData();refreshAll();closeModal('moveDrawerModal');
+      if(window.PharmacyAuditLog){ PharmacyAuditLog.log('swap_drugs',movingKey,movingName,{from:movingKey,to:newKey,swappedWith:occupantName}); }
       showToast(`🔄 تم تبديل الدواءين`);
     } else {
       // take slot, old drug becomes unassigned (x_)
+      const movingName=data[movingKey].name.replace(/\n/g,' ');
       const oldKey='x_'+uid();
       data[oldKey]={...data[newKey], drawerNum:null, drawerSlot:null, extra:true};
       data[newKey]={...data[movingKey]};
       delete data[movingKey];
       saveData();refreshAll();closeModal('moveDrawerModal');
+      if(window.PharmacyAuditLog){ PharmacyAuditLog.log('move_drug',newKey,movingName,{from:movingKey,to:newKey,displaced:occupantName}); }
       showToast(`✅ تم النقل — "${occupantName}" أصبح بدون تعيين`);
     }
     return;
   }
 
   // slot is free — simple move
+  const _moveName=data[movingKey]?data[movingKey].name.replace(/\n/g,' '):'';
   if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.assign(data,movingKey,newKey);
   else { data[newKey]={...data[movingKey]}; delete data[movingKey]; }
   saveData();refreshAll();closeModal('moveDrawerModal');
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('move_drug',newKey,_moveName,{from:movingKey,to:newKey}); }
   showToast(`✅ تم نقل الدواء إلى درج ${dr}—${sl}`);
 }
 
@@ -649,6 +664,7 @@ function confirmAssignDrawer(){
       `اضغط موافق ← تبديل (كل دواء يأخذ مكان الآخر)\n` +
       `اضغط إلغاء ← أخذ الخانة وإبقاء الآخر بدون تعيين`
     );
+    const _assignName=data[assigningKey]?data[assigningKey].name.replace(/\n/g,' '):'';
     if(choice){
       // swap: old slot drug goes to x_ temporarily, then assigningKey's data goes to newKey, old goes to x_
       const tmpOld={...data[newKey]};
@@ -657,6 +673,7 @@ function confirmAssignDrawer(){
       const oldKey='x_'+uid();
       data[oldKey]={...tmpOld, drawerNum:null, drawerSlot:null, extra:true};
       saveData();refreshAll();closeModal('assignDrawerModal');
+      if(window.PharmacyAuditLog){ PharmacyAuditLog.log('swap_drugs',newKey,_assignName,{from:assigningKey,to:newKey,swappedWith:occupantName}); }
       showToast(`🔄 تم التبديل — "${occupantName}" أصبح بدون تعيين`);
     } else {
       const oldKey='x_'+uid();
@@ -664,14 +681,17 @@ function confirmAssignDrawer(){
       data[newKey]={...data[assigningKey]};
       delete data[assigningKey];
       saveData();refreshAll();closeModal('assignDrawerModal');
+      if(window.PharmacyAuditLog){ PharmacyAuditLog.log('move_drug',newKey,_assignName,{from:assigningKey,to:newKey,displaced:occupantName}); }
       showToast(`✅ تم التعيين — "${occupantName}" أصبح بدون تعيين`);
     }
     return;
   }
 
+  const _assignDrugName=data[assigningKey]?data[assigningKey].name.replace(/\n/g,' '):'';
   if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.assign(data,assigningKey,newKey);
   else { data[newKey]={...data[assigningKey]}; delete data[assigningKey]; }
   saveData();refreshAll();closeModal('assignDrawerModal');
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('move_drug',newKey,_assignDrugName,{from:assigningKey,to:newKey}); }
   showToast(`✅ تم تعيين الدواء في درج ${dr}—${sl}`);
 }
 
@@ -886,7 +906,9 @@ function deleteShelfDrugEntry(){
   if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   if(!editingKey) return;
   if(!confirm('حذف هذا الدواء من الخانة؟')) return;
+  const _delName=data[editingKey]?data[editingKey].name:'';
   if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.remove(data,editingKey); else delete data[editingKey];
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('delete_drug',editingKey,_delName,{}); }
   saveData(); closeModal('expModal'); refreshAll(); showToast('🗑️ تم الحذف');
 }
 // unassign: move drawer slot drug to x_ key so it stays in DB without a location
@@ -894,10 +916,13 @@ function unassignDrugSlot(){
   if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   if(!editingKey) return;
   if(!confirm('سيُبقى الدواء في قاعدة البيانات لكن بدون موقع محدد. تأكيد؟')) return;
+  const _unName=data[editingKey]?data[editingKey].name:'';
+  const _oldKey=editingKey;
   const newKey='x_'+uid();
   if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.unassign(data,editingKey,newKey);
   else { data[newKey]={...data[editingKey], drawerNum:null, drawerSlot:null, extra:true}; delete data[editingKey]; }
   editingKey=newKey;
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('unassign_drug',newKey,_unName,{from:_oldKey}); }
   saveData(); closeModal('expModal'); refreshAll();
   showToast('📤 تم إلغاء الموقع — الدواء لا يزال في قاعدة البيانات بدون تعيين');
 }
@@ -940,7 +965,9 @@ function saveExpiries(){
   if(document.getElementById('typeLasa').checked)      types.push('lasa');
   if(document.getElementById('typeHighAlert').checked) types.push('high-alert');
   const changes={expiries:normalizeExpiries(Array.from(inputs).map(i=>i.value)),types,oos:document.getElementById('flagOOS').checked,shelf:document.getElementById('flagShelf').checked,notes:cleanUserText(document.getElementById('drugNotes').value,1000),name:cleanUserText(document.getElementById('modalDrugName').value,500)||data[editingKey].name,dupType:document.getElementById('dupTypeSelect').value||undefined};
+  const _oldRec=data[editingKey]?{...data[editingKey]}:null;
   if(window.PharmacyMedicationOperations) data=PharmacyMedicationOperations.update(data,editingKey,changes); else Object.assign(data[editingKey],changes);
+  if(window.PharmacyAuditLog){ const diff=PharmacyAuditLog.diffDrug(_oldRec,data[editingKey]); if(Object.keys(diff).length) PharmacyAuditLog.log('edit_drug',editingKey,data[editingKey].name,{changes:diff}); }
   saveData(); closeModal('expModal'); refreshAll(); showToast('✅ تم الحفظ');
 }
 
@@ -1081,9 +1108,10 @@ function saveManualOOS(){
   if(!name)return showToast('⚠️ أدخل اسم الدواء');
   const note=cleanUserText(document.getElementById('oosManualNote').value,1000);
   oosManual.push({id:uid(),name,note});
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('add_oos',null,name,{note}); }
   saveData();closeModal('addOOSModal');renderOOS();updateStats();showToast('✅ تمت الإضافة');
 }
-function removeManualOOS(id){if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');oosManual=oosManual.filter(m=>m.id!==id);saveData();renderOOS();updateStats();}
+function removeManualOOS(id){if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');const _oos=oosManual.find(m=>m.id===id);oosManual=oosManual.filter(m=>m.id!==id);if(window.PharmacyAuditLog&&_oos){ PharmacyAuditLog.log('remove_oos',null,_oos.name,{}); }saveData();renderOOS();updateStats();}
 
 // ══ SHELF ══
 function getNewShelfSize(){
@@ -1331,9 +1359,10 @@ async function saveNewShelf(){
   const finish=async(photoPath)=>{
     const shelf={id:uid(),name,cols,rows,startNum,cells:{},photo:null,photoPath:photoPath||null};
     shelves=window.PharmacyShelfOperations?PharmacyShelfOperations.create().add(shelves,shelf):shelves.concat([shelf]);
+    if(window.PharmacyAuditLog){ PharmacyAuditLog.log('add_shelf',null,name,{cols,rows,startNum}); }
     saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`);
   };
-  if(file){ try{ const id=uid(); const path=await uploadShelfPhoto(file,id); const shelf={id,name,cols,rows,startNum,cells:{},photo:null,photoPath:path}; shelves=window.PharmacyShelfOperations?PharmacyShelfOperations.create().add(shelves,shelf):shelves.concat([shelf]); saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`); }catch(e){showToast('⚠️ '+e.message);} }
+  if(file){ try{ const id=uid(); const path=await uploadShelfPhoto(file,id); const shelf={id,name,cols,rows,startNum,cells:{},photo:null,photoPath:path}; shelves=window.PharmacyShelfOperations?PharmacyShelfOperations.create().add(shelves,shelf):shelves.concat([shelf]); if(window.PharmacyAuditLog){ PharmacyAuditLog.log('add_shelf',null,name,{cols,rows,startNum}); } saveData();closeModal('addShelfModal');renderShelves();showToast(`✅ تمت إضافة درج العلب (${startNum}-${startNum+cols-1})`); }catch(e){showToast('⚠️ '+e.message);} }
   else finish(null);
 }
 
@@ -1386,7 +1415,7 @@ async function saveEditShelf(){
   const current=shelves.find(s=>s.id===editingShelfId);
   const photoInput=document.getElementById('editShelfPhoto');
   const file=photoInput&&photoInput.files&&photoInput.files[0];
-  const finish=()=>{ saveData();closeModal('editShelfModal');renderShelves();showToast('✅ تم تعديل درج العلب'); };
+  const finish=()=>{ if(window.PharmacyAuditLog){ PharmacyAuditLog.log('edit_shelf',null,changes.name,{shelfId:editingShelfId,changes}); } saveData();closeModal('editShelfModal');renderShelves();showToast('✅ تم تعديل درج العلب'); };
   if(file){ try{ const oldPath=current.photoPath; const newPath=await uploadShelfPhoto(file,current.id); if(window.PharmacyShelfOperations)shelves=PharmacyShelfOperations.create().update(shelves,editingShelfId,{photoPath:newPath,photo:null});else{current.photoPath=newPath;current.photo=null;} if(oldPath) await deleteShelfPhoto(oldPath); finish(); }catch(e){showToast('⚠️ '+e.message);} }
   else finish();
 }
@@ -1399,8 +1428,10 @@ async function deleteShelf(){
   if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
   if(!confirm('حذف تعريف الرف؟ ستبقى سجلات الأدوية وتواريخها محفوظة في قاعدة البيانات.'))return;
   const sh=shelves.find(s=>s.id===editingShelfId);
+  const _shelfName=sh?sh.name:'';
   shelves=window.PharmacyShelfOperations?PharmacyShelfOperations.create().remove(shelves,editingShelfId):shelves.filter(s=>s.id!==editingShelfId);
   if(sh?.photoPath) await deleteShelfPhoto(sh.photoPath);
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('delete_shelf',null,_shelfName,{shelfId:editingShelfId}); }
   saveData();closeModal('editShelfModal');renderShelves();showToast('🗑️ تم الحذف');
 }
 
@@ -1441,12 +1472,16 @@ function saveCell(){
     }
   }
   closeModal('cellModal'); refreshAll();
+  if(window.PharmacyAuditLog){ const sh=shelves.find(s=>s.id===editingShelfId); PharmacyAuditLog.log('edit_shelf_cell',editingCellKey,name,{shelfName:sh?sh.name:'',types}); }
   sbDirty=true;persistPendingWrite();setSbStatus('syncing');clearTimeout(sbSaveTimer);
   sbSaveNow().then(()=>showToast('✅ تم الحفظ المؤكد في Supabase')).catch(()=>showToast('⚠️ لم يتأكد الحفظ — احتفظنا بنسخة محلية للاسترداد'));
 }
 function clearCell(){
   if(!isWriteAuthFresh()) return showToast('⛔ الحساب للقراءة فقط');
-  const sh=shelves.find(s=>s.id===editingShelfId); if(sh&&sh.cells) delete sh.cells[editingCellKey];
+  const sh=shelves.find(s=>s.id===editingShelfId);
+  const _cellDrug=sh&&sh.cells&&sh.cells[editingCellKey]?sh.cells[editingCellKey].drug:'';
+  if(sh&&sh.cells) delete sh.cells[editingCellKey];
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('clear_shelf_cell',editingCellKey,_cellDrug,{shelfName:sh?sh.name:''}); }
   saveData();closeModal('cellModal');renderShelves();showToast('🗑️ تم مسح الخلية');
 }
 
@@ -1464,6 +1499,7 @@ function showToast(msg){
 function exportData(){
   const blob=new Blob([JSON.stringify({data,shelves,oosManual,settings,theme},null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pharmacy_v3.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),0);
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('export_data',null,null,{format:'json',drugCount:Object.keys(data).length}); }
 }
 
 function exportCSV(){
@@ -1493,6 +1529,7 @@ function exportCSV(){
   // UTF-8 BOM so Excel/Sheets reads Arabic correctly
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pharmacy_data.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),0);
+  if(window.PharmacyAuditLog){ PharmacyAuditLog.log('export_data',null,null,{format:'csv',drugCount:Object.keys(data).length}); }
   showToast('📊 تم التصدير — افتح الملف في Google Sheets أو Excel');
 }
 
