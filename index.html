@@ -40,6 +40,7 @@
   <button class="tab" onclick="switchTab('oos',this)">🚫 Out of Stock</button>
   <button class="tab" onclick="switchTab('voice',this)">🎙️ إدخال صوتي</button>
   <button class="tab" onclick="switchTab('table',this)">📋 جدول</button>
+  <button class="tab" onclick="switchTab('audit',this)">📝 سجل التعديلات</button>
 </div>
 
 <main>
@@ -278,6 +279,37 @@
         <div style="color:var(--text3);font-size:12px;font-style:italic">لا توجد تسجيلات بعد. ابدأ التسجيل أعلاه.</div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ══ AUDIT LOG ══ -->
+<div id="tab-audit" class="tab-content">
+  <div class="toolbar">
+    <input type="text" class="search-input" id="auditSearch" placeholder="🔍 بحث بالاسم أو الموقع..." oninput="PharmacyAuditLog.searchLogs(this.value)">
+    <select id="auditActionFilter" onchange="PharmacyAuditLog.filterByAction(this.value)">
+      <option value="">كل العمليات</option>
+      <option value="add_drug">➕ إضافة دواء</option>
+      <option value="edit_drug">✏️ تعديل دواء</option>
+      <option value="delete_drug">🗑️ حذف دواء</option>
+      <option value="bulk_delete">🗑️ حذف مجموعة</option>
+      <option value="move_drug">🔀 نقل دواء</option>
+      <option value="swap_drugs">🔄 تبديل</option>
+      <option value="unassign_drug">📤 إلغاء تعيين</option>
+      <option value="bulk_add">📋 إضافة مجموعة</option>
+      <option value="import_data">📥 استيراد</option>
+      <option value="add_oos">🚫 OOS</option>
+      <option value="remove_oos">✅ إزالة OOS</option>
+      <option value="edit_shelf_cell">📦 تعديل خلية</option>
+      <option value="clear_shelf_cell">🗑️ مسح خلية</option>
+      <option value="add_shelf">📦 إضافة رف</option>
+      <option value="delete_shelf">📦 حذف رف</option>
+      <option value="restore_backup">🔄 استعادة</option>
+    </select>
+    <button class="btn btn-secondary btn-sm" onclick="PharmacyAuditLog.resetFilters();document.getElementById('auditSearch').value='';document.getElementById('auditActionFilter').value=''">🔄 إعادة تعيين</button>
+    <button class="btn btn-secondary btn-sm" onclick="PharmacyAuditLog.render()">🔃 تحديث</button>
+  </div>
+  <div id="auditLogContent">
+    <div style="text-align:center;padding:40px;color:var(--text3)">اضغط على التبويب لتحميل السجل</div>
   </div>
 </div>
 
@@ -755,6 +787,7 @@
 <script src="./architecture/settings-policy.js"></script>
 <script src="./architecture/validation-policy.js"></script>
 <script src="./architecture/storage-policy.js"></script>
+<script src="./architecture/audit-log.js"></script>
 <script src="./architecture/voice-module.js"></script>
 <script src="./architecture/backup-module.js"></script>
 <script src="./architecture/auth-runtime.js"></script>
