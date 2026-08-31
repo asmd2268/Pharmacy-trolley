@@ -136,6 +136,26 @@ function saveSettings() {
   settings.critDays=parseInt(document.getElementById('critDays').value)||7;
   saveData();
 }
+function saveTypeColors() {
+  const h=document.getElementById('colorHazard'),l=document.getElementById('colorLasa'),hi=document.getElementById('colorHighAlert');
+  if(h)  settings.colorHazard=h.value;
+  if(l)  settings.colorLasa=l.value;
+  if(hi) settings.colorHighAlert=hi.value;
+  applyTypeColors(); saveData(); showToast('✅ تم حفظ الألوان');
+}
+function syncColorInputs() {
+  const h=document.getElementById('colorHazard'),l=document.getElementById('colorLasa'),hi=document.getElementById('colorHighAlert');
+  if(h&&settings.colorHazard)    h.value=settings.colorHazard;
+  if(l&&settings.colorLasa)      l.value=settings.colorLasa;
+  if(hi&&settings.colorHighAlert)hi.value=settings.colorHighAlert;
+}
+function applyTypeColors() {
+  const rs=document.documentElement.style;
+  const toRgb=h=>{const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+','+g+','+b;};
+  if(settings.colorHazard){rs.setProperty('--hazard',settings.colorHazard);rs.setProperty('--hazard-bg','rgba('+toRgb(settings.colorHazard)+',.13)');}
+  if(settings.colorLasa){rs.setProperty('--lasa',settings.colorLasa);rs.setProperty('--lasa-bg','rgba('+toRgb(settings.colorLasa)+',.13)');}
+  if(settings.colorHighAlert){rs.setProperty('--high',settings.colorHighAlert);rs.setProperty('--high-bg','rgba('+toRgb(settings.colorHighAlert)+',.15)');}
+}
 function saveShelfSettings() { updateShelfCapLabel(); saveData(); }
 function updateShelfCapLabel() {
   const c=parseInt(document.getElementById('shelfCols').value)||5;
