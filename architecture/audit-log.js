@@ -49,6 +49,7 @@
   let writeQueue = [];
 
   async function logAction(action, drugKey, drugName, details) {
+    if (writeQueue.length > 0) flushQueue(); // auto-flush queued entries
     const fn = getSbFetch();
     if (!fn) {
       writeQueue.push({ action, drug_key: drugKey||null, drug_name: drugName||null, details: details||{} });
@@ -66,15 +67,21 @@
     }
   }
 
+  let _flushing = false;
   async function flushQueue() {
-    if (!writeQueue.length || !isConnected()) return;
+    if (_flushing || !writeQueue.length) return;
     const fn = getSbFetch(); if (!fn) return;
+    _flushing = true;
     const batch = writeQueue.splice(0, writeQueue.length);
     for (const entry of batch) {
       try {
         await fn(AUDIT_TABLE, { method: 'POST', body: JSON.stringify({ ...entry, performed_by: currentUserId() }), headers: { Prefer: 'return=minimal' } });
-      } catch (e) { console.warn('[AuditLog] flush failed:', e.message); }
+      } catch (e) {
+        console.warn('[AuditLog] flush failed:', e.message);
+        writeQueue.unshift(entry); break;
+      }
     }
+    _flushing = false;
   }
 
   async function fetchLogs(options) {
