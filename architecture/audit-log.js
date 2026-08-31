@@ -132,13 +132,23 @@
         if (d.mode)  { const ml={add:'إضافة فقط',update:'تحديث + إضافة',replace:'استبدال كامل'}; det += '<span class="audit-detail">النمط: '+esc(ml[d.mode]||d.mode)+'</span>'; }
         if (d.changes && typeof d.changes==='object') {
           const ci=[];
-          if (d.changes.expiries) ci.push('تواريخ الانتهاء');
-          if (d.changes.types)    ci.push('النوع');
-          if (d.changes.oos!==undefined) ci.push('OOS');
-          if (d.changes.name)     ci.push('الاسم');
-          if (d.changes.notes)    ci.push('الملاحظات');
-          if (d.changes.shelf!==undefined) ci.push('رف');
-          if (ci.length) det += '<span class="audit-detail">تغييرات: '+ci.join('، ')+'</span>';
+          if (d.changes.name) det+='<span class="audit-detail">الاسم: <s>'+esc(d.changes.name.old)+'</s> → '+esc(d.changes.name.new)+'</span>';
+          if (d.changes.expiries) {
+            const oE=d.changes.expiries.old||[],nE=d.changes.expiries.new||[];
+            const aE=nE.filter(e=>!oE.includes(e)),rE=oE.filter(e=>!nE.includes(e));
+            if(aE.length) det+='<span class="audit-detail audit-added">➕ تاريخ: '+aE.join('، ')+'</span>';
+            if(rE.length) det+='<span class="audit-detail audit-removed">➖ تاريخ: '+rE.join('، ')+'</span>';
+          }
+          if (d.changes.types) {
+            const tl={'hazard':'Hazard','lasa':'LASA','high-alert':'High Alert'};
+            const oT=d.changes.types.old||[],nT=d.changes.types.new||[];
+            const aT=nT.filter(t=>!oT.includes(t)),rT=oT.filter(t=>!nT.includes(t));
+            if(aT.length) det+='<span class="audit-detail audit-added">➕ '+aT.map(t=>tl[t]||t).join('، ')+'</span>';
+            if(rT.length) det+='<span class="audit-detail audit-removed">➖ '+rT.map(t=>tl[t]||t).join('، ')+'</span>';
+          }
+          if(d.changes.oos!==undefined) det+='<span class="audit-detail">OOS: '+(d.changes.oos.new?'✅ مفعّل':'❌ ملغي')+'</span>';
+          if(d.changes.shelf!==undefined) det+='<span class="audit-detail">رف: '+(d.changes.shelf.new?'✅':'❌')+'</span>';
+          if(d.changes.notes) det+='<span class="audit-detail">ملاحظات: تغيّرت</span>';
         }
         html += '<div class="audit-row"><div class="audit-row-header"><span class="audit-action-badge" data-action="'+esc(row.action)+'">'+label+'</span><span class="audit-time">'+time+'</span></div><div class="audit-row-body">'+(name?'<span class="audit-drug-name">'+name+'</span>':'')+(key?'<code class="audit-key">'+key+'</code>':'')+det+'</div></div>';
       });
