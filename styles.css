@@ -521,3 +521,11 @@ code{font-family:var(--mono)}
   padding:14px 0; margin-top:8px;
 }
 .audit-page-info{ font-size:11px; color:var(--text3); font-family:var(--mono); direction:ltr; }
+
+/* audit diff lines — block layout with clear RTL/LTR separation */
+.audit-drug-line{ padding:2px 0 4px; font-size:13px; }
+.audit-changes{ padding:2px 0; }
+.audit-diff-line{ display:block; font-size:12px; padding:1px 4px; border-radius:3px; margin:1px 0; }
+.audit-diff-line.audit-added  { color:var(--success); background:rgba(46,213,115,.08); }
+.audit-diff-line.audit-removed{ color:var(--danger);  background:rgba(255,71,87,.08); }
+.audit-row-body{ display:block !important; }
