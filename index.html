@@ -54,6 +54,11 @@
     <label style="margin-right:10px">⚠️ حرج</label>
     <input type="number" id="critDays" value="7" min="1" max="60" onchange="saveSettings();refreshAll()">
     <label>يوم</label>
+    <span style="display:flex;align-items:center;gap:6px;margin-right:8px">
+      <label title="لون Hazard" style="display:flex;align-items:center;gap:2px;font-size:11px;color:var(--text2)">Hazard <input type="color" id="colorHazard" value="#f0a500" style="width:26px;height:20px;border:none;padding:0;cursor:pointer;border-radius:3px" onchange="saveTypeColors()"></label>
+      <label title="لون LASA" style="display:flex;align-items:center;gap:2px;font-size:11px;color:var(--text2)">LASA <input type="color" id="colorLasa" value="#0099ff" style="width:26px;height:20px;border:none;padding:0;cursor:pointer;border-radius:3px" onchange="saveTypeColors()"></label>
+      <label title="لون High Alert" style="display:flex;align-items:center;gap:2px;font-size:11px;color:var(--text2)">High Alert <input type="color" id="colorHighAlert" value="#ff4757" style="width:26px;height:20px;border:none;padding:0;cursor:pointer;border-radius:3px" onchange="saveTypeColors()"></label>
+    </span>
     <input type="text" class="search-input" id="drawerFilter" placeholder="🔍 بحث سريع في الأدراج..." oninput="renderDrawers()">
     <div style="display:flex;gap:4px">
       <button class="view-btn active" id="viewBtnCard" onclick="setDrawerView('card')">⊞ بطاقات</button>
