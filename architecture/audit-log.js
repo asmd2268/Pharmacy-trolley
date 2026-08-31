@@ -50,7 +50,7 @@
 
   async function logAction(action, drugKey, drugName, details) {
     const fn = getSbFetch();
-    if (!fn || !isConnected()) {
+    if (!fn) {
       writeQueue.push({ action, drug_key: drugKey||null, drug_name: drugName||null, details: details||{} });
       return;
     }
@@ -60,7 +60,10 @@
         body: JSON.stringify({ action, drug_key: drugKey||null, drug_name: drugName||null, details: details||{}, performed_by: currentUserId() }),
         headers: { Prefer: 'return=minimal' }
       });
-    } catch (e) { console.warn('[AuditLog] write failed:', e.message); }
+    } catch (e) {
+      console.warn('[AuditLog] write failed, queuing:', e.message);
+      writeQueue.push({ action, drug_key: drugKey||null, drug_name: drugName||null, details: details||{} });
+    }
   }
 
   async function flushQueue() {
@@ -97,7 +100,7 @@
   async function renderAuditLog() {
     const c = document.getElementById('auditLogContent'); if (!c) return;
     c.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)">⏳ جاري التحميل...</div>';
-    if (!isConnected()) { c.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)">⚠️ يحتاج اتصال بـ Supabase</div>'; return; }
+    if (!getSbFetch()) { c.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3)">⚠️ يحتاج اتصال بـ Supabase</div>'; return; }
     try {
       const rows = await fetchLogs({ offset: currentOffset, action: currentAction, search: currentSearch });
       if (!rows.length && currentOffset === 0) {
