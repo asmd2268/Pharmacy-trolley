@@ -136,21 +136,21 @@
           if (d.changes.expiries) {
             const oE=d.changes.expiries.old||[],nE=d.changes.expiries.new||[];
             const aE=nE.filter(e=>!oE.includes(e)),rE=oE.filter(e=>!nE.includes(e));
-            if(aE.length) det+='<span class="audit-detail audit-added">➕ تاريخ: '+aE.join('، ')+'</span>';
-            if(rE.length) det+='<span class="audit-detail audit-removed">➖ تاريخ: '+rE.join('، ')+'</span>';
+            if(aE.length) det+='<div class="audit-diff-line audit-added">أُضيف تاريخ: <span dir="ltr">'+aE.join(' ، ')+'</span></div>';
+            if(rE.length) det+='<div class="audit-diff-line audit-removed">حُذف تاريخ: <span dir="ltr">'+rE.join(' ، ')+'</span></div>';
           }
           if (d.changes.types) {
             const tl={'hazard':'Hazard','lasa':'LASA','high-alert':'High Alert'};
             const oT=d.changes.types.old||[],nT=d.changes.types.new||[];
             const aT=nT.filter(t=>!oT.includes(t)),rT=oT.filter(t=>!nT.includes(t));
-            if(aT.length) det+='<span class="audit-detail audit-added">➕ '+aT.map(t=>tl[t]||t).join('، ')+'</span>';
-            if(rT.length) det+='<span class="audit-detail audit-removed">➖ '+rT.map(t=>tl[t]||t).join('، ')+'</span>';
+            if(aT.length) det+='<div class="audit-diff-line audit-added">أُضيف تصنيف: '+aT.map(t=>tl[t]||t).join('، ')+'</div>';
+            if(rT.length) det+='<div class="audit-diff-line audit-removed">حُذف تصنيف: '+rT.map(t=>tl[t]||t).join('، ')+'</div>';
           }
-          if(d.changes.oos!==undefined) det+='<span class="audit-detail">OOS: '+(d.changes.oos.new?'✅ مفعّل':'❌ ملغي')+'</span>';
-          if(d.changes.shelf!==undefined) det+='<span class="audit-detail">رف: '+(d.changes.shelf.new?'✅':'❌')+'</span>';
-          if(d.changes.notes) det+='<span class="audit-detail">ملاحظات: تغيّرت</span>';
+          if(d.changes.oos!==undefined) det+='<div class="audit-diff-line">OOS: '+(d.changes.oos.new?'✅ مفعّل':'❌ ملغي')+'</div>';
+          if(d.changes.shelf!==undefined) det+='<div class="audit-diff-line">رف: '+(d.changes.shelf.new?'✅':'❌')+'</div>';
+          if(d.changes.notes) det+='<div class="audit-diff-line">ملاحظات: تغيّرت</div>';
         }
-        html += '<div class="audit-row"><div class="audit-row-header"><span class="audit-action-badge" data-action="'+esc(row.action)+'">'+label+'</span><span class="audit-time">'+time+'</span></div><div class="audit-row-body">'+(name?'<span class="audit-drug-name">'+name+'</span>':'')+(key?'<code class="audit-key">'+key+'</code>':'')+det+'</div></div>';
+        html += '<div class="audit-row" dir="rtl"><div class="audit-row-header"><span class="audit-action-badge" data-action="'+esc(row.action)+'">'+label+'</span><span class="audit-time" dir="ltr">'+time+'</span></div>'+(name||key?'<div class="audit-drug-line">'+(name?'<span class="audit-drug-name">'+name+'</span>':'')+(key?' &nbsp;<span class="audit-key" dir="ltr">'+key+'</span>':'')+'</div>':'')+(det?'<div class="audit-changes">'+det+'</div>':'')+'</div>';
       });
       html += '</div><div class="audit-pagination">';
       if (currentOffset > 0) html += '<button class="btn btn-secondary btn-sm" onclick="PharmacyAuditLog.prevPage()">→ السابق</button>';
