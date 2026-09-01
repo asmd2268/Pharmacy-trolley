@@ -97,6 +97,7 @@ async function sbLoad({ignorePending=false}={}){
       }
     }
     applyTheme();
+    applyTypeColors();
     document.getElementById('warnDays').value = settings.warnDays;
     document.getElementById('critDays').value  = settings.critDays;
     normalizeShelves();

@@ -84,6 +84,7 @@ function initData() {
   document.getElementById('warnDays').value = settings.warnDays;
   document.getElementById('critDays').value  = settings.critDays;
   applyTheme();
+  applyTypeColors();
   updateShelfCapLabel();
 }
 
@@ -171,6 +172,32 @@ function toggleTheme() {
 function applyTheme() {
   document.body.classList.toggle('light', theme==='light');
   document.getElementById('themeBtn').textContent = theme==='light'?'🌙':'☀️';
+}
+
+function hexToRgb(hex) {
+  return `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`;
+}
+function applyTypeColors() {
+  const h = settings.colorHazard    || '#f0a500';
+  const l = settings.colorLasa      || '#0099ff';
+  const a = settings.colorHighAlert || '#ff4757';
+  const root = document.documentElement;
+  root.style.setProperty('--hazard',    h);
+  root.style.setProperty('--hazard-bg', `rgba(${hexToRgb(h)},.13)`);
+  root.style.setProperty('--lasa',      l);
+  root.style.setProperty('--lasa-bg',   `rgba(${hexToRgb(l)},.13)`);
+  root.style.setProperty('--high',      a);
+  root.style.setProperty('--high-bg',   `rgba(${hexToRgb(a)},.15)`);
+  const ph = document.getElementById('colorHazard');    if(ph) ph.value = h;
+  const pl = document.getElementById('colorLasa');      if(pl) pl.value = l;
+  const pa = document.getElementById('colorHighAlert'); if(pa) pa.value = a;
+}
+function saveTypeColors() {
+  settings.colorHazard    = document.getElementById('colorHazard').value;
+  settings.colorLasa      = document.getElementById('colorLasa').value;
+  settings.colorHighAlert = document.getElementById('colorHighAlert').value;
+  applyTypeColors();
+  saveData();
 }
 
 // ══ HELPERS ══
@@ -405,6 +432,7 @@ function doImportFile(input){
             document.getElementById('warnDays').value=settings.warnDays;
             document.getElementById('critDays').value=settings.critDays;
             applyTheme();
+            applyTypeColors();
           } else {
             const src=p.data||{};
             Object.keys(src).forEach(k=>{
