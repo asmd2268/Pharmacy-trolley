@@ -19,9 +19,9 @@ body.light {
   --bg:#f4f6f9; --surface:#ffffff; --surface2:#edf0f4; --border:#d0d7de;
   --text:#000000; --text2:#57606a; --text3:#8c959f;
   --shadow:0 2px 12px rgba(0,0,0,.12);
-  --hazard-bg:rgba(240,165,0,.08);
-  --lasa-bg:rgba(0,153,255,.07);
-  --high-bg:rgba(255,71,87,.07);
+  --hazard-bg:rgba(240,165,0,.18);
+  --lasa-bg:rgba(0,153,255,.18);
+  --high-bg:rgba(255,71,87,.15);
   --noexp:#7c3aed; --noexp-border:rgba(124,58,237,.3); --noexp-bg:rgba(124,58,237,.06);
   --oos-cell-bg:#c7cbd1; --oos-cell-border:#8b929c; --oos-cell-text:#20242a;
 }
@@ -355,6 +355,7 @@ main.main-wide{max-width:100%}
 .shelf-cell.filled.noexp .cell-drug{color:var(--noexp)}
 .shelf-cell.filled.expired{background:rgba(110,118,129,.08);border-color:var(--border);opacity:.6}
 /* type bg/border now set via inline style in JS (supports gradient for multi-type) */
+.shelf-cell[data-type-color] .cell-drug { color: inherit; }
 /* Out of stock overrides every other color -- solid, unmistakable dark gray in both themes */
 .shelf-cell.filled.cell-oos,
 .shelf-cell.filled.cell-oos.warn,
@@ -371,9 +372,7 @@ main.main-wide{max-width:100%}
   position:absolute;top:3px;left:4px;
 }
 .cell-drug{font-size:11px;font-weight:600;line-height:1.35;color:var(--text);word-break:break-word}
-.shelf-cell.filled.type-hazard     .cell-drug{color:var(--hazard)}
-.shelf-cell.filled.type-lasa       .cell-drug{color:var(--lasa)}
-.shelf-cell.filled.type-high-alert .cell-drug{color:var(--high)}
+/* type colour on cell-drug set via JS inline style when type present */
 .cell-exp{font-family:var(--mono);font-size:10px;margin-top:2px}
 .cell-exp.ok     {color:var(--success)}
 .cell-exp.warn   {color:var(--warn)}
