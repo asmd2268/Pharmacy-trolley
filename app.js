@@ -1307,9 +1307,8 @@ function renderShelves(){
             bestExp=sorted[0]; bestSt=expStatus(bestExp);
             if(bestSt==='critical') bestSt='danger';
           }
-          const _strongestColor2=item.types.includes('high-alert')?'var(--high)':item.types.includes('hazard')?'var(--hazard)':item.types.includes('lasa')?'var(--lasa)':'';
           div.innerHTML=`<span class="cell-label">${dispLabel}</span>
-            <div class="cell-drug" ${_strongestColor2?`style="color:${_strongestColor2}"`:''}>${escapeHtml(item.name.replace(/\n/g,' '))}</div>
+            <div class="cell-drug">${escapeHtml(item.name.replace(/\n/g,' '))}</div>
             ${bestExp?`<div class="cell-exp ${bestSt}">${formatDate(bestExp)}</div>`:'<div class="cell-exp noexp">— بدون تاريخ</div>'}
             ${item.oos?'<span class="oos-badge" style="position:absolute;top:2px;right:3px;font-size:7px">OOS</span>':''}
             ${dupBadgeHtml(item,key)?'<span style="position:absolute;bottom:2px;left:2px;font-size:7px;background:#7c3aed22;color:#7c3aed;border-radius:6px;padding:0 3px;font-weight:700">🔁</span>':''}
