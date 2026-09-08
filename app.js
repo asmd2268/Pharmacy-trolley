@@ -137,25 +137,28 @@ function saveSettings() {
   settings.critDays=parseInt(document.getElementById('critDays').value)||7;
   saveData();
 }
+function _hexToRgb(hex){ return `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`; }
+function applyTypeColors() {
+  const h = settings.colorHazard    || '#f0a500';
+  const l = settings.colorLasa      || '#0099ff';
+  const a = settings.colorHighAlert || '#ff4757';
+  const rs = document.documentElement.style;
+  rs.setProperty('--hazard',    h);
+  rs.setProperty('--hazard-bg', `rgba(${_hexToRgb(h)},.13)`);
+  rs.setProperty('--lasa',      l);
+  rs.setProperty('--lasa-bg',   `rgba(${_hexToRgb(l)},.13)`);
+  rs.setProperty('--high',      a);
+  rs.setProperty('--high-bg',   `rgba(${_hexToRgb(a)},.15)`);
+  const ph=document.getElementById('colorHazard');    if(ph) ph.value=h;
+  const pl=document.getElementById('colorLasa');      if(pl) pl.value=l;
+  const pa=document.getElementById('colorHighAlert'); if(pa) pa.value=a;
+}
 function saveTypeColors() {
   const h=document.getElementById('colorHazard'),l=document.getElementById('colorLasa'),hi=document.getElementById('colorHighAlert');
   if(h)  settings.colorHazard=h.value;
   if(l)  settings.colorLasa=l.value;
   if(hi) settings.colorHighAlert=hi.value;
   applyTypeColors(); saveData(); showToast('✅ تم حفظ الألوان');
-}
-function syncColorInputs() {
-  const h=document.getElementById('colorHazard'),l=document.getElementById('colorLasa'),hi=document.getElementById('colorHighAlert');
-  if(h&&settings.colorHazard)    h.value=settings.colorHazard;
-  if(l&&settings.colorLasa)      l.value=settings.colorLasa;
-  if(hi&&settings.colorHighAlert)hi.value=settings.colorHighAlert;
-}
-function applyTypeColors() {
-  const rs=document.documentElement.style;
-  const toRgb=h=>{const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return r+','+g+','+b;};
-  if(settings.colorHazard){rs.setProperty('--hazard',settings.colorHazard);rs.setProperty('--hazard-bg','rgba('+toRgb(settings.colorHazard)+',.13)');}
-  if(settings.colorLasa){rs.setProperty('--lasa',settings.colorLasa);rs.setProperty('--lasa-bg','rgba('+toRgb(settings.colorLasa)+',.13)');}
-  if(settings.colorHighAlert){rs.setProperty('--high',settings.colorHighAlert);rs.setProperty('--high-bg','rgba('+toRgb(settings.colorHighAlert)+',.15)');}
 }
 function saveShelfSettings() { updateShelfCapLabel(); saveData(); }
 function updateShelfCapLabel() {
@@ -174,30 +177,19 @@ function applyTheme() {
   document.getElementById('themeBtn').textContent = theme==='light'?'🌙':'☀️';
 }
 
-function hexToRgb(hex) {
-  return `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`;
-}
-function applyTypeColors() {
-  const h = settings.colorHazard    || '#f0a500';
-  const l = settings.colorLasa      || '#0099ff';
-  const a = settings.colorHighAlert || '#ff4757';
-  const root = document.documentElement;
-  root.style.setProperty('--hazard',    h);
-  root.style.setProperty('--hazard-bg', `rgba(${hexToRgb(h)},.13)`);
-  root.style.setProperty('--lasa',      l);
-  root.style.setProperty('--lasa-bg',   `rgba(${hexToRgb(l)},.13)`);
-  root.style.setProperty('--high',      a);
-  root.style.setProperty('--high-bg',   `rgba(${hexToRgb(a)},.15)`);
-  const ph = document.getElementById('colorHazard');    if(ph) ph.value = h;
-  const pl = document.getElementById('colorLasa');      if(pl) pl.value = l;
-  const pa = document.getElementById('colorHighAlert'); if(pa) pa.value = a;
-}
-function saveTypeColors() {
-  settings.colorHazard    = document.getElementById('colorHazard').value;
-  settings.colorLasa      = document.getElementById('colorLasa').value;
-  settings.colorHighAlert = document.getElementById('colorHighAlert').value;
-  applyTypeColors();
-  saveData();
+// Returns styled drug name HTML with colored dots and name color based on strongest type
+function typeNameHtml(nameClean, types) {
+  const t = types || [];
+  const hasH = t.includes('high-alert');
+  const hasZ = t.includes('hazard');
+  const hasL = t.includes('lasa');
+  if (!hasH && !hasZ && !hasL) return nameClean;
+  const nameColor = hasH ? 'var(--high)' : hasZ ? 'var(--hazard)' : 'var(--lasa)';
+  let dots = '';
+  if (hasH) dots += `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--high);margin-left:2px;flex-shrink:0" title="High Alert"></span>`;
+  if (hasZ) dots += `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--hazard);margin-left:2px;flex-shrink:0" title="Hazard"></span>`;
+  if (hasL) dots += `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--lasa);margin-left:2px;flex-shrink:0" title="LASA"></span>`;
+  return `<span style="display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap"><span style="color:${nameColor};font-weight:700">${nameClean}</span>${dots}</span>`;
 }
 
 // ══ HELPERS ══
@@ -824,7 +816,7 @@ function renderDrawers(){
         const tr=document.createElement('tr');
         if(item.oos) tr.classList.add('cell-oos');
         tr.innerHTML=`<td class="loc-cell">درج ${r} — ${sl}</td>
-          <td class="name-cell">${nameClean}</td>
+          <td class="name-cell">${typeNameHtml(nameClean,item.types)}</td>
           <td>${tHtml||'—'}</td>
           <td>${expsHtml}</td>
           <td><button class="btn btn-secondary btn-sm" onclick="openExpModal('${key}')">✏️</button></td>`;
@@ -909,7 +901,7 @@ function renderDrawers(){
         <div class="row-label">${sl}</div>
         <div class="row-body">
           ${badgeHtml?`<div class="row-badges">${badgeHtml}</div>`:''}
-          <div class="${drugCls}" title="${nameClean}">${nameClean}</div>
+          <div class="${drugCls}" title="${nameClean}">${dim?nameClean:typeNameHtml(nameClean,item.types)}</div>
         </div>
         <div class="row-right">
           ${expHtml}
@@ -1306,7 +1298,7 @@ function renderShelves(){
             if(bestSt==='critical') bestSt='danger';
           }
           div.innerHTML=`<span class="cell-label">${dispLabel}</span>
-            <div class="cell-drug">${escapeHtml(item.name.replace(/\n/g,' '))}</div>
+            <div class="cell-drug">${typeNameHtml(escapeHtml(item.name.replace(/\n/g,' ')),item.types)}</div>
             ${bestExp?`<div class="cell-exp ${bestSt}">${formatDate(bestExp)}</div>`:'<div class="cell-exp noexp">— بدون تاريخ</div>'}
             ${item.oos?'<span class="oos-badge" style="position:absolute;top:2px;right:3px;font-size:7px">OOS</span>':''}
             ${dupBadgeHtml(item,key)?'<span style="position:absolute;bottom:2px;left:2px;font-size:7px;background:#7c3aed22;color:#7c3aed;border-radius:6px;padding:0 3px;font-weight:700">🔁</span>':''}
