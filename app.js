@@ -879,13 +879,10 @@ function renderDrawers(){
       const row=document.createElement('div');row.className=rowCls;
       if(dim)row.style.opacity='.18';
 
-      // badges (icon only to save space)
+      // badges (shelf/OOS/dup only — type dots rendered by typeNameHtml after the name)
       let badgeHtml='';
-      if(item.types.includes('hazard'))     badgeHtml+=`<span class="type-badge hazard" style="padding:0 3px">⚠️</span>`;
-      if(item.types.includes('lasa'))       badgeHtml+=`<span class="type-badge lasa" style="padding:0 3px">🔵</span>`;
-      if(item.types.includes('high-alert')) badgeHtml+=`<span class="type-badge high-alert" style="padding:0 3px">🔴</span>`;
-      if(item.shelf)                        badgeHtml+=`<span class="shelf-badge" style="padding:0 3px">📦</span>`;
-      if(item.oos)                          badgeHtml+=`<span class="oos-badge" style="padding:0 3px">OOS</span>`;
+      if(item.shelf) badgeHtml+=`<span class="shelf-badge" style="padding:0 3px">📦</span>`;
+      if(item.oos)   badgeHtml+=`<span class="oos-badge" style="padding:0 3px">OOS</span>`;
       badgeHtml+=dupBadgeHtml(item,key);
 
       // expiry tags inline (only earliest)
