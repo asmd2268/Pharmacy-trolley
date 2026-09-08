@@ -354,9 +354,7 @@ main.main-wide{max-width:100%}
 .shelf-cell.filled.noexp{background:var(--noexp-bg);border-color:var(--noexp-border)}
 .shelf-cell.filled.noexp .cell-drug{color:var(--noexp)}
 .shelf-cell.filled.expired{background:rgba(110,118,129,.08);border-color:var(--border);opacity:.6}
-.shelf-cell.filled.type-hazard    {border-color:rgba(240,165,0,.6);background:var(--hazard-bg)}
-.shelf-cell.filled.type-lasa      {border-color:rgba(0,153,255,.6);background:var(--lasa-bg)}
-.shelf-cell.filled.type-high-alert{border-color:rgba(255,71,87,.6);background:var(--high-bg)}
+/* type bg/border now set via inline style in JS (supports gradient for multi-type) */
 /* Out of stock overrides every other color -- solid, unmistakable dark gray in both themes */
 .shelf-cell.filled.cell-oos,
 .shelf-cell.filled.cell-oos.warn,
@@ -405,13 +403,7 @@ tr:hover td{background:var(--surface2)}
 
 mark{background:rgba(0,212,170,.25);color:var(--accent);border-radius:2px;padding:0 2px}
 body.light .oos-badge{background:rgba(88,96,105,.35);color:#24292f;border-color:rgba(88,96,105,.5)}
-/* light mode: type-colored cells use white bg + strong border, no tint overlay */
-body.light .shelf-cell.filled.type-hazard,
-body.light .shelf-cell.filled.type-lasa,
-body.light .shelf-cell.filled.type-high-alert { background:#ffffff!important; }
-body.light .shelf-cell.filled.type-hazard     { border-color:var(--hazard)!important; border-width:2px; }
-body.light .shelf-cell.filled.type-lasa       { border-color:var(--lasa)!important;   border-width:2px; }
-body.light .shelf-cell.filled.type-high-alert { border-color:var(--high)!important;   border-width:2px; }
+/* light mode: drawer type rows use white bg (shelf cells handled via inline style) */
 body.light .drawer-row.type-hazard,
 body.light .drawer-row.type-lasa,
 body.light .drawer-row.type-high-alert        { background:#ffffff!important; }

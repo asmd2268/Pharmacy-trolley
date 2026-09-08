@@ -1283,12 +1283,19 @@ function renderShelves(){
           const cSt=slotExpSt(key);
           const expCls=!item.expiries.length?'noexp':cSt==='danger'?'danger':cSt==='warn'?'warn':'ok';
           cellCls+=` filled ${expCls}`;
-          if(item.types.includes('high-alert'))     cellCls+=' type-high-alert';
-          else if(item.types.includes('lasa'))      cellCls+=' type-lasa';
-          else if(item.types.includes('hazard'))    cellCls+=' type-hazard';
           if(item.oos) cellCls+=' cell-oos';
         }
         div.className=cellCls;
+        if(item&&!item.oos){
+          const _tc=[];
+          if(item.types.includes('high-alert')) _tc.push('var(--high-bg)');
+          if(item.types.includes('hazard'))     _tc.push('var(--hazard-bg)');
+          if(item.types.includes('lasa'))       _tc.push('var(--lasa-bg)');
+          if(_tc.length===1) div.style.background=_tc[0];
+          else if(_tc.length===2) div.style.background=`linear-gradient(to bottom,${_tc[0]} 50%,${_tc[1]} 50%)`;
+          else if(_tc.length>=3) div.style.background=`linear-gradient(to bottom,${_tc[0]} 33%,${_tc[1]} 33% 66%,${_tc[2]} 66%)`;
+          if(_tc.length) div.style.borderColor=item.types.includes('high-alert')?'var(--high)':item.types.includes('hazard')?'var(--hazard)':'var(--lasa)';
+        }
         if(q&&!cellMatches) div.style.opacity='.16';
         if(q&&cellMatches) div.style.outline='2px solid var(--accent)';
 
