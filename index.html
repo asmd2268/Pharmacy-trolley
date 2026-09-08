@@ -93,6 +93,15 @@
     <button class="btn btn-secondary btn-sm" onclick="dbSelectAll()">تحديد الكل</button>
     <button class="btn btn-secondary btn-sm" onclick="dbDeselectAll()">إلغاء التحديد</button>
     <div style="margin-right:auto"></div>
+    <!-- bulk type change -->
+    <div style="display:flex;align-items:center;gap:4px">
+      <span style="font-size:12px;color:var(--text3)">تصنيف:</span>
+      <button class="btn btn-sm" style="background:var(--hazard-bg);color:var(--hazard);border:1px solid var(--hazard)" onclick="dbBulkToggleType('hazard')">⚠️ Hazard</button>
+      <button class="btn btn-sm" style="background:var(--lasa-bg);color:var(--lasa);border:1px solid var(--lasa)" onclick="dbBulkToggleType('lasa')">🔵 LASA</button>
+      <button class="btn btn-sm" style="background:var(--high-bg);color:var(--high);border:1px solid var(--high)" onclick="dbBulkToggleType('high-alert')">🔴 High Alert</button>
+      <button class="btn btn-secondary btn-sm" onclick="dbBulkClearTypes()" title="إزالة كل التصنيفات من المحدد">✕ مسح</button>
+    </div>
+    <span style="color:var(--text3);font-size:12px">|</span>
     <div style="display:flex;align-items:center;gap:6px">
       <input type="password" id="dbBulkPass" class="search-input" style="max-width:130px;letter-spacing:3px;font-size:13px" placeholder="••••" onkeydown="if(event.key==='Enter')dbBulkDelete()">
       <button class="btn btn-danger btn-sm" onclick="dbBulkDelete()">🗑️ حذف المحدد</button>

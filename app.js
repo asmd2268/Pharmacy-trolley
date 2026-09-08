@@ -332,7 +332,16 @@ function renderDB(){
         <button class="btn btn-secondary btn-sm" style="margin-top:2px;display:block;font-size:10px" onclick="event.stopPropagation();openMoveDrawerModal('${key}')">🔀 نقل</button>`;
     }
     const oosClass=item.oos?' class="cell-oos"':'';
-    html+=`<tr${oosClass} style="cursor:pointer" onclick="openExpModal('${key}')">
+    const _types=item.types||[];
+    const _tc=[];
+    if(_types.includes('hazard'))     _tc.push('var(--hazard-bg)');
+    if(_types.includes('lasa'))       _tc.push('var(--lasa-bg)');
+    if(_types.includes('high-alert')) _tc.push('var(--high-bg)');
+    let _rowBg='';
+    if(_tc.length===1) _rowBg=`background:${_tc[0]};`;
+    else if(_tc.length===2) _rowBg=`background:linear-gradient(to bottom,${_tc[0]} 50%,${_tc[1]} 50%);`;
+    else if(_tc.length>=3) _rowBg=`background:linear-gradient(to bottom,${_tc[0]} 33%,${_tc[1]} 33% 66%,${_tc[2]} 66%);`;
+    html+=`<tr${oosClass} style="cursor:pointer;${_rowBg}" onclick="openExpModal('${key}')">
       <td style="text-align:center;vertical-align:middle"><input type="checkbox" class="db-row-chk" data-key="${key}" style="width:15px;height:15px;cursor:pointer" onclick="event.stopPropagation()" onchange="dbUpdateBulkBar()"></td>
       <td class="loc-cell" style="vertical-align:top;padding-top:8px">${locHtml}</td>
       <td class="name-cell" style="max-width:260px;word-break:break-word;white-space:normal;line-height:1.4;font-weight:600">${nameClean}</td>
@@ -381,6 +390,33 @@ async function dbBulkDelete(){
   document.getElementById('dbBulkPass').value='';
   renderDB(); // immediate refresh — no need to reload page
   showToast(confirmed?`🗑️ تم حذف ${keys.length} دواء وحُفظ التغيير ✅`:'⚠️ لم يتأكد الحذف — احتفظنا بنسخة محلية للاسترداد');
+}
+
+async function dbBulkToggleType(type){
+  if(!requireWriteAuth('تغيير تصنيف أدوية')) return;
+  const keys=[...document.querySelectorAll('.db-row-chk:checked')].map(c=>c.dataset.key);
+  if(!keys.length){ showToast('⚠️ لم تحدد أي دواء'); return; }
+  // toggle: إذا كل المحدد يحمل النوع → اسحبه، وإلا أضفه
+  const allHave=keys.every(k=>(data[k]&&data[k].types||[]).includes(type));
+  keys.forEach(k=>{
+    if(!data[k]) return;
+    const t=data[k].types||[];
+    if(allHave) data[k].types=t.filter(x=>x!==type);
+    else if(!t.includes(type)) data[k].types=[...t,type];
+  });
+  if(window.PharmacyAuditLog) PharmacyAuditLog.log('bulk_type',null,null,{type,action:allHave?'remove':'add',count:keys.length});
+  saveData(); renderDB();
+  try{ await sbSaveNow(); showToast(`✅ تم ${allHave?'إزالة':'إضافة'} ${type} لـ ${keys.length} دواء`); }
+  catch(e){ showToast('⚠️ حُفظ محلياً — تحقق من الاتصال'); }
+}
+async function dbBulkClearTypes(){
+  if(!requireWriteAuth('مسح تصنيفات أدوية')) return;
+  const keys=[...document.querySelectorAll('.db-row-chk:checked')].map(c=>c.dataset.key);
+  if(!keys.length){ showToast('⚠️ لم تحدد أي دواء'); return; }
+  keys.forEach(k=>{ if(data[k]) data[k].types=[]; });
+  saveData(); renderDB();
+  try{ await sbSaveNow(); showToast(`✅ تم مسح التصنيفات من ${keys.length} دواء`); }
+  catch(e){ showToast('⚠️ حُفظ محلياً — تحقق من الاتصال'); }
 }
 
 // ══ IMPORT/EXPORT MODAL ══
