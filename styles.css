@@ -7,7 +7,7 @@
   --success:#23d160; --text:#ffffff; --text2:#8b949e; --text3:#6e7681;
   --shadow:0 2px 12px rgba(0,0,0,.4);
   --hazard:#f0a500; --hazard-bg:rgba(240,165,0,.75);
-  --lasa:#0099ff;   --lasa-bg:rgba(0,153,255,.88);
+  --lasa:#00c853;   --lasa-bg:rgba(0,200,83,.88);
   --high:#ff4757;   --high-bg:rgba(255,71,87,.78);
   --noexp:#a78bfa; --noexp-border:rgba(167,139,250,.3); --noexp-bg:rgba(167,139,250,.06);
   --oos-cell-bg:#3a3f47; --oos-cell-border:#565d68; --oos-cell-text:#e6e8eb;
@@ -20,7 +20,7 @@ body.light {
   --text:#000000; --text2:#57606a; --text3:#8c959f;
   --shadow:0 2px 12px rgba(0,0,0,.12);
   --hazard-bg:rgba(240,165,0,.35);
-  --lasa-bg:rgba(0,153,255,.30);
+  --lasa-bg:rgba(0,200,83,.30);
   --high-bg:rgba(255,71,87,.28);
   --noexp:#7c3aed; --noexp-border:rgba(124,58,237,.3); --noexp-bg:rgba(124,58,237,.06);
   --oos-cell-bg:#c7cbd1; --oos-cell-border:#8b929c; --oos-cell-text:#20242a;
@@ -347,10 +347,10 @@ main.main-wide{max-width:100%}
 }
 .shelf-cell:hover{border-color:var(--accent);transform:scale(1.03);z-index:2}
 .shelf-cell.filled{
-  background:var(--surface2);border-color:rgba(35,209,96,.35);
+  background:var(--surface2);border-color:rgba(255,255,255,.25);
 }
-.shelf-cell.filled.warn  {background:rgba(240,165,0,.09);border-color:rgba(240,165,0,.4)}
-.shelf-cell.filled.danger{background:rgba(255,71,87,.09);border-color:rgba(255,71,87,.4)}
+.shelf-cell.filled.warn  {background:rgba(240,165,0,.09);border-color:rgba(240,165,0,.5)}
+.shelf-cell.filled.danger{background:rgba(255,71,87,.09);border-color:rgba(255,71,87,.5)}
 .shelf-cell.filled.noexp{background:var(--noexp-bg);border-color:var(--noexp-border)}
 .shelf-cell.filled.noexp .cell-drug{color:var(--noexp)}
 .shelf-cell.filled.expired{background:rgba(110,118,129,.08);border-color:var(--border);opacity:.6}
@@ -402,11 +402,11 @@ tr:hover td{background:var(--surface2)}
 
 mark{background:rgba(0,212,170,.25);color:var(--accent);border-radius:2px;padding:0 2px}
 body.light .oos-badge{background:rgba(88,96,105,.35);color:#24292f;border-color:rgba(88,96,105,.5)}
-/* light mode: ok-filled shelf cells default white, not green */
-body.light .shelf-cell.filled { background:#ffffff; border-color:rgba(35,209,96,.4); }
-body.light .shelf-cell.filled.warn   { background:#ffffff; border-color:rgba(240,165,0,.5); }
-body.light .shelf-cell.filled.danger { background:#ffffff; border-color:rgba(255,71,87,.5); }
-body.light .shelf-cell.filled.noexp  { background:#ffffff; }
+/* light mode: ok-filled shelf cells white with neutral border */
+body.light .shelf-cell.filled { background:#ffffff; border-color:rgba(0,0,0,.18); }
+body.light .shelf-cell.filled.warn   { background:#ffffff; border-color:rgba(240,165,0,.6); }
+body.light .shelf-cell.filled.danger { background:#ffffff; border-color:rgba(255,71,87,.6); }
+body.light .shelf-cell.filled.noexp  { background:#ffffff; border-color:rgba(0,0,0,.15); }
 /* light mode: drawer type rows use white bg (shelf cells handled via inline style) */
 body.light .drawer-row.type-hazard,
 body.light .drawer-row.type-lasa,

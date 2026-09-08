@@ -140,7 +140,7 @@ function saveSettings() {
 function _hexToRgb(hex){ return `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`; }
 function applyTypeColors() {
   const h = settings.colorHazard    || '#f0a500';
-  const l = settings.colorLasa      || '#0099ff';
+  const l = settings.colorLasa      || '#00c853';
   const a = settings.colorHighAlert || '#ff4757';
   const rs = document.documentElement.style;
   rs.setProperty('--hazard',    h);
@@ -153,12 +153,21 @@ function applyTypeColors() {
   const pl=document.getElementById('colorLasa');      if(pl) pl.value=l;
   const pa=document.getElementById('colorHighAlert'); if(pa) pa.value=a;
 }
+const TYPE_COLOR_DEFAULTS = { hazard:'#f0a500', lasa:'#00c853', 'high-alert':'#ff4757' };
 function saveTypeColors() {
   const h=document.getElementById('colorHazard'),l=document.getElementById('colorLasa'),hi=document.getElementById('colorHighAlert');
   if(h)  settings.colorHazard=h.value;
   if(l)  settings.colorLasa=l.value;
   if(hi) settings.colorHighAlert=hi.value;
   applyTypeColors(); saveData(); showToast('✅ تم حفظ الألوان');
+}
+function resetTypeColor(type) {
+  const def = TYPE_COLOR_DEFAULTS[type];
+  if(!def) return;
+  if(type==='hazard')     { settings.colorHazard=def;    const el=document.getElementById('colorHazard');    if(el) el.value=def; }
+  if(type==='lasa')       { settings.colorLasa=def;      const el=document.getElementById('colorLasa');      if(el) el.value=def; }
+  if(type==='high-alert') { settings.colorHighAlert=def; const el=document.getElementById('colorHighAlert'); if(el) el.value=def; }
+  applyTypeColors(); saveData(); showToast(`↺ تم إعادة لون ${type} للافتراضي`);
 }
 function saveShelfSettings() { updateShelfCapLabel(); saveData(); }
 function updateShelfCapLabel() {
