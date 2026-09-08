@@ -6,9 +6,9 @@
   --accent:#00d4aa; --accent2:#0099ff; --warn:#f0a500; --danger:#ff4757;
   --success:#23d160; --text:#ffffff; --text2:#8b949e; --text3:#6e7681;
   --shadow:0 2px 12px rgba(0,0,0,.4);
-  --hazard:#f0a500; --hazard-bg:rgba(240,165,0,.55);
-  --lasa:#0099ff;   --lasa-bg:rgba(0,153,255,.72);
-  --high:#ff4757;   --high-bg:rgba(255,71,87,.58);
+  --hazard:#f0a500; --hazard-bg:rgba(240,165,0,.75);
+  --lasa:#0099ff;   --lasa-bg:rgba(0,153,255,.88);
+  --high:#ff4757;   --high-bg:rgba(255,71,87,.78);
   --noexp:#a78bfa; --noexp-border:rgba(167,139,250,.3); --noexp-bg:rgba(167,139,250,.06);
   --oos-cell-bg:#3a3f47; --oos-cell-border:#565d68; --oos-cell-text:#e6e8eb;
   --font:'IBM Plex Sans Arabic',sans-serif;
@@ -347,7 +347,7 @@ main.main-wide{max-width:100%}
 }
 .shelf-cell:hover{border-color:var(--accent);transform:scale(1.03);z-index:2}
 .shelf-cell.filled{
-  background:rgba(35,209,96,.08);border-color:rgba(35,209,96,.35);
+  background:var(--surface2);border-color:rgba(35,209,96,.35);
 }
 .shelf-cell.filled.warn  {background:rgba(240,165,0,.09);border-color:rgba(240,165,0,.4)}
 .shelf-cell.filled.danger{background:rgba(255,71,87,.09);border-color:rgba(255,71,87,.4)}
