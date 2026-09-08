@@ -29,6 +29,7 @@
     edit_drug:       '✏️ تعديل دواء',
     delete_drug:     '🗑️ حذف دواء',
     bulk_delete:     '🗑️ حذف مجموعة',
+    bulk_type:       '🏷️ تغيير تصنيف مجموعة',
     move_drug:       '🔀 نقل دواء',
     swap_drugs:      '🔄 تبديل دواءين',
     unassign_drug:   '📤 إلغاء تعيين',
@@ -124,6 +125,15 @@
         let det = '';
         if (d.from && d.to)        det += '<span class="audit-detail">من <code>'+esc(d.from)+'</code> إلى <code>'+esc(d.to)+'</code></span>';
         if (d.count)               det += '<span class="audit-detail">العدد: '+Number(d.count)+'</span>';
+        if (d.type && d.action) {
+          const tl = {'hazard':'⚠️ Hazard','lasa':'🔵 LASA','high-alert':'🔴 High Alert'};
+          const al = d.action==='add' ? 'إضافة' : d.action==='remove' ? 'إزالة' : 'مسح';
+          det += '<span class="audit-detail">التصنيف: <strong>'+esc(tl[d.type]||d.type)+'</strong> — '+al+'</span>';
+        }
+        if (d.names && Array.isArray(d.names) && d.names.length) {
+          det += '<div class="audit-diff-line" style="margin-top:4px"><span style="color:var(--text3);font-size:11px">الأدوية المتأثرة:</span><br>'
+            + d.names.map(n=>'<span style="font-size:11px;margin-left:4px">• '+esc(n)+'</span>').join('<br>')+' </div>';
+        }
         if (d.location)            det += '<span class="audit-detail">الموقع: <code>'+esc(d.location)+'</code></span>';
         if (d.displaced)           det += '<span class="audit-detail">أُزيح: '+esc(d.displaced)+'</span>';
         if (d.swappedWith)         det += '<span class="audit-detail">تبديل مع: '+esc(d.swappedWith)+'</span>';

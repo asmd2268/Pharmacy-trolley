@@ -396,7 +396,7 @@ async function dbBulkToggleType(type){
     if(allHave) data[k].types=t.filter(x=>x!==type);
     else if(!t.includes(type)) data[k].types=[...t,type];
   });
-  if(window.PharmacyAuditLog) PharmacyAuditLog.log('bulk_type',null,null,{type,action:allHave?'remove':'add',count:keys.length});
+  if(window.PharmacyAuditLog) PharmacyAuditLog.log('bulk_type',null,null,{type,action:allHave?'remove':'add',count:keys.length,names:keys.map(k=>data[k]?data[k].name:'').filter(Boolean).slice(0,30)});
   saveData(); renderDB();
   try{ await sbSaveNow(); showToast(`✅ تم ${allHave?'إزالة':'إضافة'} ${type} لـ ${keys.length} دواء`); }
   catch(e){ showToast('⚠️ حُفظ محلياً — تحقق من الاتصال'); }
@@ -405,7 +405,9 @@ async function dbBulkClearTypes(){
   if(!requireWriteAuth('مسح تصنيفات أدوية')) return;
   const keys=[...document.querySelectorAll('.db-row-chk:checked')].map(c=>c.dataset.key);
   if(!keys.length){ showToast('⚠️ لم تحدد أي دواء'); return; }
+  const _clearedNames=keys.map(k=>data[k]?data[k].name:'').filter(Boolean);
   keys.forEach(k=>{ if(data[k]) data[k].types=[]; });
+  if(window.PharmacyAuditLog) PharmacyAuditLog.log('bulk_type',null,null,{type:'all',action:'remove',count:keys.length,names:_clearedNames.slice(0,30)});
   saveData(); renderDB();
   try{ await sbSaveNow(); showToast(`✅ تم مسح التصنيفات من ${keys.length} دواء`); }
   catch(e){ showToast('⚠️ حُفظ محلياً — تحقق من الاتصال'); }
