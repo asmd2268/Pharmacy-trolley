@@ -1316,7 +1316,8 @@ function renderShelves(){
           const _hasType=(item.types||[]).some(t=>['hazard','lasa','high-alert'].includes(t));
           // On coloured cell backgrounds: ok dates use default text colour, warn/danger keep their colour
           const _isLight=document.body.classList.contains('light');
-          const _okExpStyle=(_hasType&&bestSt==='ok')?`style="color:${_isLight?'#1a1a1a':'#ffffff'};font-weight:600"`:'';
+          const _okExpStyle=(_hasType&&bestSt==='ok')?`style="color:var(--text)"`:'';
+
 
           div.innerHTML=`<span class="cell-label">${dispLabel}</span>
             <div class="cell-drug">${escapeHtml(item.name.replace(/\n/g,' '))}</div>
