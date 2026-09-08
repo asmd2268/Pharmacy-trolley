@@ -1308,8 +1308,10 @@ function renderShelves(){
             if(bestSt==='critical') bestSt='danger';
           }
           const _hasType=(item.types||[]).some(t=>['hazard','lasa','high-alert'].includes(t));
-          // On coloured cell backgrounds in light mode, force date text to dark for readability
-          const _expStyle=_hasType&&document.body.classList.contains('light')?'style="color:#1a1a1a;font-weight:700"':'';
+          // On coloured cell backgrounds force date text to contrast: dark in light mode, white in dark mode
+          const _isLight=document.body.classList.contains('light');
+          const _expStyle=_hasType?`style="color:${_isLight?'#1a1a1a':'#ffffff'};font-weight:700"`:'';
+
           div.innerHTML=`<span class="cell-label">${dispLabel}</span>
             <div class="cell-drug">${escapeHtml(item.name.replace(/\n/g,' '))}</div>
             ${bestExp?`<div class="cell-exp ${bestSt}" ${_expStyle}>${formatDate(bestExp)}</div>`:'<div class="cell-exp noexp">— بدون تاريخ</div>'}

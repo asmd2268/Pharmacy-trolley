@@ -402,6 +402,11 @@ tr:hover td{background:var(--surface2)}
 
 mark{background:rgba(0,212,170,.25);color:var(--accent);border-radius:2px;padding:0 2px}
 body.light .oos-badge{background:rgba(88,96,105,.35);color:#24292f;border-color:rgba(88,96,105,.5)}
+/* light mode: ok-filled shelf cells default white, not green */
+body.light .shelf-cell.filled { background:#ffffff; border-color:rgba(35,209,96,.4); }
+body.light .shelf-cell.filled.warn   { background:#ffffff; border-color:rgba(240,165,0,.5); }
+body.light .shelf-cell.filled.danger { background:#ffffff; border-color:rgba(255,71,87,.5); }
+body.light .shelf-cell.filled.noexp  { background:#ffffff; }
 /* light mode: drawer type rows use white bg (shelf cells handled via inline style) */
 body.light .drawer-row.type-hazard,
 body.light .drawer-row.type-lasa,
