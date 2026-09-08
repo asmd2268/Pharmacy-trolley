@@ -6,9 +6,9 @@
   --accent:#00d4aa; --accent2:#0099ff; --warn:#f0a500; --danger:#ff4757;
   --success:#23d160; --text:#ffffff; --text2:#8b949e; --text3:#6e7681;
   --shadow:0 2px 12px rgba(0,0,0,.4);
-  --hazard:#f0a500; --hazard-bg:rgba(240,165,0,.42);
-  --lasa:#0099ff;   --lasa-bg:rgba(0,153,255,.52);
-  --high:#ff4757;   --high-bg:rgba(255,71,87,.38);
+  --hazard:#f0a500; --hazard-bg:rgba(240,165,0,.55);
+  --lasa:#0099ff;   --lasa-bg:rgba(0,153,255,.72);
+  --high:#ff4757;   --high-bg:rgba(255,71,87,.58);
   --noexp:#a78bfa; --noexp-border:rgba(167,139,250,.3); --noexp-bg:rgba(167,139,250,.06);
   --oos-cell-bg:#3a3f47; --oos-cell-border:#565d68; --oos-cell-text:#e6e8eb;
   --font:'IBM Plex Sans Arabic',sans-serif;
